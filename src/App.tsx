@@ -8,6 +8,8 @@ import { buildSuggestConfig } from './lib/suggest'
 import { computePairs } from './lib/pairs'
 import { load, save } from './lib/storage'
 import { migrateBests, savedLength, type Bests } from './lib/settings'
+import { openHistory } from './lib/history'
+import { recordRun } from './lib/runlog'
 import { CHORD_TIMEOUT_MS, keyLabels, shortcut, shortcutText } from './lib/shortcuts'
 import { CodeView } from './components/CodeView'
 import { ConfigBar } from './components/ConfigBar'
@@ -106,6 +108,19 @@ export default function App() {
   useEffect(() => {
     if (isBest) save('bests', currentBests)
   }, [isBest, currentBests])
+
+  // Every finished run goes into local history with its keystroke log
+  // (src/lib/history.ts), once. Where the browser won't store it, nothing happens.
+  const [history] = useState(() => openHistory())
+  const recordedRun = useRef(-1)
+  useEffect(() => {
+    if (phase !== 'done' || recordedRun.current === state.runId) return
+    recordedRun.current = state.runId
+    const aids = { autoIndent, autoClose, autocomplete }
+    recordRun(language, state, aids)
+      .then(async (record) => (await history)?.add(record))
+      .catch((err) => console.warn('This run could not be saved to local history:', err))
+  }, [phase, state, language, autoIndent, autoClose, autocomplete, history])
 
   const start = useCallback(
     (s: Snippet, changes: Partial<Settings> = {}) => {

@@ -69,7 +69,7 @@ function head(page) {
 const faq = [
   ['How is WPM counted?', 'Correct characters you typed yourself, divided by five, per minute. Text you accept from a suggestion or that the editor inserts for you counts toward a separate code speed, not your WPM.'],
   ['Can I turn the editor help off?', 'Yes. Auto-indent, auto-close and autocomplete each have a switch, and personal bests are kept apart depending on whether auto-close and autocomplete were on.'],
-  ['Is it free? Do I need an account?', 'It is free and there is no account. Everything runs in your browser, and your settings and personal bests stay on your device.'],
+  ['Is it free? Do I need an account?', 'It is free and there is no account. Everything runs in your browser, and your settings, personal bests and run history stay on your device.'],
 ]
 
 function about(page) {

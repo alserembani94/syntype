@@ -1,0 +1,138 @@
+/**
+ * Local history: every finished run, kept in the browser's IndexedDB
+ * (docs/leaderboard.md, "Personal board"). Results are kept for every run;
+ * keystroke logs only for each snippet's best 3 runs and the last 10 runs, so
+ * storage stays small however much someone plays. Nothing here leaves the
+ * device.
+ *
+ * Storage can be missing or refused (private windows, sandboxed pages, a full
+ * disk). openHistory() then resolves to null and the game carries on without it.
+ */
+import type { LogEntry, RunRecord } from './runlog'
+import { MIN_ACCURACY_FOR_BEST } from './stats'
+
+const DB_NAME = 'syntype'
+const DB_VERSION = 1
+/** Logs kept per snippet, best first. */
+export const BEST_LOGS_PER_SNIPPET = 3
+/** Logs kept for the most recent runs, whatever their score. */
+export const RECENT_LOGS = 10
+
+/** A run as stored: its record without the log, which is kept separately. */
+export interface StoredRun extends Omit<RunRecord, 'log'> {
+  /** "language/snippet/fingerprint": one snippet's exact text. */
+  snippetKey: string
+  hasLog: boolean
+}
+
+export const snippetKey = (r: Pick<RunRecord, 'language' | 'snippet' | 'fingerprint'>) => `${r.language}/${r.snippet}/${r.fingerprint}`
+
+/** Best first: accurate runs by WPM, then earlier first on a tie. */
+export function byBest(a: StoredRun, b: StoredRun): number {
+  const accurate = (r: StoredRun) => (r.accuracy >= MIN_ACCURACY_FOR_BEST ? 1 : 0)
+  return accurate(b) - accurate(a) || b.wpm - a.wpm || a.finishedAt.localeCompare(b.finishedAt)
+}
+
+const request = <T>(r: IDBRequest<T>) =>
+  new Promise<T>((resolve, reject) => {
+    r.onsuccess = () => resolve(r.result)
+    r.onerror = () => reject(r.error)
+  })
+
+const done = (tx: IDBTransaction) =>
+  new Promise<void>((resolve, reject) => {
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error)
+    tx.onabort = () => reject(tx.error ?? new Error('transaction aborted'))
+  })
+
+export interface History {
+  /** Saves a finished run, then drops logs that are no longer among the kept ones. */
+  add(record: RunRecord): Promise<void>
+  /** Runs, newest first; optionally one language's or one snippet's. */
+  runs(filter?: { language?: string; snippetKey?: string }): Promise<StoredRun[]>
+  /** A run's keystroke log, if it was kept. */
+  log(id: string): Promise<LogEntry[] | undefined>
+  close(): void
+}
+
+/** Opens local history, or resolves to null where the browser won't store it. */
+export async function openHistory(factory?: IDBFactory | null): Promise<History | null> {
+  try {
+    // Even reading window.indexedDB can throw (blocked storage, sandboxed pages).
+    const idb = factory === undefined ? globalThis.indexedDB : factory
+    if (!idb) return null
+    const open = idb.open(DB_NAME, DB_VERSION)
+    open.onupgradeneeded = () => {
+      const db = open.result
+      const runs = db.createObjectStore('runs', { keyPath: 'id' })
+      runs.createIndex('snippetKey', 'snippetKey')
+      runs.createIndex('language', 'language')
+      runs.createIndex('finishedAt', 'finishedAt')
+      db.createObjectStore('logs')
+    }
+    const db = await request(open)
+    return makeHistory(db)
+  } catch {
+    return null
+  }
+}
+
+function makeHistory(db: IDBDatabase): History {
+  return {
+    async add(record) {
+      const { log, ...rest } = record
+      const run: StoredRun = { ...rest, snippetKey: snippetKey(record), hasLog: true }
+      const tx = db.transaction(['runs', 'logs'], 'readwrite')
+      const runs = tx.objectStore('runs')
+      const logs = tx.objectStore('logs')
+      runs.put(run)
+      logs.put(log, run.id)
+
+      // The logs to keep: this snippet's best 3, and the last 10 runs overall.
+      const sameSnippet = (await request(runs.index('snippetKey').getAll(run.snippetKey))) as StoredRun[]
+      const keep = new Set(sameSnippet.sort(byBest).slice(0, BEST_LOGS_PER_SNIPPET).map((r) => r.id))
+      const recent: StoredRun[] = []
+      let cursor = await request(runs.index('finishedAt').openCursor(null, 'prev'))
+      // One past the last 10: the run that just stopped being recent.
+      while (cursor && recent.length <= RECENT_LOGS) {
+        recent.push(cursor.value as StoredRun)
+        cursor.continue()
+        cursor = await request(cursor.request as IDBRequest<IDBCursorWithValue | null>)
+      }
+      recent.slice(0, RECENT_LOGS).forEach((r) => keep.add(r.id))
+
+      // Only runs whose status could have changed with this one need checking.
+      const candidates = new Map([...sameSnippet, ...recent.slice(RECENT_LOGS)].map((r) => [r.id, r]))
+      for (const r of candidates.values()) {
+        if (!r.hasLog || keep.has(r.id)) continue
+        // The other snippet's run that left the last 10 may still be among its own best 3.
+        if (r.snippetKey !== run.snippetKey) {
+          const theirs = (await request(runs.index('snippetKey').getAll(r.snippetKey))) as StoredRun[]
+          if (theirs.sort(byBest).slice(0, BEST_LOGS_PER_SNIPPET).some((x) => x.id === r.id)) continue
+        }
+        logs.delete(r.id)
+        runs.put({ ...r, hasLog: false })
+      }
+      await done(tx)
+    },
+
+    async runs(filter = {}) {
+      const store = db.transaction('runs').objectStore('runs')
+      const all = (await request(
+        filter.snippetKey
+          ? store.index('snippetKey').getAll(filter.snippetKey)
+          : filter.language
+            ? store.index('language').getAll(filter.language)
+            : store.getAll(),
+      )) as StoredRun[]
+      return all.sort((a, b) => b.finishedAt.localeCompare(a.finishedAt))
+    },
+
+    async log(id) {
+      return (await request(db.transaction('logs').objectStore('logs').get(id))) as LogEntry[] | undefined
+    },
+
+    close: () => db.close(),
+  }
+}

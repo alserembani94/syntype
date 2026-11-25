@@ -56,7 +56,7 @@ Built in `src/lib/runlog.ts` (task 2): the reducer logs every action that change
 
 Works for everyone, costs nothing on the server, and never leaves the device unless the player exports it.
 
-- **Stored in IndexedDB**, not `localStorage`: that's capped at 10 MiB, which a heavy player would fill in months. Today's local personal bests move over.
+- **Stored in IndexedDB**, not `localStorage`: that's capped at 10 MiB, which a heavy player would fill in months. Built in `src/lib/history.ts` (task 3): runs and logs in separate stores, so listing runs never loads logs; logs pruned after each run. Today's personal bests (per language, length and aids) stay in `localStorage` and keep driving the results screen; the history starts with the first run recorded.
 - **Kept:**
   - every run's **result** (about 0.2 KB; under 1 MB a year at 10 runs a day)
   - **logs** for each snippet's best 3 runs (at most ~1.4 MB for today's 241 snippets) and for the last 10 runs, for replaying a run just played
@@ -66,7 +66,7 @@ Works for everyone, costs nothing on the server, and never leaves the device unl
   - a replay of any run that has a log
   - for signed-in players, whether each run was submitted, accepted or rejected, and why
 - **Durability:**
-  - The app asks the browser for persistent storage (`navigator.storage.persist()`).
+  - The personal board offers a button that asks the browser for persistent storage (`navigator.storage.persist()`). It isn't asked for automatically: Firefox shows a permission prompt for it, which shouldn't appear on someone's first finished run.
   - Safari may still delete a site's data after 7 days of browsing without a visit, which is why **export to a file** and **import** exist. They're also how history moves to another device.
   - Private windows keep nothing.
 - **Clear local history:** everything, or one language.

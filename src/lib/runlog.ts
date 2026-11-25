@@ -133,12 +133,18 @@ export async function fingerprint(code: string): Promise<string> {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
+/** A unique run id: a UUID where the browser offers one (secure pages), random hex otherwise. */
+const runId = () =>
+  typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, '0')).join('')
+
 /** The record of a finished run. */
 export async function recordRun(lang: Language, s: TestState, aids: TypingAids, finishedAt = new Date()): Promise<RunRecord> {
   if (s.phase !== 'done') throw new Error('Only a finished run can be recorded')
   const r = resultOf(s)
   return {
-    id: crypto.randomUUID(),
+    id: runId(),
     language: lang.id,
     snippet: s.snippet.name,
     fingerprint: await fingerprint(s.snippet.code),
