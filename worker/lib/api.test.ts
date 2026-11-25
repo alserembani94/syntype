@@ -84,7 +84,7 @@ const rename = (session: string, name: unknown, origin: string | null = SITE, no
 
 describe('health', () => {
   it('reports the database is up', async () => {
-    expect(await (await handle(new Request(`${SITE}/api/health`), deps())).json()).toEqual({ ok: true, database: true })
+    expect(await (await handle(new Request(`${SITE}/api/health`), deps())).json()).toEqual({ ok: true, database: true, tables: true })
   })
 })
 

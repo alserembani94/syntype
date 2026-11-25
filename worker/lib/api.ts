@@ -91,8 +91,9 @@ export async function handle(request: Request, deps: Deps): Promise<Response> {
   const method = request.method
 
   if (url.pathname === '/api/health' && method === 'GET') {
-    const row = await db.prepare('SELECT 1 AS up').first<{ up: number }>()
-    return json({ ok: true, database: row?.up === 1 })
+    // Up, and with its tables: the migrations in migrations/ have been applied.
+    const row = await db.prepare("SELECT count(*) AS tables FROM sqlite_master WHERE type = 'table' AND name IN ('players', 'bests', 'logs', 'reports')").first<{ tables: number }>()
+    return json({ ok: true, database: row !== null, tables: row?.tables === 4 })
   }
 
   const auth = url.pathname.match(/^\/api\/auth\/(github|google)\/(start|callback)$/)
