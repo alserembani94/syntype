@@ -3,6 +3,7 @@
  * (docs/leaderboard.md, "Moderation"). Every admin action is written to
  * admin_actions, with the admin's Access email.
  */
+import { fail, isUniqueViolation, type Result } from './result'
 import type { Db } from './db'
 import { nameKey, nameProblem, tidyName } from './names'
 import { getPlayer, type PlayerRow } from './players'
@@ -14,8 +15,6 @@ export type Reason = ReportReason
 export const NOTE_MAX = 500
 export const REPORTS_PER_DAY = 10
 
-type Result<T = object> = ({ ok: true } & T) | { ok: false; status: number; error: string }
-const fail = (status: number, error: string) => ({ ok: false as const, status, error })
 
 /** A player reports a player, or one of their runs. */
 export async function report(db: Db, reporter: PlayerRow, body: unknown, now: Date): Promise<Result<{ id: string }>> {
@@ -54,7 +53,7 @@ export async function report(db: Db, reporter: PlayerRow, body: unknown, now: Da
       .run()
   } catch (err) {
     // Two reports of the same run at once: the table's UNIQUE catches the second.
-    if (/UNIQUE/i.test(String(err))) return fail(409, 'You’ve already reported this.')
+    if (isUniqueViolation(err)) return fail(409, 'You’ve already reported this.')
     throw err
   }
   return { ok: true, id }

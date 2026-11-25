@@ -6,7 +6,8 @@
  */
 import type { Db } from './db'
 import { runRemoval } from './boards'
-import { gunzip } from './runs'
+import { unpackLog } from './logs'
+import { fail } from './result'
 import type { PlayerRow } from './players'
 import type { SnippetLength } from '../../src/languages/types'
 import type { Entry } from '../../src/lib/apiTypes'
@@ -24,10 +25,10 @@ export interface RateLimiter {
  * something changes, and at most twice a minute per player (`limiter`).
  */
 export async function setHidden(db: Db, player: PlayerRow, hidden: unknown, limiter?: RateLimiter) {
-  if (typeof hidden !== 'boolean') return { ok: false as const, status: 400, error: 'Say whether to hide.' }
+  if (typeof hidden !== 'boolean') return fail(400, 'Say whether to hide.')
   if ((player.hidden === 1) === hidden) return { ok: true as const }
   if (limiter && !(await limiter.limit({ key: player.id })).success) {
-    return { ok: false as const, status: 429, error: 'That’s a lot of switching. Try again in a minute.' }
+    return fail(429, 'That’s a lot of switching. Try again in a minute.')
   }
   await db.prepare('UPDATE players SET hidden = ? WHERE id = ?').bind(hidden ? 1 : 0, player.id).run()
   return { ok: true as const }
@@ -60,7 +61,7 @@ export async function myEntries(db: Db, player: Pick<PlayerRow, 'id'>): Promise<
 /** Deletes one of the player's own runs from the boards. */
 export async function deleteMyRun(db: Db, player: PlayerRow, runId: string) {
   const removal = await runRemoval(db, runId, player.id)
-  if (!removal) return { ok: false as const, status: 404, error: 'That run isn’t one of yours on the boards.' }
+  if (!removal) return fail(404, 'That run isn’t one of yours on the boards.')
   await db.batch(removal.writes)
   return { ok: true as const }
 }
@@ -99,7 +100,7 @@ export async function myData(db: Db, player: PlayerRow, now: Date) {
       lastSeenAt: player.last_seen_at,
     },
     bests: bests.results,
-    logs: await Promise.all(logs.results.map(async (l) => ({ runId: l.run_id, fingerprint: l.fingerprint, createdAt: l.created_at, log: JSON.parse(await gunzip(new Uint8Array(l.log))) }))),
+    logs: await Promise.all(logs.results.map(async (l) => ({ runId: l.run_id, fingerprint: l.fingerprint, createdAt: l.created_at, log: await unpackLog(l.log) }))),
     reportsMade: reports.results,
     reportsAboutYou: about.results,
     moderatorActions: actions.results,
@@ -131,7 +132,7 @@ export async function deleteAccount(db: Db, player: PlayerRow, body: unknown) {
   const typed = (body as { confirm?: unknown } | null)?.confirm
   const expected = player.name ?? player.suggested_name
   if (typeof typed !== 'string' || typed.trim().toLowerCase() !== expected.toLowerCase()) {
-    return { ok: false as const, status: 400, error: `Type ${expected} to confirm.` }
+    return fail(400, `Type ${expected} to confirm.`)
   }
   await db.batch(deletion(db, { sql: 'SELECT ?', binds: [player.id] }))
   return { ok: true as const }

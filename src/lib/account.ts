@@ -5,20 +5,18 @@
  */
 import type { Entry, Player, Provider } from './apiTypes'
 import { nameShapeProblem } from './nameRules'
+import { api, OFFLINE, TRY_AGAIN } from './http'
 
 export type { Entry, Player, Provider }
 
 export type Account = { state: 'loading' } | { state: 'unavailable' } | { state: 'signed-out' } | { state: 'signed-in'; player: Player; turnstileSiteKey?: string }
 
 export async function fetchAccount(): Promise<Account> {
-  try {
-    const res = await fetch('/api/me', { credentials: 'same-origin', headers: { Accept: 'application/json' } })
-    if (!res.ok || !res.headers.get('Content-Type')?.includes('application/json')) return { state: 'unavailable' }
-    const body = (await res.json()) as { signedIn: boolean; player?: Player; turnstileSiteKey?: string }
-    return body.signedIn && body.player ? { state: 'signed-in', player: body.player, turnstileSiteKey: body.turnstileSiteKey } : { state: 'signed-out' }
-  } catch {
-    return { state: 'unavailable' }
-  }
+  // The artifact has no server: its page answers instead, which isn't JSON.
+  const r = await api<{ signedIn: boolean; player?: Player; turnstileSiteKey?: string }>('/api/me')
+  if (!r.ok) return { state: 'unavailable' }
+  const { player, turnstileSiteKey } = r.body
+  return r.body.signedIn && player ? { state: 'signed-in', player, turnstileSiteKey } : { state: 'signed-out' }
 }
 
 /** Remembered across the trip to GitHub or Google, so the name step opens on return. */
@@ -62,22 +60,12 @@ export function signInProblem(): string | null {
 }
 
 export async function saveName(name: string): Promise<{ player: Player } | { error: string }> {
-  try {
-    const res = await fetch('/api/me/name', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
-    })
-    const body = (await res.json()) as { player?: Player; error?: string }
-    return res.ok && body.player ? { player: body.player } : { error: body.error ?? 'That didn’t work. Please try again.' }
-  } catch {
-    return { error: 'Couldn’t reach Syntype. Check your connection and try again.' }
-  }
+  const r = await api<{ player: Player }>('/api/me/name', { body: { name } })
+  return r.ok ? { player: r.body.player } : { error: r.error }
 }
 
 export async function signOut(): Promise<void> {
-  await fetch('/api/auth/signout', { method: 'POST', credentials: 'same-origin' }).catch(() => {})
+  await api('/api/auth/signout', { method: 'POST' })
 }
 
 /** The name's shape, checked as the player types for a quick hint; the server also turns away reserved and offensive names. */
@@ -85,28 +73,12 @@ export const nameHint = nameShapeProblem
 
 // ——— The player's own data (worker/lib/account.ts) ———
 
-
-async function post<T>(path: string, body: unknown): Promise<{ ok: true; body: T } | { ok: false; error: string }> {
-  try {
-    const res = await fetch(path, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-    const data = (await res.json().catch(() => null)) as (T & { error?: string }) | null
-    return res.ok && data ? { ok: true, body: data } : { ok: false, error: data?.error ?? 'That didn’t work. Please try again.' }
-  } catch {
-    return { ok: false, error: 'Couldn’t reach Syntype. Check your connection and try again.' }
-  }
-}
+const post = <T>(path: string, body: unknown) => api<T>(path, { body })
 
 /** Hides the player from every leaderboard, or shows them again. */
 export const setHidden = (hidden: boolean) => post<{ player: Player }>('/api/me/hide', { hidden })
 
-export async function fetchEntries(): Promise<Entry[] | null> {
-  try {
-    const res = await fetch('/api/me/runs', { credentials: 'same-origin' })
-    return res.ok ? ((await res.json()) as { entries: Entry[] }).entries : null
-  } catch {
-    return null
-  }
-}
+export const fetchEntries = (): Promise<Entry[] | null> => api<{ entries: Entry[] }>('/api/me/runs').then((r) => (r.ok ? r.body.entries : null))
 
 export const deleteEntry = (runId: string) => post<{ ok: true }>(`/api/me/runs/${encodeURIComponent(runId)}/delete`, {})
 
@@ -114,7 +86,7 @@ export const deleteEntry = (runId: string) => post<{ ok: true }>(`/api/me/runs/$
 export async function downloadData(): Promise<string | null> {
   try {
     const res = await fetch('/api/me/data', { credentials: 'same-origin' })
-    if (!res.ok) return 'The download didn’t work. Please try again.'
+    if (!res.ok) return TRY_AGAIN
     const url = URL.createObjectURL(await res.blob())
     const a = document.createElement('a')
     a.href = url
@@ -123,7 +95,7 @@ export async function downloadData(): Promise<string | null> {
     setTimeout(() => URL.revokeObjectURL(url), 10_000)
     return null
   } catch {
-    return 'Couldn’t reach Syntype. Check your connection and try again.'
+    return OFFLINE
   }
 }
 

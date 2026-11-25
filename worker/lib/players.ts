@@ -1,4 +1,5 @@
 /** Players: created on first sign-in, named once they confirm a name. */
+import { fail, isUniqueViolation, type Result } from './result'
 import type { Db } from './db'
 import type { Profile, Provider } from './oauth'
 import type { Player } from '../../src/lib/apiTypes'
@@ -59,25 +60,25 @@ export async function touch(db: Db, p: PlayerRow, now: Date): Promise<void> {
   await db.prepare('UPDATE players SET last_seen_at = ? WHERE id = ?').bind(now.toISOString(), p.id).run()
 }
 
-export type NameResult = { ok: true; player: PlayerRow } | { ok: false; status: number; error: string }
+export type NameResult = Result<{ player: PlayerRow }>
 
 /** Sets (or changes) the player's name, by the rules in names.ts. */
 export async function setName(db: Db, p: PlayerRow, raw: unknown, now: Date): Promise<NameResult> {
-  if (typeof raw !== 'string') return { ok: false, status: 400, error: 'Send a name.' }
+  if (typeof raw !== 'string') return fail(400, 'Send a name.')
   const name = tidyName(raw)
   const problem = nameProblem(name)
-  if (problem) return { ok: false, status: 400, error: problem }
+  if (problem) return fail(400, problem)
   if (p.name === name) return { ok: true, player: p }
   if (p.name && p.name_changed_at && now.getTime() - Date.parse(p.name_changed_at) < RENAME_EVERY_MS) {
     const after = new Date(Date.parse(p.name_changed_at) + RENAME_EVERY_MS)
-    return { ok: false, status: 429, error: `You can change your name again after ${after.toUTCString().slice(5, 16)}.` }
+    return fail(429, `You can change your name again after ${after.toUTCString().slice(5, 16)}.`)
   }
   // Only a change of name starts the weekly wait; confirming the first one doesn't.
   const changedAt = p.name ? now.toISOString() : null
   try {
     await db.prepare('UPDATE players SET name = ?, name_key = ?, name_changed_at = ? WHERE id = ?').bind(name, nameKey(name), changedAt, p.id).run()
   } catch (err) {
-    if (/UNIQUE/i.test(String(err))) return { ok: false, status: 409, error: 'That name is taken. Try another.' }
+    if (isUniqueViolation(err)) return fail(409, 'That name is taken. Try another.')
     throw err
   }
   return { ok: true, player: (await getPlayer(db, p.id))! }

@@ -12,6 +12,8 @@
  *    replaced; if it's in a board's top 20, its log is kept, and logs pushed
  *    out of the top 20 are deleted.
  */
+import { fail } from './result'
+import { packLog } from './logs'
 import type { Db } from './db'
 import { randomToken, sign, verify } from './crypto'
 import { checkRun, REJECTIONS, type Claim, type Rejection } from './runcheck'
@@ -82,7 +84,7 @@ export async function snippetFor(assets: Assets, fingerprint: string): Promise<S
 
 export async function startRun(config: RunConfig, assets: Assets, player: PlayerRow, body: unknown, now: Date) {
   const fingerprint = (body as { fingerprint?: unknown } | null)?.fingerprint
-  if (typeof fingerprint !== 'string' || !(await snippetFor(assets, fingerprint))) return { ok: false as const, status: 404, error: 'That snippet isn’t on the leaderboards.' }
+  if (typeof fingerprint !== 'string' || !(await snippetFor(assets, fingerprint))) return fail(404, 'That snippet isn’t on the leaderboards.')
   const t = now.getTime()
   const token = await sign(config.SESSION_SECRET, { k: 'run', id: randomToken(16), p: player.id, f: fingerprint, t, exp: t + TOKEN_HOURS * 3_600_000 } satisfies RunToken)
   return { ok: true as const, token }
@@ -133,16 +135,6 @@ async function turnstilePasses(fetchImpl: (input: string, init?: RequestInit) =>
     console.warn('Turnstile unreachable:', err instanceof Error ? err.message : err)
     return false
   }
-}
-
-async function gzip(text: string): Promise<Uint8Array> {
-  const stream = new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'))
-  return new Uint8Array(await new Response(stream).arrayBuffer())
-}
-
-export async function gunzip(bytes: ArrayBuffer | Uint8Array<ArrayBuffer>): Promise<string> {
-  const stream = new Response(bytes).body!.pipeThrough(new DecompressionStream('gzip'))
-  return new Response(stream).text()
 }
 
 interface Deps {
@@ -225,7 +217,7 @@ export async function submitRun(deps: Deps, player: PlayerRow, body: unknown, no
     const visible = player.hidden === 0 && player.moderator_hidden === 0
     if (rank <= LOGS_KEPT && visible) {
       writes.push(
-        db.prepare('INSERT INTO logs (run_id, player_id, fingerprint, log, created_at) VALUES (?, ?, ?, ?, ?)').bind(runId, player.id, snippet.fingerprint, await gzip(JSON.stringify(b.log as LogEntry[])), at),
+        db.prepare('INSERT INTO logs (run_id, player_id, fingerprint, log, created_at) VALUES (?, ?, ?, ?, ?)').bind(runId, player.id, snippet.fingerprint, await packLog(b.log as LogEntry[]), at),
         // The run pushed out of the top 20 loses its log.
         db
           .prepare(

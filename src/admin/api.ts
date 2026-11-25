@@ -1,6 +1,8 @@
 /** The admin page's calls to /api/admin (worker/lib/moderation.ts has the other side). */
 import type { AdminAction, AdminPlayer, Entry, PlayerAction, ReportGroup, ReportReason as Reason, RunInfo } from '../lib/apiTypes'
 
+import { api } from '../lib/http'
+
 export type { AdminAction, AdminPlayer, Entry, PlayerAction, Reason, RunInfo, ReportGroup }
 
 export class AdminError extends Error {
@@ -12,17 +14,11 @@ export class AdminError extends Error {
 }
 
 async function call<T>(path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`/api/admin${path}`, {
-    method: body === undefined ? 'GET' : 'POST',
-    headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
-    credentials: 'same-origin',
-  })
+  const r = await api<T>(`/api/admin${path}`, { body })
+  if (r.ok) return r.body
   // Access's login page (an expired Access session) instead of our JSON.
-  if (!res.headers.get('Content-Type')?.includes('json')) throw new AdminError('Your Cloudflare Access session has ended. Reload the page to sign in again.', res.status)
-  const data = (await res.json()) as T & { error?: string }
-  if (!res.ok) throw new AdminError(data.error ?? `Request failed (${res.status})`, res.status)
-  return data
+  if (r.status !== 0 && !r.body) throw new AdminError('Your Cloudflare Access session has ended. Reload the page to sign in again.', r.status)
+  throw new AdminError(r.body?.error ?? (r.status ? `Request failed (${r.status})` : r.error), r.status)
 }
 
 export const whoAmI = () => call<{ email: string }>('/me')

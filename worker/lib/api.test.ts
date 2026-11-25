@@ -11,7 +11,8 @@ import { sign } from './crypto'
 import type { Db, Statement } from './db'
 import { RENAME_EVERY_MS } from './names'
 import { AUD, fakeAccess, TEAM } from './test-access'
-import { gunzip, LOGS_KEPT } from './runs'
+import { LOGS_KEPT } from './runs'
+import { unpackLog } from './logs'
 import { myPlace, runForReplay, runRemoval } from './boards'
 import { deleteInactive } from './account'
 import { LANGUAGES } from '../../src/languages'
@@ -565,7 +566,7 @@ describe('submitting runs', () => {
       { aids: 'any', run_aids: '110', run_id: body.runId },
     ])
     const stored = await db.prepare('SELECT log FROM logs WHERE run_id = ?').bind(body.runId).first<{ log: ArrayBuffer }>()
-    expect(JSON.parse(await gunzip(new Uint8Array(stored!.log)))).toEqual(run.log)
+    expect(await unpackLog(stored!.log)).toEqual(run.log)
     expect(await db.prepare('SELECT name FROM snippet_versions WHERE fingerprint = ?').bind(fp).first()).toEqual({ name: snippet.name })
 
     // The same token can't submit twice.

@@ -44,7 +44,9 @@ import { actionLog, actOnPlayer, closeReports, findPlayers, PLAYER_ACTIONS, remo
 import { board, BOARD_CACHE_SECONDS, languageBoards, myPlace, runForReplay, validAids } from './boards'
 import { deleteAccount, deleteMyRun, myData, myEntries, setHidden, type RateLimiter } from './account'
 import { readJson } from './body'
-import { MAX_BODY, gunzip, rejectionMessage, startRun, submitRun, type Assets } from './runs'
+import { MAX_BODY, rejectionMessage, startRun, submitRun, type Assets } from './runs'
+import { unpackLog } from './logs'
+import type { Result } from './result'
 import { getPlayer, playerFor, publicPlayer, setName, touch, type PlayerRow } from './players'
 
 export interface ApiConfig extends OAuthConfig, AccessConfig {
@@ -98,6 +100,11 @@ export function safeReturn(path: string | null): string {
 const json = (body: unknown, status = 200, headers: HeadersInit = {}) =>
   Response.json(body, { status, headers: { 'Cache-Control': 'no-store', ...headers } })
 
+/** A Result as a response: `ok` builds the answer to send when it succeeded. */
+function reply<T>(result: Result<T>, ok: (r: { ok: true } & T) => Response | Promise<Response> = (r) => json(r)): Response | Promise<Response> {
+  return result.ok ? ok(result) : json({ error: result.error }, result.status)
+}
+
 const redirect = (to: string, cookies: string[] = []) => {
   const headers = new Headers({ Location: to, 'Cache-Control': 'no-store' })
   for (const c of cookies) headers.append('Set-Cookie', c)
@@ -142,6 +149,22 @@ async function signedIn(request: Request, deps: Deps): Promise<PlayerRow | null>
  */
 function fromOurPages(request: Request, config: ApiConfig): boolean {
   return request.headers.get('Origin') === originOf(request, config)
+}
+
+/** A change a signed-in player asks for: from the site's own pages, with its JSON body; or the response that turns it away. */
+async function playerPost(request: Request, deps: Deps, signIn = 'Sign in first.'): Promise<{ player: PlayerRow; body: unknown } | Response> {
+  if (!fromOurPages(request, deps.config)) return json({ error: 'Not allowed from here.' }, 403)
+  const player = await signedIn(request, deps)
+  if (!player) return json({ error: signIn }, 401)
+  const read = await bodyOf(request)
+  if (read instanceof Response) return read
+  return { player, body: read.value }
+}
+
+/** A kept run with its keystrokes unpacked, for a replay. */
+async function replayOf(db: Db, runId: string, admin: boolean) {
+  const run = await runForReplay(db, runId, { admin })
+  return run && { ...run, log: await unpackLog(run.log) }
 }
 
 export async function handle(request: Request, deps: Deps): Promise<Response> {
@@ -216,13 +239,10 @@ export async function handle(request: Request, deps: Deps): Promise<Response> {
   }
 
   if (url.pathname === '/api/me/name' && method === 'POST') {
-    if (!fromOurPages(request, config)) return json({ error: 'Not allowed from here.' }, 403)
-    const player = await signedIn(request, deps)
-    if (!player) return json({ error: 'Sign in first.' }, 401)
-    const body = await bodyOf(request)
-    if (body instanceof Response) return body
-    const result = await setName(db, player, (body.value as { name?: unknown } | null)?.name, now)
-    return result.ok ? json({ signedIn: true, player: publicPlayer(result.player) }) : json({ error: result.error }, result.status)
+    const req = await playerPost(request, deps)
+    if (req instanceof Response) return req
+    const result = await setName(db, req.player, (req.body as { name?: unknown } | null)?.name, now)
+    return reply(result, (r) => json({ signedIn: true, player: publicPlayer(r.player) }))
   }
 
   // The player's own data (account.ts).
@@ -231,23 +251,25 @@ export async function handle(request: Request, deps: Deps): Promise<Response> {
     const action = mine[1] ?? 'delete-run'
     const post = action !== 'runs' && action !== 'data'
     if (method !== (post ? 'POST' : 'GET')) return json({ error: 'Not found' }, 404)
-    if (post && !fromOurPages(request, config)) return json({ error: 'Not allowed from here.' }, 403)
-    const player = await signedIn(request, deps)
-    if (!player) return json({ error: 'Sign in first.' }, 401)
-    const read = post ? await bodyOf(request) : { value: null }
-    if (read instanceof Response) return read
-    const body = read.value
+    let player: PlayerRow | null
+    let body: unknown = null
+    if (post) {
+      const req = await playerPost(request, deps)
+      if (req instanceof Response) return req
+      ;({ player, body } = req)
+    } else {
+      player = await signedIn(request, deps)
+      if (!player) return json({ error: 'Sign in first.' }, 401)
+    }
     switch (action) {
       case 'hide': {
         const r = await setHidden(db, player, (body as { hidden?: unknown } | null)?.hidden, deps.limits?.hide)
-        return r.ok ? json({ signedIn: true, player: publicPlayer((await getPlayer(db, player.id))!) }) : json({ error: r.error }, r.status)
+        return reply(r, async () => json({ signedIn: true, player: publicPlayer((await getPlayer(db, player.id))!) }))
       }
       case 'runs':
         return json({ entries: await myEntries(db, player) })
-      case 'delete-run': {
-        const r = await deleteMyRun(db, player, mine[2])
-        return r.ok ? json({ ok: true }) : json({ error: r.error }, r.status)
-      }
+      case 'delete-run':
+        return reply(await deleteMyRun(db, player, mine[2]))
       case 'signout-everywhere': {
         // Every session this player has, on every device, stops working (sessions carry the version they were made with).
         await db.prepare('UPDATE players SET session_version = session_version + 1 WHERE id = ?').bind(player.id).run()
@@ -255,33 +277,22 @@ export async function handle(request: Request, deps: Deps): Promise<Response> {
       }
       case 'data':
         return json(await myData(db, player, now), 200, { 'Content-Disposition': 'attachment; filename="syntype-account-data.json"' })
-      case 'delete': {
-        const r = await deleteAccount(db, player, body)
-        if (!r.ok) return json({ error: r.error }, r.status)
-        return json({ deleted: true }, 200, { 'Set-Cookie': cookie(SESSION_COOKIE, '', { maxAge: 0, secure }) })
-      }
+      case 'delete':
+        return reply(await deleteAccount(db, player, body), () => json({ deleted: true }, 200, { 'Set-Cookie': cookie(SESSION_COOKIE, '', { maxAge: 0, secure }) }))
     }
   }
 
   if (url.pathname === '/api/reports' && method === 'POST') {
-    if (!fromOurPages(request, config)) return json({ error: 'Not allowed from here.' }, 403)
-    const player = await signedIn(request, deps)
-    if (!player) return json({ error: 'Sign in to report.' }, 401)
-    const body = await bodyOf(request)
-    if (body instanceof Response) return body
-    const result = await report(db, player, body.value, now)
-    return result.ok ? json({ ok: true }, 201) : json({ error: result.error }, result.status)
+    const req = await playerPost(request, deps, 'Sign in to report.')
+    if (req instanceof Response) return req
+    return reply(await report(db, req.player, req.body, now), () => json({ ok: true }, 201))
   }
 
   if (url.pathname === '/api/runs/start' && method === 'POST') {
-    if (!fromOurPages(request, config)) return json({ error: 'Not allowed from here.' }, 403)
-    const player = await signedIn(request, deps)
-    if (!player) return json({ error: 'Sign in to submit runs.' }, 401)
-    if (!player.name) return json({ error: 'Choose your leaderboard name first.' }, 403)
-    const body = await bodyOf(request)
-    if (body instanceof Response) return body
-    const result = await startRun(config, deps.assets, player, body.value, now)
-    return result.ok ? json({ token: result.token }) : json({ error: result.error }, result.status)
+    const req = await playerPost(request, deps, 'Sign in to submit runs.')
+    if (req instanceof Response) return req
+    if (!req.player.name) return json({ error: 'Choose your leaderboard name first.' }, 403)
+    return reply(await startRun(config, deps.assets, req.player, req.body, now), (r) => json({ token: r.token }))
   }
 
   if (url.pathname === '/api/runs' && method === 'POST') {
@@ -315,8 +326,8 @@ export async function handle(request: Request, deps: Deps): Promise<Response> {
   }
   const replayPath = url.pathname.match(/^\/api\/replays\/([\w-]{1,64})$/)
   if (replayPath && method === 'GET') {
-    const run = await runForReplay(db, replayPath[1], { admin: false })
-    return run ? json({ ...run, log: JSON.parse(await gunzip(new Uint8Array(run.log))) }, 200, shared) : json({ error: 'That run can’t be replayed.' }, 404)
+    const run = await replayOf(db, replayPath[1], false)
+    return run ? json(run, 200, shared) : json({ error: 'That run can’t be replayed.' }, 404)
   }
 
   if (url.pathname.startsWith('/api/admin/')) return admin(request, url, deps, now)
@@ -335,8 +346,6 @@ async function admin(request: Request, url: URL, deps: Deps, now: Date): Promise
     const r = await readJson(request)
     return r.ok ? r.value : null
   }
-  const reply = (result: { ok: true } | { ok: false; status: number; error: string }) =>
-    result.ok ? json(result) : json({ error: result.error }, result.status)
 
   if (path === '/me' && method === 'GET') return json({ email })
   if (path === '/players' && method === 'GET') return json({ players: await findPlayers(db, url.searchParams.get('q')) })
@@ -353,8 +362,8 @@ async function admin(request: Request, url: URL, deps: Deps, now: Date): Promise
   if (path === '/actions' && method === 'GET') return json({ actions: await actionLog(db, url.searchParams.get('before')) })
   const replay = path.match(/^\/replays\/([\w-]{1,64})$/)
   if (replay && method === 'GET') {
-    const run = await runForReplay(db, replay[1], { admin: true })
-    return run ? json({ ...run, log: JSON.parse(await gunzip(new Uint8Array(run.log))) }) : json({ error: 'That run’s keystrokes aren’t kept.' }, 404)
+    const run = await replayOf(db, replay[1], true)
+    return run ? json(run) : json({ error: 'That run’s keystrokes aren’t kept.' }, 404)
   }
   const remove = path.match(/^\/runs\/([\w-]{1,64})\/remove$/)
   if (remove && method === 'POST') return reply(await removeRun(db, email, remove[1], await body(), now))

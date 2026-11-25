@@ -13,15 +13,9 @@ import {
   type AidsFilter,
 } from '../lib/board'
 import { ReplayView } from './ReplayView'
+import { useAddressPlace, type AddressSpec } from '../hooks/useAddressPlace'
 
 const LENGTHS: SnippetLength[] = ['short', 'medium', 'long']
-
-interface Place {
-  language: string
-  length: SnippetLength
-  snippet: string | null
-  replay: string | null
-}
 
 interface Props {
   languages: Language[]
@@ -37,38 +31,19 @@ interface Props {
   onType: (language: string, snippet: string) => void
 }
 
-const placeFromAddress = (fallback: Place): Place => {
-  const q = new URLSearchParams(location.search)
-  const length = q.get('length')
-  return {
-    language: q.get('lang') ?? fallback.language,
-    length: length === 'short' || length === 'medium' || length === 'long' ? length : fallback.length,
-    snippet: q.get('snippet'),
-    replay: q.get('replay'),
-  }
-}
-
-const addressOf = (p: Place) => {
-  const q = new URLSearchParams({ lang: p.language, length: p.length })
-  if (p.snippet) q.set('snippet', p.snippet)
-  if (p.replay) q.set('replay', p.replay)
-  return `/runs?${q}`
+const ADDRESS: AddressSpec<{ snippet: string | null; replay: string | null }> = {
+  path: '/runs',
+  empty: { snippet: null, replay: null },
+  read: (q) => ({ snippet: q.get('snippet'), replay: q.get('replay') }),
+  write: (p, q) => {
+    if (p.snippet) q.set('snippet', p.snippet)
+    if (p.replay) q.set('replay', p.replay)
+  },
 }
 
 /** The personal board: every run kept on this device (docs/leaderboard.md). */
 export function RunsView({ languages, history, language, length, onLanguage, onLength, inAddress, onType }: Props) {
-  const fallback: Place = { language, length, snippet: null, replay: null }
-  const [own, setPlace] = useState<Place>(() => (inAddress ? placeFromAddress(fallback) : fallback))
-  // The language and length are the app's; the rest is this view's own.
-  const place: Place = { ...own, language, length }
-  const fallbackRef = useRef(fallback)
-  const onLanguageRef = useRef(onLanguage)
-  const onLengthRef = useRef(onLength)
-  useEffect(() => {
-    fallbackRef.current = fallback
-    onLanguageRef.current = onLanguage
-    onLengthRef.current = onLength
-  })
+  const [place, go] = useAddressPlace(ADDRESS, { language, length, onLanguage, onLength, inAddress })
   const [runs, setRuns] = useState<StoredRun[] | null>(null)
   const [store, setStore] = useState<History | null | undefined>(undefined)
   const [reload, setReload] = useState(0)
@@ -84,29 +59,6 @@ export function RunsView({ languages, history, language, length, onLanguage, onL
       live = false
     }
   }, [history, reload])
-
-  // The back button steps out of a snippet or a replay.
-  useEffect(() => {
-    if (!inAddress) return
-    const onPop = () => {
-      const next = placeFromAddress(fallbackRef.current)
-      setPlace(next)
-      if (next.language !== fallbackRef.current.language) onLanguageRef.current(next.language)
-      if (next.length !== fallbackRef.current.length) onLengthRef.current(next.length)
-    }
-    window.addEventListener('popstate', onPop)
-    return () => window.removeEventListener('popstate', onPop)
-  }, [inAddress])
-
-  const go = (changes: Partial<Place>, push = false) => {
-    const next = { ...place, ...changes }
-    setPlace(next)
-    if (next.language !== language) onLanguage(next.language)
-    if (next.length !== length) onLength(next.length)
-    if (!inAddress) return
-    if (push) history_.push(addressOf(next))
-    else history_.replace(addressOf(next))
-  }
 
   const lang = languages.find((l) => l.id === place.language) ?? languages[0]
 
@@ -189,12 +141,6 @@ export function RunsView({ languages, history, language, length, onLanguage, onL
       onChanged={() => setReload((n) => n + 1)}
     />
   )
-}
-
-/** The page's address, separate from the run history above. */
-const history_ = {
-  push: (url: string) => window.history.pushState(null, '', url),
-  replace: (url: string) => window.history.replaceState(null, '', url),
 }
 
 function AidsChips({ value, onChange }: { value: AidsFilter; onChange: (f: AidsFilter) => void }) {

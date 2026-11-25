@@ -4,7 +4,8 @@
  * snippet's board (top 15, by typing aids, with your own place), replays of
  * the kept runs, and reports. The data comes from /api/boards (worker/lib/boards.ts).
  */
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useAddressPlace, type AddressSpec } from '../hooks/useAddressPlace'
+import { useEffect, useMemo, useState } from 'react'
 import type { Language, Snippet, SnippetLength } from '../languages'
 import type { Player } from '../lib/account'
 import { AIDS, aidsKey, aidsOf } from '../lib/aids'
@@ -43,64 +44,25 @@ interface Props {
   inAddress?: boolean
 }
 
-const placeFromAddress = (fallback: Place): Place => {
-  const q = new URLSearchParams(location.search)
-  const length = q.get('length')
-  const aids = q.get('aids')
-  return {
-    language: q.get('lang') ?? fallback.language,
-    length: length === 'short' || length === 'medium' || length === 'long' ? length : fallback.length,
-    snippet: q.get('snippet'),
-    version: q.get('v'),
-    aids: aids && /^[01]{3}$/.test(aids) ? aids : 'any',
-    replay: q.get('replay'),
-    admin: q.get('admin') === '1',
-  }
-}
-
-const addressOf = (p: Place) => {
-  const q = new URLSearchParams({ lang: p.language, length: p.length })
-  if (p.snippet) q.set('snippet', p.snippet)
-  if (p.version) q.set('v', p.version)
-  if (p.aids !== 'any') q.set('aids', p.aids)
-  if (p.replay) q.set('replay', p.replay)
-  if (p.admin) q.set('admin', '1')
-  return `/leaderboard?${q}`
+type Own = Omit<Place, 'language' | 'length'>
+const ADDRESS: AddressSpec<Own> = {
+  path: '/leaderboard',
+  empty: { snippet: null, version: null, aids: 'any', replay: null, admin: false },
+  read: (q) => {
+    const aids = q.get('aids')
+    return { snippet: q.get('snippet'), version: q.get('v'), aids: aids && /^[01]{3}$/.test(aids) ? aids : 'any', replay: q.get('replay'), admin: q.get('admin') === '1' }
+  },
+  write: (p, q) => {
+    if (p.snippet) q.set('snippet', p.snippet)
+    if (p.version) q.set('v', p.version)
+    if (p.aids !== 'any') q.set('aids', p.aids)
+    if (p.replay) q.set('replay', p.replay)
+    if (p.admin) q.set('admin', '1')
+  },
 }
 
 export function LeaderboardView({ languages, language, length, onLanguage, onLength, player, onType, inAddress = true }: Props) {
-  const fallback: Place = { language, length, snippet: null, version: null, aids: 'any', replay: null, admin: false }
-  const [own, setPlace] = useState<Place>(() => (inAddress ? placeFromAddress(fallback) : fallback))
-  // The language and length are the app's; the rest is this view's own.
-  const place: Place = { ...own, language, length }
-  const fallbackRef = useRef(fallback)
-  const onLanguageRef = useRef(onLanguage)
-  const onLengthRef = useRef(onLength)
-  useEffect(() => {
-    fallbackRef.current = fallback
-    onLanguageRef.current = onLanguage
-    onLengthRef.current = onLength
-  })
-  useEffect(() => {
-    if (!inAddress) return
-    const onPop = () => {
-      const next = placeFromAddress(fallbackRef.current)
-      setPlace(next)
-      if (next.language !== fallbackRef.current.language) onLanguageRef.current(next.language)
-      if (next.length !== fallbackRef.current.length) onLengthRef.current(next.length)
-    }
-    window.addEventListener('popstate', onPop)
-    return () => window.removeEventListener('popstate', onPop)
-  }, [inAddress])
-  const go = (changes: Partial<Place>, push = false) => {
-    const next = { ...place, ...changes }
-    setPlace(next)
-    if (next.language !== language) onLanguage(next.language)
-    if (next.length !== length) onLength(next.length)
-    if (!inAddress) return
-    if (push) window.history.pushState(null, '', addressOf(next))
-    else window.history.replaceState(null, '', addressOf(next))
-  }
+  const [place, go] = useAddressPlace(ADDRESS, { language, length, onLanguage, onLength, inAddress })
   const lang = languages.find((l) => l.id === place.language) ?? languages[0]
 
   if (place.replay) return <BoardReplayView languages={languages} runId={place.replay} admin={place.admin} onClose={() => go({ replay: null, admin: false }, true)} />
