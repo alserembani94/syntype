@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { getLanguage, LANGUAGES, pickSnippet, type Snippet, type SnippetLength } from './languages'
 import { useTypingTest, type TestOptions } from './hooks/useTypingTest'
 import { isTouch, usePageFocus } from './hooks/usePageFocus'
@@ -18,12 +18,13 @@ import { ConfigBar } from './components/ConfigBar'
 import { AdSlot } from './components/AdSlot'
 import { LanguagePicker } from './components/LanguagePicker'
 import { ThemePicker } from './components/ThemePicker'
-import { AboutDialog } from './components/AboutDialog'
-import { RunsView } from './components/RunsView'
+// Views that open on a click load on demand, so the game's first load carries only what typing needs.
+const AboutDialog = lazy(() => import('./components/AboutDialog').then((m) => ({ default: m.AboutDialog })))
+const RunsView = lazy(() => import('./components/RunsView').then((m) => ({ default: m.RunsView })))
+const LeaderboardView = lazy(() => import('./components/LeaderboardView').then((m) => ({ default: m.LeaderboardView })))
 import { Account } from './components/Account'
 import { applyTheme, getTheme, loadTheme, saveTheme } from './themes'
 import { isLeaderboardPath, isRunsPath, isSitePath, languageFromPath, languagePage, leaderboardPage, RUNS_PAGE } from './seo/site'
-import { LeaderboardView } from './components/LeaderboardView'
 import { Results } from './components/Results'
 
 interface Settings {
@@ -343,6 +344,18 @@ export default function App() {
     useCallback((cb: () => void) => (service ? service.onStatus(cb) : () => {}), [service]),
     () => service?.status() ?? null,
   )
+  // A service that waits to be asked (TypeScript's 4 MB compiler) starts on the player's first
+  // key or tap: the page focuses the editor itself, so focus alone says nothing about intent.
+  useEffect(() => {
+    if (!service?.start || service.status() !== 'idle') return
+    const go = () => service.start?.()
+    window.addEventListener('keydown', go, { once: true, capture: true })
+    window.addEventListener('pointerdown', go, { once: true, capture: true })
+    return () => {
+      window.removeEventListener('keydown', go, { capture: true })
+      window.removeEventListener('pointerdown', go, { capture: true })
+    }
+  }, [service])
   const serviceLabel =
     serviceStatus === 'starting'
       ? `${language.name} autocomplete starting…`
@@ -352,10 +365,14 @@ export default function App() {
           ? `${language.name} autocomplete`
           : null
 
-  const onMobileInput = (text: string, deleted: boolean) => {
-    if (deleted) back(false)
-    for (const ch of text) type(ch)
-  }
+  // Stable, so the memoised CodeView skips renders where nothing it shows changed.
+  const onMobileInput = useCallback(
+    (text: string, deleted: boolean) => {
+      if (deleted) back(false)
+      for (const ch of text) type(ch)
+    },
+    [back, type],
+  )
 
   // The theme: index.html shows the saved one before the first paint; the picker previews others.
   const [themeId, setThemeId] = useState(loadTheme)
@@ -442,7 +459,11 @@ export default function App() {
       {pickerOpen && (
         <LanguagePicker languages={LANGUAGES} currentId={languageId} onSelect={pickLanguage} onClose={closePicker} />
       )}
-      {aboutOpen && aboutSection && <AboutDialog section={aboutSection} onLanguage={aboutLanguage} onClose={closeAbout} />}
+      {aboutOpen && aboutSection && (
+        <Suspense fallback={null}>
+          <AboutDialog section={aboutSection} onLanguage={aboutLanguage} onClose={closeAbout} />
+        </Suspense>
+      )}
       {themeOpen && (
         <ThemePicker
           currentId={themeId}
@@ -508,9 +529,13 @@ export default function App() {
       </header>
 
       {view === 'board' ? (
-        <LeaderboardView languages={LANGUAGES} language={languageId} length={length} onLanguage={changeLanguage} onLength={changeLength} player={player.player} onType={typeSnippet} />
+        <Suspense fallback={<section className="runs" aria-busy="true" />}>
+          <LeaderboardView languages={LANGUAGES} language={languageId} length={length} onLanguage={changeLanguage} onLength={changeLength} player={player.player} onType={typeSnippet} />
+        </Suspense>
       ) : view === 'runs' ? (
-        <RunsView languages={LANGUAGES} history={runHistory} language={languageId} length={length} onLanguage={changeLanguage} onLength={changeLength} inAddress={onSite} onType={typeSnippet} />
+        <Suspense fallback={<section className="runs" aria-busy="true" />}>
+          <RunsView languages={LANGUAGES} history={runHistory} language={languageId} length={length} onLanguage={changeLanguage} onLength={changeLength} inAddress={onSite} onType={typeSnippet} />
+        </Suspense>
       ) : (
         <>
           {/* Everything that changes the run, next to the code it changes. No clock or score while typing. */}

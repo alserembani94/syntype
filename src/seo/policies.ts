@@ -10,10 +10,9 @@
  */
 import { SITE_URL } from './site'
 
-/** Who runs Syntype, as the privacy page names them. */
-export const OPERATOR = 'Atif'
-/** Where players write about their data. Null until there's an address for it. */
-export const PRIVACY_CONTACT: string | null = 'privacy@vercel.my'
+import { OPERATOR, PRIVACY_CONTACT } from './policyLinks'
+
+export { OPERATOR, PRIVACY_CONTACT, POLICY_LINKS } from './policyLinks'
 /** When the privacy page last changed. */
 export const PRIVACY_UPDATED = '2026-11-25'
 
@@ -180,4 +179,3 @@ export const fairPlayPage: PolicyPage = {
 
 /** The policy pages published now: fair play always, privacy once it has a contact. */
 export const policyPages = (): PolicyPage[] => (PRIVACY_CONTACT ? [privacyPage, fairPlayPage] : [fairPlayPage])
-export const POLICY_LINKS = policyPages().map((p) => ({ path: p.path, label: p.label }))

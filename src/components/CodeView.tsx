@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef } from 'react'
+import { memo, useLayoutEffect, useMemo, useRef } from 'react'
 import { tokenize } from '../lib/tokenize'
 import type { Run } from '../lib/engine'
 import type { HighlightRules } from '../languages'
@@ -31,7 +31,13 @@ interface Props {
 /** Kept in the hidden textarea so a mobile Backspace still fires an input event. */
 const SENTINEL = ' '
 
-export function CodeView({
+/**
+ * The snippet as the player types it. Rendered line by line, each line
+ * memoised: a keystroke changes one or two characters, so only the caret's
+ * line (and the one it left) re-renders, not every character of the snippet.
+ * CodeView itself is memoised too, so the once-a-second clock tick skips it.
+ */
+export const CodeView = memo(function CodeView({
   code,
   highlight,
   run,
@@ -47,7 +53,8 @@ export function CodeView({
 }: Props) {
   const readOnly = !inputRef
   const classes = useMemo(() => tokenize(code, highlight), [code, highlight])
-  const lineCount = useMemo(() => code.split('\n').length, [code])
+  const lines = useMemo(() => lineRanges(code), [code])
+  const lineCount = lines.length
   const scrollerRef = useRef<HTMLDivElement>(null)
   const editorRef = useRef<HTMLDivElement>(null)
   const codeRef = useRef<HTMLPreElement>(null)
@@ -156,24 +163,9 @@ export function CodeView({
               <span ref={barRef} className="caret-bar" aria-hidden="true" />
             </>
           )}
-          {run.chars.map((ch, i) => {
-            const state = run.states[i]
-            const cur = i === run.pos
-            const sug = markSuggested && run.completed[i] && state === 'ok'
-            const cls = ['c', classes[i], state, ch === '\n' && 'nl', cur && 'cur', sug && 'sug'].filter(Boolean).join(' ')
-            return ch === '\n' ? (
-              <span key={i}>
-                <span className={cls} ref={cur ? caretRef : undefined}>
-                  ↵
-                </span>
-                {'\n'}
-              </span>
-            ) : (
-              <span key={i} className={cls} ref={cur ? caretRef : undefined}>
-                {ch}
-              </span>
-            )
-          })}
+          {lines.map(([start, end]) => (
+            <Line key={start} run={run} start={start} end={end} classes={classes} markSuggested={markSuggested} caretRef={caretRef} />
+          ))}
         </pre>
       </div>
       {overlay && (
@@ -197,4 +189,67 @@ export function CodeView({
       )}
     </div>
   )
+})
+
+/** [first, last] character index of each line; a line's last character is its newline, if it has one. */
+function lineRanges(code: string): [number, number][] {
+  const chars = [...code]
+  const out: [number, number][] = []
+  let start = 0
+  chars.forEach((ch, i) => {
+    if (ch === '\n') {
+      out.push([start, i])
+      start = i + 1
+    }
+  })
+  out.push([start, chars.length - 1])
+  return out
 }
+
+interface LineProps {
+  run: Run
+  start: number
+  end: number
+  classes: string[]
+  markSuggested: boolean
+  caretRef: React.RefObject<HTMLSpanElement | null>
+}
+
+const Line = memo(
+  function Line({ run, start, end, classes, markSuggested, caretRef }: LineProps) {
+    const out: React.ReactNode[] = []
+    for (let i = start; i <= end; i++) {
+      const ch = run.chars[i]
+      const state = run.states[i]
+      const cur = i === run.pos
+      const sug = markSuggested && run.completed[i] && state === 'ok'
+      const cls = ['c', classes[i], state, ch === '\n' && 'nl', cur && 'cur', sug && 'sug'].filter(Boolean).join(' ')
+      out.push(
+        ch === '\n' ? (
+          <span key={i}>
+            <span className={cls} ref={cur ? caretRef : undefined}>
+              ↵
+            </span>
+            {'\n'}
+          </span>
+        ) : (
+          <span key={i} className={cls} ref={cur ? caretRef : undefined}>
+            {ch}
+          </span>
+        ),
+      )
+    }
+    return <>{out}</>
+  },
+  // Re-render only when something this line shows changed: a character's state, whether it
+  // came from a suggestion, or the caret arriving or leaving.
+  (a, b) => {
+    if (a.start !== b.start || a.end !== b.end || a.classes !== b.classes || a.markSuggested !== b.markSuggested || a.run.chars !== b.run.chars) return false
+    const has = (pos: number) => pos >= a.start && pos <= a.end
+    if ((has(a.run.pos) || has(b.run.pos)) && a.run.pos !== b.run.pos) return false
+    for (let i = a.start; i <= a.end; i++) {
+      if (a.run.states[i] !== b.run.states[i] || a.run.completed[i] !== b.run.completed[i]) return false
+    }
+    return true
+  },
+)

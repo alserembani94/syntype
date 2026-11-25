@@ -6,7 +6,8 @@
  */
 import type { SuggestionKind } from '../languages/types'
 
-export type ServiceStatus = 'starting' | 'ready' | 'failed'
+/** 'idle': not started yet (a service may wait for the player's first key before loading). */
+export type ServiceStatus = 'idle' | 'starting' | 'ready' | 'failed'
 
 export interface ServiceRequest {
   /** The editor buffer: everything on screen, including auto-inserted text after the caret. */
@@ -37,6 +38,8 @@ export interface ServiceResponse {
 
 export interface CompletionService {
   status(): ServiceStatus
+  /** Starts a service that waits to be asked (see 'idle'); does nothing once started. */
+  start?(): void
   /** Why the service failed to start, when it did. */
   failure?(): string | undefined
   onStatus(listener: (status: ServiceStatus) => void): () => void

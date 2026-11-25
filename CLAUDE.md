@@ -6,8 +6,8 @@ A typing speed test for code (Vite + React + TypeScript). See README.md for how 
 
 - `npm test`: all tests, including the language conformance suite. Run before every commit.
 - `npm run lint`, `npx tsc -b`: must be clean.
-- `npm run build`: regular build (the TypeScript worker is a separate file).
-- `npm run build:page`: one self-contained page in `dist-page/index.html`, used for the published artifact.
+- `npm run build`: regular build (the TypeScript worker is a separate file, and the leaderboard, My runs, About and Account & data views are loaded on demand).
+- `npm run build:page`: one self-contained page in `dist-page/index.html`, used for the published artifact (its own build, with every view in one script and the worker gzipped inside the page).
 
 ## Language rules
 
@@ -54,6 +54,10 @@ The site is https://syntype.vercel.my (`SITE_URL` in `src/seo/site.ts`). `npm ru
 `docs/leaderboard.md` is the agreed design for the personal board and the global leaderboard: what is stored on the device and the server, the rules, moderation, privacy and the cost limits. Follow it when building them, and update it when a decision changes.
 
 The admin page (`/admin`, `src/admin/`) sits behind Cloudflare Access. Every `/api/admin/*` route must go through `accessEmail` (`worker/lib/access.ts`), which checks Access's signed token, and every admin change must be written to `admin_actions`.
+
+## Performance
+
+Typing must stay fast on slow phones. `CodeView` renders the snippet as memoised lines, so a keystroke re-renders only the caret's line, and untyped code is dimmed by mixing its colour (`--tc`, `--a` in `src/index.css`), never with `opacity` on characters: hundreds of elements with their own opacity made every keystroke repaint the whole snippet (about 47 ms a key with the CPU slowed 4×; about 6 ms now). Measure a change to the editor's rendering or CSS on the longest snippet before and after.
 
 ## Security headers
 

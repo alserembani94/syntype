@@ -11,7 +11,7 @@ npm run dev
 
 Other scripts: `npm test` (unit and playthrough tests, Vitest), `npm run build`, `npm run lint`.
 
-`npm run build:page` builds `dist-page/index.html`: the whole app as one self-contained page, for hosts that serve a single HTML file (such as a claude.ai artifact). The TypeScript worker is embedded in the page and started from a `blob:` URL as a classic worker, so it runs even where the page has no address of its own or sits in a sandboxed frame. The regular `npm run build` keeps the worker as a separate file.
+`npm run build:page` builds `dist-page/index.html`: the whole app as one self-contained page, for hosts that serve a single HTML file (such as a claude.ai artifact). It runs its own build with every on-demand view inlined into one script. The TypeScript worker is embedded in the page gzipped (about 1.4 MB instead of 4 MB), decompressed and started from a `blob:` URL as a classic worker when the player first types, so it runs even where the page has no address of its own or sits in a sandboxed frame. The regular `npm run build` keeps the worker as a separate file.
 
 ## Deploy
 
@@ -177,4 +177,4 @@ Use printable ASCII, 2-space indentation, lines of 88 characters or fewer, and n
 
 ## TypeScript dependency note
 
-The project builds with TypeScript 7, the native Go compiler, which has no JavaScript API that runs in a browser. The in-browser language service is TypeScript **6.0.3**, the last JavaScript-based release, installed under the alias `ts-lang`. It ships as a separate worker file of about 1 MB gzipped, shared by JavaScript and TypeScript, and loaded in the background as soon as a snippet opens with autocomplete on. Its browser globals, React and Express types are small stubs (`src/lib/ts/stubs.ts`) rather than the full DOM, `@types/react` and `@types/express` declarations.
+The project builds with TypeScript 7, the native Go compiler, which has no JavaScript API that runs in a browser. The in-browser language service is TypeScript **6.0.3**, the last JavaScript-based release, installed under the alias `ts-lang`. It ships as a separate worker file of about 1 MB gzipped, shared by JavaScript and TypeScript, and loaded on the player's first key or tap with autocomplete on (basic suggestions until it's ready, about a second), so visitors who never type don't download it. Its browser globals, React and Express types are small stubs (`src/lib/ts/stubs.ts`) rather than the full DOM, `@types/react` and `@types/express` declarations.

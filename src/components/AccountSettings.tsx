@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react'
 import { LANGUAGES } from '../languages'
 import { deleteAccount, deleteEntry, downloadData, fetchEntries, setHidden, signOutEverywhere, type Entry, type Player } from '../lib/account'
 import { whenPlayed } from '../lib/board'
-import { POLICY_LINKS } from '../seo/policies'
+import { POLICY_LINKS } from '../seo/policyLinks'
 import { Dialog } from './Account'
 
 const PROVIDERS = { github: 'GitHub', google: 'Google' }

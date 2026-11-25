@@ -84,7 +84,9 @@ export function SuggestBox({ suggest, editorRef, scrollerRef, codeRef, onAccept 
     place()
     sc.addEventListener('scroll', place)
     return () => sc.removeEventListener('scroll', place)
-  })
+    // Only when the word or the list's size changes (and on scroll): code doesn't wrap, so typing
+    // more of the word never moves its start. Not on every render, which forced a layout per key.
+  }, [suggest.start, suggest.items.length, editorRef, scrollerRef, codeRef])
 
   return (
     <ul

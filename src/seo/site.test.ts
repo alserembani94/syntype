@@ -89,3 +89,10 @@ describe('privacy and fair-play pages', () => {
     expect(policyPages().includes(privacyPage)).toBe(PRIVACY_CONTACT !== null)
   })
 })
+
+describe('policy links in the game', () => {
+  it('match the policy pages that are published', async () => {
+    const { policyPages, POLICY_LINKS } = await import('./policies')
+    expect(POLICY_LINKS).toEqual(policyPages().map((p) => ({ path: p.path, label: p.label })))
+  })
+})

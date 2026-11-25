@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type { History } from '../lib/history'
-import { AccountSettings } from './AccountSettings'
-import { POLICY_LINKS } from '../seo/policies'
+import { POLICY_LINKS } from '../seo/policyLinks'
+
+// Loaded when the player opens Account & data.
+const AccountSettings = lazy(() => import('./AccountSettings').then((m) => ({ default: m.AccountSettings })))
 import { justSignedIn, nameHint, saveName, signIn, signInProblem, signOut, fetchAccount, type Account as AccountState, type Player, type Provider } from '../lib/account'
 
 interface Props {
@@ -106,21 +108,23 @@ export function Account({ available, onOpenChange, onMyRuns, onPlayer, history }
         />
       )}
       {open === 'settings' && (player ?? settingsFor) && (
-        <AccountSettings
-          player={(player ?? settingsFor)!}
-          onClose={() => setOpen(null)}
-          onRename={() => setOpen('name')}
-          onPlayer={(p) => setAccount((a) => (a.state === 'signed-in' ? { ...a, player: p } : a))}
-          onDeleted={async (clearLocal) => {
-            if (clearLocal) await (await history)?.clear()
-            setAccount({ state: 'signed-out' })
-          }}
-          onSignedOut={() => {
-            setAccount({ state: 'signed-out' })
-            setOpen(null)
-            setNotice('Signed out on every device.')
-          }}
-        />
+        <Suspense fallback={null}>
+          <AccountSettings
+            player={(player ?? settingsFor)!}
+            onClose={() => setOpen(null)}
+            onRename={() => setOpen('name')}
+            onPlayer={(p) => setAccount((a) => (a.state === 'signed-in' ? { ...a, player: p } : a))}
+            onDeleted={async (clearLocal) => {
+              if (clearLocal) await (await history)?.clear()
+              setAccount({ state: 'signed-out' })
+            }}
+            onSignedOut={() => {
+              setAccount({ state: 'signed-out' })
+              setOpen(null)
+              setNotice('Signed out on every device.')
+            }}
+          />
+        </Suspense>
       )}
       {open === 'menu' && player && (
         <AccountMenu
