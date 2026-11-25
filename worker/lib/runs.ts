@@ -16,6 +16,7 @@ import type { Db } from './db'
 import { randomToken, sign, verify } from './crypto'
 import { checkRun, REJECTIONS, type Claim, type Rejection } from './runcheck'
 import type { PlayerRow } from './players'
+import { flagIfUnusual } from './flags'
 import { SNIPPET_DATA_PATH, type SnippetFile } from '../../src/lib/snippetfiles'
 import type { LogEntry, TypingAids } from '../../src/lib/runcore'
 
@@ -244,6 +245,8 @@ export async function submitRun(deps: Deps, player: PlayerRow, body: unknown, no
     }
     if (writes.length) await db.batch(writes)
   }
+  // A new best far above the player's history goes to the admin to look at (flags.ts). The run stays up.
+  if (best) await flagIfUnusual(db, { playerId: player.id, runId, fingerprint: snippet.fingerprint, wpm: run.wpm, rank }, now)
   // Now and then, forget tokens too old to be used again.
   if (Math.random() < 0.02) await db.prepare('DELETE FROM used_run_tokens WHERE used_at < ?').bind(new Date(t - 86_400_000).toISOString()).run()
 

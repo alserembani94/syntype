@@ -195,6 +195,8 @@ Indexes:
 - **Rename** follows the usual name rules, at any time, and counts as a change of name: the player waits a week before changing it again.
 - **Sign out everywhere** ends every session the player has.
 - **Reports from players** (`POST /api/reports`) need a confirmed name; you can't report yourself; one per target, whatever its status; 10 in 24 hours. A run can only be reported while it's on a board.
+- **Automatic flags** (`worker/lib/flags.ts`, migration 0004): when an accepted run becomes a player's new best, it's filed as a report from Syntype (`source = 'auto'`, reason cheating) if it's at least 90 WPM and 1.6× their average best on 3 or more other snippets, or if a player with fewer than 3 other snippets takes #1 on a board of 5 or more. The run stays up.
+- **The queue shows each reported run** (snippet, WPM, accuracy, aids, date), or that it's no longer on the boards; **Watch replay** appears only when its keystrokes are kept. **Player search** can show a player's leaderboard entries, each with Watch replay and Remove run.
 - Locally, `npm run dev:api` treats requests to localhost as an admin (`ADMIN_DEV_EMAIL`), since Access doesn't run there. Any other host needs a real Access token.
 
 **What this won't catch:** a careful cheater feeding in human-like keystrokes at a believable speed. Review and reports keep that rare.

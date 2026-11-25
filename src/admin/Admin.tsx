@@ -8,10 +8,13 @@ import {
   actOnPlayer,
   closeReports,
   findPlayers,
+  playerRuns,
   removeRun,
   reportQueue,
   whoAmI,
   type AdminAction,
+  type Entry,
+  type RunInfo,
   type AdminPlayer,
   type PlayerAction,
   type Reason,
@@ -164,8 +167,9 @@ function Reports({ onNotice }: { onNotice: Notify }) {
               <div>
                 {g.player ? <PlayerName player={g.player} /> : <strong>Deleted player</strong>}
                 <div className="admin-meta">
-                  {g.run ? `Run ${g.run.slice(0, 8)}` : 'The player'} · {g.count} report{g.count === 1 ? '' : 's'} · latest {when(g.latest)}
+                  {g.run ? 'A run' : 'The player'} · {g.count} report{g.count === 1 ? '' : 's'} · latest {when(g.latest)}
                 </div>
+                {g.run && <RunLine info={g.runInfo} />}
               </div>
               {status === 'open' && g.player && (
                 <div className="admin-actions">
@@ -184,13 +188,13 @@ function Reports({ onNotice }: { onNotice: Notify }) {
                   <span className={`reason reason-${r.reason}`}>{REASONS[r.reason]}</span>
                   {r.note ? <q>{r.note}</q> : <span className="admin-meta">No note</span>}
                   <span className="admin-meta">
-                    {r.reporter ?? 'a deleted player'} · {when(r.createdAt)}
+                    {r.automatic ? 'Syntype (automatic)' : (r.reporter ?? 'a deleted player')} · {when(r.createdAt)}
                     {status === 'closed' && ` · ${r.status}`}
                   </span>
                 </li>
               ))}
             </ul>
-            {g.run && status === 'open' && <RunTools runId={g.run} onRemoved={load} onNotice={onNotice} />}
+            {g.run && g.runInfo && status === 'open' && <RunTools runId={g.run} hasLog={g.runInfo.hasLog} onRemoved={load} onNotice={onNotice} />}
             {g.player && <PlayerTools player={g.player} onChange={updated} onNotice={onNotice} />}
           </article>
         ))
@@ -244,6 +248,7 @@ function Players({ onNotice }: { onNotice: Notify }) {
                 </div>
               </div>
             </div>
+            <PlayerRuns player={p} onNotice={onNotice} />
             <PlayerTools player={p} onChange={updated} onNotice={onNotice} />
           </article>
         ))
@@ -393,13 +398,17 @@ function RenameDetail({ detail }: { detail: string }) {
 }
 
 /** For a reported run: watch its replay (if its keystrokes are kept), or take it off the boards. */
-function RunTools({ runId, onRemoved, onNotice }: { runId: string; onRemoved: () => void; onNotice: Notify }) {
+function RunTools({ runId, hasLog, onRemoved, onNotice }: { runId: string; hasLog: boolean; onRemoved: () => void; onNotice: Notify }) {
   const [busy, setBusy] = useState(false)
   return (
     <div className="admin-tools">
-      <a className="btn" href={`/leaderboard?replay=${encodeURIComponent(runId)}&admin=1`} target="_blank" rel="noreferrer">
-        Watch replay ↗
-      </a>
+      {hasLog ? (
+        <a className="btn" href={`/leaderboard?replay=${encodeURIComponent(runId)}&admin=1`} target="_blank" rel="noreferrer">
+          Watch replay ↗
+        </a>
+      ) : (
+        <span className="admin-meta">No replay: keystrokes are kept only for each board’s top 20.</span>
+      )}
       <button
         type="button"
         className="btn danger"
@@ -421,5 +430,63 @@ function RunTools({ runId, onRemoved, onNotice }: { runId: string; onRemoved: ()
         Remove run
       </button>
     </div>
+  )
+}
+
+const AID_NAMES = ['indent', 'close', 'auto']
+const aidsText = (key: string) => AID_NAMES.filter((_, i) => key[i] === '1').join(' + ') || 'no aids'
+// Language ids as they are (the admin bundle leaves out the language definitions).
+const langName = (id: string) => id
+
+/** What a reported run is: snippet, speed, aids, date; or that it's no longer on the boards. */
+function RunLine({ info }: { info: RunInfo | null }) {
+  if (!info) return <div className="admin-meta run-gone">The run is no longer on the boards (removed, deleted by the player, or replaced by a better run).</div>
+  return (
+    <div className="run-line">
+      <span className="entry-snippet">
+        {langName(info.language)} · {info.snippet}
+      </span>
+      <b>{Math.round(info.wpm)} WPM</b> · {Math.round(info.accuracy)}% · {aidsText(info.aids)} · {when(info.finishedAt)}
+    </div>
+  )
+}
+
+/** A player's leaderboard entries, on demand, each with its replay and a remove. */
+function PlayerRuns({ player, onNotice }: { player: AdminPlayer; onNotice: Notify }) {
+  const [entries, setEntries] = useState<Entry[] | null>(null)
+  const [open, setOpen] = useState(false)
+  const load = () => playerRuns(player.id).then(setEntries, (err) => onNotice(message(err)))
+  if (!open) {
+    return (
+      <div>
+        <button
+          type="button"
+          className="inline-link"
+          onClick={() => {
+            setOpen(true)
+            void load()
+          }}
+        >
+          Show leaderboard entries
+        </button>
+      </div>
+    )
+  }
+  if (!entries) return <p className="admin-meta">Loading entries…</p>
+  if (!entries.length) return <p className="admin-meta">No leaderboard entries.</p>
+  return (
+    <ul className="player-runs">
+      {entries.map((e) => (
+        <li key={e.runId}>
+          <span className="entry-snippet">
+            {langName(e.language)} · {e.snippet}
+          </span>
+          <span className="admin-meta">
+            {Math.round(e.wpm)} WPM · {Math.round(e.accuracy)}% · {aidsText(e.aids)} · {when(e.finishedAt)}
+          </span>
+          <RunTools runId={e.runId} hasLog={e.hasLog} onRemoved={load} onNotice={onNotice} />
+        </li>
+      ))}
+    </ul>
   )
 }

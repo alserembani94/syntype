@@ -30,6 +30,7 @@
  *   GET  /api/admin/reports?status=       the report queue: open or closed
  *   POST /api/admin/reports/close         resolve or dismiss reports about a player or run
  *   GET  /api/admin/actions?before=       the action log
+ *   GET  /api/admin/players/:id/runs      a player's leaderboard entries
  *   GET  /api/admin/replays/:runId        any kept run, to replay
  *   POST /api/admin/runs/:runId/remove    take a run off the boards
  */
@@ -300,6 +301,8 @@ async function admin(request: Request, url: URL, deps: Deps, now: Date): Promise
 
   if (path === '/me' && method === 'GET') return json({ email })
   if (path === '/players' && method === 'GET') return json({ players: await findPlayers(db, url.searchParams.get('q')) })
+  const runsOf = path.match(/^\/players\/([^/]+)\/runs$/)
+  if (runsOf && method === 'GET') return json({ entries: await myEntries(db, { id: decodeURIComponent(runsOf[1]) }) })
   const act = path.match(/^\/players\/([^/]+)\/([a-z]+)$/)
   if (act && method === 'POST' && PLAYER_ACTIONS.includes(act[2] as PlayerAction)) {
     return reply(await actOnPlayer(db, email, decodeURIComponent(act[1]), act[2] as PlayerAction, await body(), now))

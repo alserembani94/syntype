@@ -47,3 +47,12 @@
   .admin-reports li, .admin-log li { grid-template-columns: 1fr; gap: 4px; }
   .admin-who > span { display: none; }
 }
+.run-line { margin-top: 6px; font-size: 14px; display: flex; gap: 6px 10px; flex-wrap: wrap; align-items: baseline; }
+.entry-snippet { font-family: var(--f-code); font-size: 13px; padding: 1px 7px; border-radius: 6px; background: var(--surface-2); }
+.run-gone { margin-top: 6px; }
+.inline-link { border: 0; padding: 0; background: none; cursor: pointer; color: var(--accent); font: 500 13px var(--f-ui); }
+.inline-link:hover { text-decoration: underline; }
+.player-runs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.player-runs li { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; }
+.player-runs .admin-tools { border-top: 0; padding-top: 0; }
+.player-runs .entry-snippet { justify-self: start; }

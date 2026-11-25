@@ -13,7 +13,7 @@ import { SITE_URL } from './site'
 /** Who runs Syntype, as the privacy page names them. */
 export const OPERATOR = 'Atif'
 /** Where players write about their data. Null until there's an address for it. */
-export const PRIVACY_CONTACT: string | null = null
+export const PRIVACY_CONTACT: string | null = 'privacy@vercel.my'
 /** When the privacy page last changed. */
 export const PRIVACY_UPDATED = '2026-11-25'
 
@@ -65,7 +65,7 @@ export const privacyPage: PolicyPage = {
         '- your player record: an internal ID, whether you use GitHub or Google and that account’s ID, your leaderboard name and the suggested one, when you last changed your name, whether you are hidden, and when you joined and were last seen',
         '- your best run on each snippet you submit (overall and for each combination of typing aids): WPM, raw WPM, accuracy, time, typing aids and when you finished',
         '- the keystrokes of runs in the top 20 of a board: which keys you pressed in the snippet, and when, so the run can be replayed and checked',
-        '- reports you send, and reports about you, with any note',
+        '- reports you send, and reports about you (including Syntype’s own automatic flags of unusually fast runs), with any note',
       ],
     },
     {
@@ -161,6 +161,7 @@ export const fairPlayPage: PolicyPage = {
       heading: 'How runs are checked',
       body: [
         'Every submitted run carries its keystrokes. The server types them again through the game’s own code, against the snippet’s exact text, and accepts the run only if they finish the snippet and give the same result. Runs are also turned away when their keystrokes span more time than had passed since the run began, when keys come faster than fingers can press them, when the speed stays above about 250 WPM, or when the rhythm is too even to be a person’s. Runs under 75% accuracy don’t count.',
+        'A new best far above your usual speed, or a new player going straight to #1, is also sent to the moderator to look at. The run stays on the board while they do.',
       ],
     },
     {

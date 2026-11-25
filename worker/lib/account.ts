@@ -19,7 +19,7 @@ export async function setHidden(db: Db, player: PlayerRow, hidden: unknown) {
 }
 
 /** The player's leaderboard entries: their overall best on each snippet version. */
-export async function myEntries(db: Db, player: PlayerRow) {
+export async function myEntries(db: Db, player: Pick<PlayerRow, 'id'>) {
   const { results } = await db
     .prepare(
       `SELECT b.run_id, b.fingerprint, b.wpm, b.accuracy, b.run_aids, b.finished_at, v.language, v.name, v.length, (l.run_id IS NOT NULL) AS has_log

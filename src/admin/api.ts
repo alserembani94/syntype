@@ -16,12 +16,37 @@ export interface AdminPlayer {
 
 export type Reason = 'cheating' | 'name' | 'other'
 
+/** A reported run as it stands on the boards; null once it's gone. */
+export interface RunInfo {
+  language: string
+  snippet: string
+  wpm: number
+  accuracy: number
+  aids: string
+  finishedAt: string
+  hasLog: boolean
+}
+
 export interface ReportGroup {
   player: AdminPlayer | null
   run: string | null
+  runInfo: RunInfo | null
   count: number
   latest: string
-  reports: { id: string; reason: Reason; note: string | null; status: string; createdAt: string; reporter: string | null }[]
+  reports: { id: string; reason: Reason; note: string | null; status: string; createdAt: string; reporter: string | null; automatic: boolean }[]
+}
+
+/** One of a player's leaderboard entries (their best on a snippet). */
+export interface Entry {
+  runId: string
+  language: string
+  snippet: string
+  length: string
+  wpm: number
+  accuracy: number
+  aids: string
+  finishedAt: string
+  hasLog: boolean
 }
 
 export interface AdminAction {
@@ -68,3 +93,4 @@ export const closeReports = (player: string, run: string | null, status: 'resolv
   call<{ closed: number }>('/reports/close', { player, run, status })
 export const actionLog = (before?: string) => call<{ actions: AdminAction[] }>(`/actions${before ? `?before=${encodeURIComponent(before)}` : ''}`).then((r) => r.actions)
 export const removeRun = (runId: string) => call<{ removed: number }>(`/runs/${encodeURIComponent(runId)}/remove`, {})
+export const playerRuns = (id: string) => call<{ entries: Entry[] }>(`/players/${encodeURIComponent(id)}/runs`).then((r) => r.entries)

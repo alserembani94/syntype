@@ -187,12 +187,40 @@ export async function removeRun(db: Db, admin: string, runId: string, now: Date)
   return { ok: true, removed: removal.rows }
 }
 
+/** A reported run as it stands on the boards: null once it's gone (removed, deleted, or beaten). */
+export interface RunInfo {
+  language: string
+  snippet: string
+  wpm: number
+  accuracy: number
+  aids: string
+  finishedAt: string
+  hasLog: boolean
+}
+
 export interface ReportGroup {
   player: AdminPlayer | null
   run: string | null
+  runInfo: RunInfo | null
   count: number
   latest: string
-  reports: { id: string; reason: Reason; note: string | null; status: string; createdAt: string; reporter: string | null }[]
+  reports: { id: string; reason: Reason; note: string | null; status: string; createdAt: string; reporter: string | null; automatic: boolean }[]
+}
+
+/** Runs on the boards, by run id, for the report queue. */
+async function runInfos(db: Db, runIds: string[]): Promise<Map<string, RunInfo>> {
+  if (!runIds.length) return new Map()
+  const { results } = await db
+    .prepare(
+      `SELECT b.run_id, max(b.wpm) AS wpm, max(b.accuracy) AS accuracy, b.run_aids, b.finished_at, v.language, v.name, max(l.run_id IS NOT NULL) AS has_log
+       FROM bests b JOIN snippet_versions v ON v.fingerprint = b.fingerprint LEFT JOIN logs l ON l.run_id = b.run_id
+       WHERE b.run_id IN (${runIds.map(() => '?').join(', ')}) GROUP BY b.run_id`,
+    )
+    .bind(...runIds)
+    .all<{ run_id: string; wpm: number; accuracy: number; run_aids: string; finished_at: string; language: string; name: string; has_log: number }>()
+  return new Map(
+    results.map((r) => [r.run_id, { language: r.language, snippet: r.name, wpm: r.wpm, accuracy: r.accuracy, aids: r.run_aids, finishedAt: r.finished_at, hasLog: r.has_log === 1 }]),
+  )
 }
 
 interface ReportRow {
@@ -204,6 +232,7 @@ interface ReportRow {
   status: string
   created_at: string
   reporter_name: string | null
+  source: string
 }
 
 /**
@@ -234,14 +263,16 @@ export async function reportQueue(db: Db, status: 'open' | 'closed'): Promise<Re
     db.prepare(`SELECT *, ${OPEN_REPORTS} FROM players WHERE id IN (${marks})`).bind(...ids).all<PlayerRow>(),
   ])
   const byId = new Map(players.map((p) => [p.id, adminPlayer(p)]))
+  const runs = await runInfos(db, [...new Set(groups.map((g) => g.run).filter((r): r is string => !!r))])
   return groups.map((g) => ({
     player: byId.get(g.player) ?? null,
     run: g.run,
+    runInfo: g.run ? (runs.get(g.run) ?? null) : null,
     count: g.count,
     latest: g.latest,
     reports: rows
       .filter((r) => r.target_player_id === g.player && r.target_run_id === g.run)
-      .map((r) => ({ id: r.id, reason: r.reason, note: r.note, status: r.status, createdAt: r.created_at, reporter: r.reporter_name })),
+      .map((r) => ({ id: r.id, reason: r.reason, note: r.note, status: r.status, createdAt: r.created_at, reporter: r.reporter_name, automatic: r.source === 'auto' })),
   }))
 }
 

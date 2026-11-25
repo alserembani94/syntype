@@ -771,6 +771,32 @@ describe('submitting runs', () => {
     expect(await db.prepare('SELECT id FROM players WHERE id IN (?, ?)').bind(old.id, recent.id).all()).toMatchObject({ results: [{ id: recent.id }] })
   })
 
+  it('flags a new best far above the player’s history for the admin, with the run’s details; the run stays up', async () => {
+    const p = await named('sudden-jump')
+    // Three earlier bests around 50 WPM, on other (older) snippet versions.
+    const at = new Date().toISOString()
+    for (let i = 0; i < 3; i++) {
+      const old = `${i}`.repeat(64).slice(0, 64).replace(/./g, String.fromCharCode(97 + i))
+      await db.batch([
+        db.prepare("INSERT OR IGNORE INTO snippet_versions (fingerprint, language, name, length, code, first_seen_at) VALUES (?, 'python', ?, 'short', 'x', ?)").bind(old, `old${i}.py`, at),
+        db.prepare("INSERT INTO bests (player_id, fingerprint, aids, language, run_id, wpm, raw_wpm, accuracy, seconds, run_aids, finished_at) VALUES (?, ?, 'any', 'python', ?, 50, 50, 97, 9, '110', ?)").bind(p.id, old, `slow-${i}-${p.id}`, at),
+      ])
+    }
+    const run = await submit(p.session, honestRun(1, 99))
+    expect(run.body).toMatchObject({ accepted: true, best: true })
+    clearAccessKeys()
+    const access = await fakeAccess()
+    const res = await handle(new Request(`${SITE}/api/admin/reports`, { headers: { [ACCESS_HEADER]: await access.token() } }), deps(access.fetchImpl))
+    type Queue = { groups: { player: { id: string }; run: string; runInfo: { snippet: string; hasLog: boolean; wpm: number } | null; reports: { automatic: boolean; reporter: string | null; note: string }[] }[] }
+    const group = ((await res.json()) as Queue).groups.find((g) => g.player.id === p.id)!
+    expect(group.run).toBe(run.body.runId)
+    expect(group.runInfo).toMatchObject({ snippet: snippet.name, hasLog: true })
+    expect(group.reports).toEqual([expect.objectContaining({ automatic: true, reporter: null, note: expect.stringMatching(/against an average of 50 on their 3 other snippets/) })])
+    // The admin sees the player's entries, from the player search.
+    const runs = await handle(new Request(`${SITE}/api/admin/players/${p.id}/runs`, { headers: { [ACCESS_HEADER]: await access.token() } }), deps(access.fetchImpl))
+    expect(((await runs.json()) as { entries: { runId: string }[] }).entries.map((e) => e.runId)).toContain(run.body.runId)
+  })
+
   it('a token is the player’s own', async () => {
     const a = await named('token-owner')
     const b = await named('token-thief')
