@@ -9,11 +9,11 @@ npm install
 npm run dev
 ```
 
-Other scripts: `npm test` (engine tests, Vitest), `npm run build`, `npm run lint`.
+Other scripts: `npm test` (unit and playthrough tests, Vitest), `npm run build`, `npm run lint`.
 
 ## How it plays
 
-- Nothing is scored on screen while you type: no clock, no WPM, no accuracy, no personal best. Timing starts quietly on your first key, and everything appears on the results screen when you finish. `Esc` loads a new snippet.
+- Nothing is scored on screen while you type: no clock, no WPM, no accuracy, no personal best. Timing starts quietly on your first key, and everything appears on the results screen when you finish. The status bar does show your line, column and how many characters are done. `Esc` loads a new snippet (or first closes an open suggestion list).
 - When the page can't receive keys (on first load in a frame, after clicking elsewhere, or when switching tab or window), the code blurs and asks you to click, or tap on phones. Mid-run, this **pauses the clock**. Time away isn't counted, and results show how long you were paused.
 - **Results:** WPM and accuracy beside a per-second chart (wpm, raw, and errors as ✕ with their own axis). Below that: test details, raw WPM, characters (right / wrong / suggested / auto-inserted), **consistency** (100% minus the variation in your per-second speed, shown for runs of 3 seconds or more) and time. A second row has code speed, keys saved, symbol accuracy and the keys you missed most. **Review** (`v`) shows the snippet with your mistakes, suggested text and auto-inserted text marked.
 - **Auto-indent** (on by default) skips the leading spaces after Enter, the way an editor would. Skipped spaces don't count toward your score. With it off, you type the indentation, and Tab inserts 2 spaces.
@@ -23,19 +23,18 @@ Other scripts: `npm test` (engine tests, Vitest), `npm run build`, `npm run lint
   - VS Code's rules apply: quotes don't auto-close inside strings, `'` and `` ` `` don't inside comments, and no quote closes right after a letter or digit. Nothing auto-closes unless the next character is whitespace, end of line or one of `;:.,=}])>`.
   - Backspace on an opener also removes the closer it inserted.
   - The one difference from VS Code: a mistyped opener doesn't auto-close anything.
-  - Closers you move past with `→`, `End` or `↓` don't count toward WPM. Personal bests are kept separately with auto-close on and off.
+  - Closers you move past with `→`, `End` or `↓` don't count toward WPM.
 - **IntelliSense** (on by default) behaves like VS Code's suggestion list:
-  - It opens as you type a word or a trigger character such as `.`, but not inside strings or comments (VS Code's `quickSuggestions` defaults). Matching is fuzzy, so `uC` finds `useCallback`.
+  - It opens as you start a word or type a trigger character such as `.`, but not for words inside strings or comments (VS Code's `quickSuggestions` defaults). A quote is a trigger character, so `"` can still offer a string union's values. Matching is fuzzy, so `uC` finds `useCallback`.
   - `Tab` or `Enter` accepts, `↑`/`↓` choose and `Esc` closes. Clicking or tapping a row also accepts. As in VS Code (`acceptSuggestionOnEnter: "on"`), Enter accepts even when the word is already complete. Press `Esc` first if you want a new line.
   - Ranking follows VS Code: match quality, then the language's own priority (names from the file before globals and keywords), then alphabetical. Recommended items are pre-selected.
   - Accepting a wrong suggestion inserts it anyway, and its letters are checked like typed ones.
 - **IntelliSense is type-aware.** JavaScript and TypeScript snippets both get suggestions from TypeScript's real language service, the engine VS Code uses for both, running in a Web Worker. JavaScript is analysed for inference only (no type errors), as VS Code does without `// @ts-check`. Names it can't resolve are offered as plain words, as in VS Code. It knows the types declared in the snippet: after `interface User { name: string }`, `u.` offers `name`, `users.filter((x) => x.` knows `x` is a `User`, and `Pick<>`, generics, union narrowing, enums and string-literal unions (`"up"`) all work. It only sees what you've typed so far, as a real editor would, so a typo breaks suggestions there too. The status bar shows "… IntelliSense starting…" while it loads (about a second). Until then, and if it can't start, basic suggestions (keywords and words you've typed) are used.
 - **Commit characters** (VS Code's): with the list open, typing `.` `,` `;` or `(` accepts the selected item and then types the character. They apply everywhere except where you're declaring a new name, because the service knows those spots. Basic suggestions have none, since they can't tell when a new name is being declared. An exact, fully typed word always outranks longer words it starts (VS Code's full-match boost), so typing `fetch(` commits `fetch`, not `fetchUser`.
-- **Scoring with assists:** WPM counts only characters you typed. **Code speed** counts every right character on screen, including suggested and auto-inserted text, and **keys saved** shows what suggestions saved you. Personal bests are kept separately for each combination of assists.
+- **Scoring with assists:** WPM counts only characters you typed. **Code speed** counts every right character on screen, including suggested and auto-inserted text, and **keys saved** shows what suggestions saved you.
+- WPM is correct typed characters ÷ 5 per minute. Accuracy counts every keystroke, so fixed mistakes still cost you. Symbol accuracy covers brackets, `=>`, `;` and the like.
+- **Personal bests** are kept in `localStorage`, separately for each language, length, and auto-close and IntelliSense setting (auto-indent isn't part of it). Runs under 75% accuracy don't count.
 - `Ctrl+Backspace` deletes a word.
-- WPM is correct typed characters ÷ 5 per minute. Accuracy counts every keystroke, so fixed mistakes still cost you.
-- Results show raw WPM, symbol accuracy (brackets, `=>`, `;` and so on), a speed-over-time chart, and the keys you missed most.
-- Personal bests are kept per language and length in `localStorage`. Runs under 75% accuracy don't count.
 
 ## Project layout
 
@@ -45,10 +44,10 @@ src/
     index.ts            the LANGUAGES registry
     types.ts            Language, Snippet and HighlightRules types
     snippets.ts         parses snippets files, picks a random snippet
-    typescript/         TypeScript: highlighting, snippets, and its language service
     javascript/
       index.ts          name, extension, highlighting, auto-close and completion settings
       snippets.txt      the snippets: "=== name.js" header, then the code
+    typescript/         the same for TypeScript (its service lives in lib/ts/)
   lib/engine.ts         pure typing engine (type, backspace, auto-indent, auto-close, →/End/↓)
   lib/suggest.ts        IntelliSense: context (word or member), local candidates, fuzzy matching, ranking
   lib/service.ts        the interface a language's completion service implements
@@ -56,29 +55,30 @@ src/
   lib/pairs.ts          matches brackets and quotes per snippet, with VS Code's auto-close rules
   lib/stats.ts          WPM, accuracy and the results summary
   lib/tokenize.ts       highlighter driven by a language's HighlightRules
-  hooks/useTypingTest.ts  engine + clock as a React reducer
-  components/           CodeView, ConfigBar, Results, Review, SpeedChart, SuggestBox
+  lib/storage.ts        localStorage wrapper for settings and personal bests
+  hooks/useTypingTest.ts  engine, clock and suggestion requests as a React reducer
   hooks/usePageFocus.ts whether keys can reach the game (drives the focus overlay and pausing)
+  components/           CodeView, ConfigBar, Results, Review, SpeedChart, SuggestBox
   App.tsx               layout, keyboard handling, settings, personal bests
 ```
 
 ## Adding a language
 
 1. Create `src/languages/<id>/snippets.txt` with snippets in the format below. Name each file with the language's extension.
-2. Create `src/languages/<id>/index.ts`, copying `javascript/index.ts` and changing `id`, `name`, `extension`, `highlight` (keywords, comment and string syntax), `autoClosingPairs` and `completion.wordChar` (what counts as a word character). Copy `autoClosingPairs` from the language's VS Code `language-configuration.json` so auto-close matches the editor.
+2. Create `src/languages/<id>/index.ts`, using `javascript/index.ts` as a model: set `id`, `name`, `extension`, `highlight` (keywords, comment and string syntax), `autoClosingPairs` and `completion`. Copy `autoClosingPairs` from the language's VS Code `language-configuration.json` so auto-close matches the editor. **Don't copy JavaScript's `completion.service`, `serviceMode` or `triggerCharacters`**: those wire in TypeScript's service. A language without its own service sets `wordChar` and, if useful, vocabulary `packs` (see below).
 3. Add it to `LANGUAGES` in `src/languages/index.ts`.
 
-It then appears in the language picker. `npm test` checks every registered language's snippets.
+It then appears in the language picker. `npm test` checks every registered language's snippet names and formatting. The literal-typing playthroughs and keystroke-savings report in `src/lib/ts/typescript.test.ts` cover JavaScript and TypeScript; add the new language there if it has a service.
 
 ### Suggestions for a language
 
 A language can have a **completion service** (`completion.service`, see `src/lib/service.ts`) that understands the code, like TypeScript's in `src/lib/ts/`. Services run asynchronously, usually in a worker, and are asked for suggestions at the start of a word or after a trigger character (`completion.triggerCharacters`). The list is then filtered locally as you type, as VS Code does. Languages without a service get keywords and words already typed, plus optional vocabulary packs: `completion.packs`, with `wordChar` for what makes a word and `memberTriggers` (e.g. `["."]` or `["::", "->"]`) for what opens member lists. A pack without `detect` is always on (built-ins); one with `detect` switches on when the snippet matches it, usually an import. Each pack has `globals`, and `members` keyed by receiver, with `"*"` for receivers whose type is unknown. The test language in `src/lib/suggest.test.ts` shows the shape. JavaScript and TypeScript don't use packs, because the service covers them.
 
-`npm test` reports how many keystrokes suggestions save across each language's snippets, and fails if typing any snippet literally lets a commit character insert a wrong word.
+`npm test` reports how many keystrokes suggestions save across the JavaScript and TypeScript snippets, and fails if typing any of them literally lets a commit character insert a wrong word.
 
 ## Adding snippets
 
-**Declare or import every name a snippet uses.** A real file would, and IntelliSense relies on it. With an undeclared `db`, typing `db.` would commit the `debugger` keyword (the `.` is a commit character), exactly as VS Code would. `npm test` types every snippet literally with suggestions on and fails if that happens.
+A snippet can use names from code around it that isn't shown, such as `items`, `todos` or `user`. The suggestion service treats them as unknown, as a real editor would with that code missing. One case needs care: an undeclared name that fuzzy-matches something else can be swapped by a commit character. In `server.js`, an undeclared `db` made `db.` commit the `debugger` keyword, exactly as VS Code would. `npm test` types every JavaScript and TypeScript snippet literally with suggestions on and fails if that happens. If it does, declare or import the name in the snippet, as `server.js` now imports `db`.
 
 Append a block to the language's `snippets.txt`:
 
@@ -91,4 +91,4 @@ Use 2-space indentation and no tabs or trailing spaces (the tests check this). L
 
 ## TypeScript dependency note
 
-The project builds with TypeScript 7, the native Go compiler, which has no JavaScript API that runs in a browser. The in-browser language service is TypeScript **6.0.3**, the last JavaScript-based release, installed under the alias `ts-lang`. It ships as a separate worker file of about 1 MB gzipped, shared by JavaScript and TypeScript, and loaded in the background as soon as a snippet opens with IntelliSense on. Its browser globals, React and Express types are small stubs (`src/lib/ts/stubs.ts`) rather than the full DOM and `@types/react` declarations.
+The project builds with TypeScript 7, the native Go compiler, which has no JavaScript API that runs in a browser. The in-browser language service is TypeScript **6.0.3**, the last JavaScript-based release, installed under the alias `ts-lang`. It ships as a separate worker file of about 1 MB gzipped, shared by JavaScript and TypeScript, and loaded in the background as soon as a snippet opens with IntelliSense on. Its browser globals, React and Express types are small stubs (`src/lib/ts/stubs.ts`) rather than the full DOM, `@types/react` and `@types/express` declarations.
