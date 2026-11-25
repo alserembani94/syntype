@@ -256,7 +256,7 @@ Indexes:
 - **Signed tokens** all carry a kind (`session`, `signin`, `run`), and each check requires its own, so one can never pass as another.
 - **Sign-in** uses PKCE with both GitHub and Google.
 - **Turnstile:** a token is checked once (no idempotency key, so Cloudflare's reuse check applies), and must be for the `submit-run` action on our hostname. Cloudflare's always-pass test secret, used locally, skips those two checks, since its answers carry neither.
-- **Headers** (`public/_headers`): no framing, HSTS for a year, no camera, microphone, location, payment or USB access, and a Content Security Policy. `scripts/build-pages.mjs` fills in the hashes of the built pages' inline code, so the policy always matches what shipped. A new third-party script, style, font or frame needs its origin added there.
+- **Headers** (`public/_headers`): no framing, HSTS for a year, no camera, microphone, location, payment or USB access, and a Content Security Policy. `scripts/build-pages.mjs` fills in the hashes of the built pages' inline code, so the policy always matches what shipped. A new third-party script, style, font or frame needs its origin added there. Cloudflare Web Analytics is on for the zone (automatic setup): Cloudflare injects its cookieless beacon, which the policy allows, and the privacy page says so.
 
 Have the privacy page checked against the laws that apply: Malaysia's PDPA for a `.my` site, and the EU's GDPR for European players.
 

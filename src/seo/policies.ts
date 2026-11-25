@@ -86,13 +86,14 @@ export const privacyPage: PolicyPage = {
         'Syntype sets two cookies, both needed for signing in, and none for tracking or advertising:',
         '- syntype_session: keeps you signed in, for up to 30 days',
         '- syntype_signin: links GitHub’s or Google’s answer to the sign-in you started, for 10 minutes',
-        'There are no analytics.',
+        'Visits are counted with Cloudflare Web Analytics, which sets no cookies and doesn’t follow you across sites (see below). There is no other analytics or tracking.',
       ],
     },
     {
       heading: 'Services Syntype uses',
       body: [
         '- [Cloudflare](https://www.cloudflare.com/privacypolicy/) hosts the site and its database. Like any host, it handles your IP address to deliver the pages, and keeps short-lived request logs. When you submit a run, Cloudflare Turnstile checks that your browser is used by a person; your IP address is passed to that check.',
+        '- Cloudflare Web Analytics counts page visits and measures how fast pages load, to show how the site is used and how well it performs. It uses no cookies, doesn’t follow you across sites, and reports to Syntype’s own address.',
         '- [GitHub](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement) and [Google](https://policies.google.com/privacy) handle signing in.',
         '- [Google Fonts](https://developers.google.com/fonts/faq/privacy) serves the typefaces, so Google sees your IP address when they load.',
         'These services may process data outside your country, under their own safeguards.',

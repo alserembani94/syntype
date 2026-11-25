@@ -192,7 +192,9 @@ for (const file of fs.readdirSync(dist).filter((f) => f.endsWith('.html'))) {
 }
 const csp = [
   "default-src 'self'",
-  `script-src 'self' https://challenges.cloudflare.com ${[...inlineScripts].join(' ')}${inlineHandlers.size ? ` 'unsafe-hashes' ${[...inlineHandlers].join(' ')}` : ''}`,
+  // Cloudflare Web Analytics' beacon is injected by Cloudflare at its versioned address
+  // (/beacon.min.js/v…), so the whole host is allowed; it reports to our own /cdn-cgi/rum.
+  `script-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com ${[...inlineScripts].join(' ')}${inlineHandlers.size ? ` 'unsafe-hashes' ${[...inlineHandlers].join(' ')}` : ''}`,
   "style-src 'self' https://fonts.googleapis.com",
   'font-src https://fonts.gstatic.com',
   "img-src 'self' data:",
