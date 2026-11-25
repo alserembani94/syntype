@@ -338,7 +338,14 @@ export default function App() {
               `best (${[language.name, length, autoClose && 'auto-close', intellisense && 'intellisense'].filter(Boolean).join(', ')}): ${best ? `${Math.round(best)} wpm` : '—'}`}
           </span>
           {serviceLabel && (
-            <span className={`service ${serviceStatus}`} title="Type-aware suggestions from the language's own service">
+            <span
+              className={`service ${serviceStatus}`}
+              title={
+                serviceStatus === 'failed'
+                  ? `Couldn't start: ${service?.failure?.() ?? 'unknown reason'}`
+                  : "Type-aware suggestions from the language's own service"
+              }
+            >
               {serviceLabel}
             </span>
           )}

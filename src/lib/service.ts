@@ -37,6 +37,8 @@ export interface ServiceResponse {
 
 export interface CompletionService {
   status(): ServiceStatus
+  /** Why the service failed to start, when it did. */
+  failure?(): string | undefined
   onStatus(listener: (status: ServiceStatus) => void): () => void
   complete(request: ServiceRequest): Promise<ServiceResponse>
 }
