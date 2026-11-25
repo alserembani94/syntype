@@ -106,7 +106,11 @@ export function Results({ result: r, isBest, info, run, highlight, onNext, onRet
         <div>
           <dt>characters</dt>
           <dd className="num" title="typed right / wrong / from suggestions / auto-inserted">
-            {r.correct}/{r.incorrect}/{r.suggested}/{r.autoInserted}
+            {/* <wbr>: on the narrowest screens the count may break after a slash. */}
+            {r.correct}/<wbr />
+            {r.incorrect}/<wbr />
+            {r.suggested}/<wbr />
+            {r.autoInserted}
           </dd>
           <dd className="sub">right / wrong / suggested / auto</dd>
         </div>

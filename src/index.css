@@ -167,15 +167,15 @@ svg.chart .raw { fill: none; stroke: var(--muted); stroke-width: 1.8; opacity: .
 svg.chart .dot { fill: var(--accent); }
 svg.chart .er path { stroke: var(--err); stroke-width: 2; stroke-linecap: round; }
 
-.r-row { display: grid; grid-template-columns: minmax(0, 1.7fr) repeat(4, minmax(0, 1fr)); gap: 18px 28px; margin: 0; }
-.r-row:not(.secondary) > :nth-child(3) { min-width: max-content; }
+.r-row { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr) minmax(max-content, 1fr) repeat(2, minmax(0, 1fr)); gap: 18px 28px; margin: 0; }
 .r-row.secondary { grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 2fr); }
 .r-row > div { display: grid; gap: 2px; align-content: start; min-width: 0; }
 .r-row dt { font: 13px var(--f-code); color: var(--muted); }
 .r-row dd { margin: 0; font: 500 15px var(--f-code); }
 .r-row dd.num { font: 700 26px var(--f-display); color: var(--accent); font-variant-numeric: tabular-nums; line-height: 1.15; }
 .r-row dd.num small { font: 400 13px var(--f-code); color: var(--muted); }
-.r-row dd.sub { font: 12px var(--f-code); color: var(--muted); }
+/* Captions wrap to their column instead of widening it (the characters count sets that width). */
+.r-row dd.sub { font: 12px var(--f-code); color: var(--muted); contain: inline-size; }
 .r-row .test dd:not(.sub) { color: var(--accent); }
 .r-row.secondary { padding-top: 18px; border-top: 1px solid var(--line); }
 .r-row.secondary dd.num { font-size: 20px; color: var(--fg); }
@@ -212,6 +212,12 @@ svg.chart .er path { stroke: var(--err); stroke-width: 2; stroke-linecap: round;
 
 footer { color: var(--muted); font-size: 13px; display: flex; gap: 16px; flex-wrap: wrap; }
 
+/* Too narrow for five columns: the test details take their own line above the four numbers. */
+@media (min-width: 641px) and (max-width: 820px) {
+  .r-row:not(.secondary) { grid-template-columns: minmax(0, 1fr) minmax(max-content, 1fr) repeat(2, minmax(0, 1fr)); }
+  .r-row:not(.secondary) .test { grid-column: 1 / -1; }
+}
+
 @media (max-width: 640px) {
   body { padding-block: 18px 28px; }
   .gutter, .code { font-size: 13px; }
@@ -221,7 +227,6 @@ footer { color: var(--muted); font-size: 13px; display: flex; gap: 16px; flex-wr
   .big .v { font-size: 48px; }
   .r-row, .r-row.secondary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 20px; }
   .r-row .test, .r-row .missed { grid-column: 1 / -1; }
-  .r-row:not(.secondary) > :nth-child(3) { min-width: 0; }
   .live .hint, .r-hints { display: none; }
   .modal-backdrop { padding-top: max(16px, env(safe-area-inset-top, 0px)); }
   .results { padding: 20px 16px; }
