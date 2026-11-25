@@ -357,3 +357,38 @@ describe('YAML', () => {
     expect(suggestContext(typeAll(run, 'host: 0.'), cfg)).toBeNull()
   })
 })
+
+describe('PostgreSQL', () => {
+  const pg = getLanguage('postgresql')
+  const pgSetup = (code: string) => ({
+    run: createRun(code, { autoIndent: true, autoClose: false }),
+    cfg: buildSuggestConfig(code, pg, false),
+  })
+
+  it('colours keywords in any case, and types separately', () => {
+    const code = 'select id from users where id::integer > 0'
+    const cls = tokenize(code, pg.highlight)
+    expect(cls[code.indexOf('select')]).toBe('kw')
+    expect(cls[code.indexOf('from')]).toBe('kw')
+    expect(cls[code.indexOf('integer')]).toBe('ty')
+  })
+
+  it('treats a $$ function body as one string', () => {
+    const code = "AS $$\nBEGIN\n  RETURN NEW;\nEND;\n$$;"
+    const cls = tokenize(code, pg.highlight)
+    expect(cls[code.indexOf('RETURN')]).toBe('str')
+  })
+
+  it('offers keywords as written in the snippets, uppercase', () => {
+    const { run, cfg } = pgSetup('SELECT 1;')
+    expect(labels(typeAll(run, 'SEL'), cfg)[0]).toBe('SELECT')
+  })
+
+  it('offers columns typed earlier after an alias and a dot, but not keywords', () => {
+    const code = 'SELECT u.name, u.email\nFROM users AS u;'
+    const { run, cfg } = pgSetup(code)
+    const items = labels(typeAll(run, 'SELECT u.name, u.'), cfg)
+    expect(items).toContain('name')
+    expect(items).not.toContain('SELECT')
+  })
+})

@@ -194,6 +194,8 @@ export function getSuggestions(run: Run, ctx: SuggestContext, cfg: SuggestConfig
     if (!candidates.has(item.label)) candidates.set(item.label, item)
   }
   const known = receiver ? cfg.members.get(receiver) : undefined
+  const keywordSet = new Set(cfg.keywords.map((k) => k.toLowerCase()))
+  const isKeyword = (w: string) => keywordSet.has(w.toLowerCase())
   if (receiver === null) {
     for (const k of cfg.keywords) add({ label: k, kind: 'keyword' })
     for (const g of cfg.globals) add(g)
@@ -209,7 +211,11 @@ export function getSuggestions(run: Run, ctx: SuggestContext, cfg: SuggestConfig
     for (let i = 0; i < ctx.start; i++) text += charAt(run, i) ?? ''
     for (const [w] of text.matchAll(new RegExp(`${cfg.wordChar.source}+`, 'g'))) {
       // VS Code's word-based list leaves out the word being typed.
-      if (!/^\d/.test(w) && w !== prefix) add({ label: w, kind: 'word' })
+      if (/^\d/.test(w) || w === prefix) continue
+      // A keyword never follows a member trigger, so after "." keywords typed
+      // earlier (SQL's FROM, AS) aren't offered as members.
+      if (receiver !== null && isKeyword(w)) continue
+      add({ label: w, kind: 'word' })
     }
   }
 

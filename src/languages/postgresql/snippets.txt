@@ -1,0 +1,144 @@
+=== active_users.sql
+SELECT id, email
+FROM users
+WHERE active = TRUE
+ORDER BY created_at DESC
+LIMIT 10;
+=== count_orders.sql
+SELECT status, count(*) AS total
+FROM orders
+GROUP BY status;
+=== add_column.sql
+ALTER TABLE users
+ADD COLUMN last_login_at timestamptz;
+=== email_index.sql
+CREATE UNIQUE INDEX CONCURRENTLY users_email_key
+ON users (lower(email));
+=== deactivate.sql
+UPDATE users
+SET active = FALSE
+WHERE last_login_at < now() - INTERVAL '1 year';
+=== create_users.sql
+CREATE TABLE users (
+  id bigserial PRIMARY KEY,
+  email text NOT NULL UNIQUE,
+  name text NOT NULL,
+  active boolean NOT NULL DEFAULT TRUE,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+=== order_totals.sql
+SELECT u.name, sum(o.total) AS spent
+FROM users AS u
+JOIN orders AS o ON o.user_id = u.id
+WHERE o.created_at >= date_trunc('month', now())
+GROUP BY u.name
+HAVING sum(o.total) > 100
+ORDER BY spent DESC;
+=== upsert_views.sql
+INSERT INTO page_views (page, day, views)
+VALUES ('/pricing', current_date, 1)
+ON CONFLICT (page, day)
+DO UPDATE SET views = page_views.views + 1
+RETURNING views;
+=== signup_events.sql
+SELECT id, payload ->> 'email' AS email
+FROM events
+WHERE payload @> '{"type": "signup"}'
+  AND created_at > now() - INTERVAL '7 days'
+ORDER BY created_at DESC;
+=== daily_signups.sql
+SELECT day::date, count(u.id) AS signups
+FROM generate_series(now() - INTERVAL '6 days', now(), INTERVAL '1 day') AS day
+LEFT JOIN users AS u ON u.created_at::date = day::date
+GROUP BY day
+ORDER BY day;
+=== transfer.sql
+BEGIN;
+
+UPDATE accounts
+SET balance = balance - 100
+WHERE id = 1 AND balance >= 100;
+
+UPDATE accounts
+SET balance = balance + 100
+WHERE id = 2;
+
+INSERT INTO transfers (from_account, to_account, amount)
+VALUES (1, 2, 100);
+
+COMMIT;
+=== orders_schema.sql
+CREATE TABLE orders (
+  id bigserial PRIMARY KEY,
+  user_id bigint NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  status text NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'paid', 'shipped', 'cancelled')),
+  total numeric(10, 2) NOT NULL CHECK (total >= 0),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX orders_user_id_idx ON orders (user_id);
+CREATE INDEX orders_status_idx ON orders (status) WHERE status <> 'cancelled';
+=== top_customers.sql
+WITH monthly AS (
+  SELECT
+    user_id,
+    date_trunc('month', created_at) AS month,
+    sum(total) AS spent
+  FROM orders
+  WHERE status = 'paid'
+  GROUP BY user_id, month
+),
+ranked AS (
+  SELECT
+    monthly.*,
+    rank() OVER (PARTITION BY month ORDER BY spent DESC) AS position
+  FROM monthly
+)
+SELECT month, user_id, spent
+FROM ranked
+WHERE position <= 3
+ORDER BY month, position;
+=== updated_at_trigger.sql
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  NEW.updated_at := now();
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER users_set_updated_at
+BEFORE UPDATE ON users
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+=== running_balance.sql
+SELECT
+  account_id,
+  created_at,
+  amount,
+  sum(amount) OVER (
+    PARTITION BY account_id
+    ORDER BY created_at
+    ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+  ) AS balance,
+  lag(amount) OVER (PARTITION BY account_id ORDER BY created_at) AS previous
+FROM transactions
+ORDER BY account_id, created_at;
+=== org_chart.sql
+WITH RECURSIVE reports AS (
+  SELECT id, name, manager_id, 1 AS depth
+  FROM employees
+  WHERE manager_id IS NULL
+
+  UNION ALL
+
+  SELECT e.id, e.name, e.manager_id, r.depth + 1
+  FROM employees AS e
+  JOIN reports AS r ON e.manager_id = r.id
+)
+SELECT repeat('-', depth - 1) || name AS employee, depth
+FROM reports
+ORDER BY depth, name;

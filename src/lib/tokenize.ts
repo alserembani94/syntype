@@ -33,16 +33,17 @@ function buildRegex(rules: HighlightRules): RegExp {
   )
 }
 
-const cache = new WeakMap<HighlightRules, { re: RegExp; keywords: Set<string> }>()
+const cache = new WeakMap<HighlightRules, { re: RegExp; keywords: Set<string>; types: Set<string> }>()
 
 /** Splits `code` into coloured tokens using the language's rules. Whitespace is not tokenized. */
 export function tokens(code: string, rules: HighlightRules): Token[] {
   let compiled = cache.get(rules)
   if (!compiled) {
-    compiled = { re: buildRegex(rules), keywords: new Set(rules.keywords) }
+    const norm = (w: string) => (rules.caseInsensitive ? w.toLowerCase() : w)
+    compiled = { re: buildRegex(rules), keywords: new Set(rules.keywords.map(norm)), types: new Set((rules.types ?? []).map(norm)) }
     cache.set(rules, compiled)
   }
-  const { keywords } = compiled
+  const { keywords, types } = compiled
   const re = new RegExp(compiled.re)
   const out: Token[] = []
   let m: RegExpExecArray | null
@@ -52,7 +53,9 @@ export function tokens(code: string, rules: HighlightRules): Token[] {
     else if (m[2]) cls = 'str'
     else if (m[3]) cls = 'num'
     else if (m[4]) {
-      if (keywords.has(m[4])) cls = 'kw'
+      const word = rules.caseInsensitive ? m[4].toLowerCase() : m[4]
+      if (keywords.has(word)) cls = 'kw'
+      else if (types.has(word)) cls = 'ty'
       else if (code[re.lastIndex] === '(') cls = 'fn'
       else if (/^[A-Z]/.test(m[4])) cls = 'ty'
     } else if (m[5]) cls = 'pun'

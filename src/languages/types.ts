@@ -11,6 +11,10 @@ export interface Snippet {
 /** How to colour a language. Everything is optional except keywords. */
 export interface HighlightRules {
   keywords: string[]
+  /** Match keywords and types regardless of case, as SQL does. */
+  caseInsensitive?: boolean
+  /** Built-in type names, coloured as types (e.g. SQL's integer, text, jsonb). */
+  types?: string[]
   /** Line comment starters, e.g. ["//"] or ["#"]. */
   lineComments?: string[]
   /** Block comment pairs, e.g. [["/*", "*\/"]]. */

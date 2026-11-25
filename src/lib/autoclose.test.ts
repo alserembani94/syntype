@@ -236,3 +236,14 @@ describe("YAML auto-close, from VS Code's YAML configuration", () => {
     expect(pendingText(run)).toBe('}}')
   })
 })
+
+describe("PostgreSQL auto-close, from VS Code's SQL configuration", () => {
+  const pg = getLanguage('postgresql')
+  const startPg = (code: string) =>
+    createRun(code, { autoIndent: true, autoClose: true, pairs: computePairs(code, pg) })
+
+  it("closes ' and the N' national-string prefix", () => {
+    expect(pendingText(typeAll(startPg("WHERE status = 'paid';"), "WHERE status = '"))).toBe("'")
+    expect(pendingText(typeAll(startPg("SELECT N'text';"), "SELECT N'"))).toBe("'")
+  })
+})
