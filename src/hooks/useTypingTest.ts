@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useReducer } from 'react'
-import { backspace, counts, createRun, isFinished, typeChar, type Run } from '../lib/engine'
+import { backspace, counts, createRun, isFinished, move, typeChar, type Move, type Run, type RunOptions } from '../lib/engine'
 import { wpm, type Sample } from '../lib/stats'
 import type { Snippet } from '../languages'
 
@@ -21,8 +21,9 @@ export interface TestState {
 }
 
 type Action =
-  | { type: 'load'; snippet: Snippet; autoIndent: boolean }
+  | { type: 'load'; snippet: Snippet; options: RunOptions }
   | { type: 'key'; ch: string; now: number }
+  | { type: 'move'; dir: Move; now: number }
   | { type: 'back'; word: boolean }
   | { type: 'tick'; now: number }
 
@@ -37,10 +38,22 @@ function sample(s: TestState, now: number): Sample {
   }
 }
 
-function init(snippet: Snippet, autoIndent: boolean, runId: number): TestState {
+function finishIfDone(s: TestState, now: number): TestState {
+  if (!isFinished(s.run)) return s
+  return {
+    ...s,
+    phase: 'done',
+    finishedAt: now,
+    samples: [...s.samples, sample(s, now)],
+    intervalTyped: 0,
+    intervalErrors: 0,
+  }
+}
+
+function init(snippet: Snippet, options: RunOptions, runId: number): TestState {
   return {
     snippet,
-    run: createRun(snippet.code, autoIndent),
+    run: createRun(snippet.code, options),
     phase: 'ready',
     startedAt: 0,
     finishedAt: 0,
@@ -55,7 +68,7 @@ function init(snippet: Snippet, autoIndent: boolean, runId: number): TestState {
 function reducer(s: TestState, a: Action): TestState {
   switch (a.type) {
     case 'load':
-      return init(a.snippet, a.autoIndent, s.runId + 1)
+      return init(a.snippet, a.options, s.runId + 1)
 
     case 'key': {
       if (s.phase === 'done') return s
@@ -70,15 +83,12 @@ function reducer(s: TestState, a: Action): TestState {
         intervalTyped: s.intervalTyped + 1,
         intervalErrors: s.intervalErrors + (run.correctKeystrokes === before ? 1 : 0),
       }
-      if (!isFinished(run)) return next
-      return {
-        ...next,
-        phase: 'done',
-        finishedAt: a.now,
-        samples: [...next.samples, sample(next, a.now)],
-        intervalTyped: 0,
-        intervalErrors: 0,
-      }
+      return finishIfDone(next, a.now)
+    }
+
+    case 'move': {
+      if (s.phase !== 'running') return s
+      return finishIfDone({ ...s, run: move(s.run, a.dir), now: a.now }, a.now)
     }
 
     case 'back':
@@ -97,8 +107,8 @@ function reducer(s: TestState, a: Action): TestState {
   }
 }
 
-export function useTypingTest(first: Snippet, autoIndent: boolean) {
-  const [state, dispatch] = useReducer(reducer, undefined, () => init(first, autoIndent, 0))
+export function useTypingTest(first: Snippet, options: RunOptions) {
+  const [state, dispatch] = useReducer(reducer, undefined, () => init(first, options, 0))
 
   // One sample per second while the clock runs.
   useEffect(() => {
@@ -107,15 +117,13 @@ export function useTypingTest(first: Snippet, autoIndent: boolean) {
     return () => clearInterval(id)
   }, [state.phase, state.runId])
 
-  const load = useCallback(
-    (snippet: Snippet, indent: boolean) => dispatch({ type: 'load', snippet, autoIndent: indent }),
-    [],
-  )
+  const load = useCallback((snippet: Snippet, opts: RunOptions) => dispatch({ type: 'load', snippet, options: opts }), [])
+  const moveCaret = useCallback((dir: Move) => dispatch({ type: 'move', dir, now: performance.now() }), [])
   const type = useCallback((ch: string) => dispatch({ type: 'key', ch, now: performance.now() }), [])
   const back = useCallback((word: boolean) => dispatch({ type: 'back', word }), [])
 
   const elapsed =
     state.phase === 'ready' ? 0 : ((state.phase === 'done' ? state.finishedAt : state.now) - state.startedAt) / 1000
 
-  return { state, elapsed, load, type, back }
+  return { state, elapsed, load, type, back, move: moveCaret }
 }

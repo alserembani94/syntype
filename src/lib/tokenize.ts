@@ -2,6 +2,13 @@ import type { HighlightRules } from '../languages/types'
 
 export type TokenClass = '' | 'kw' | 'str' | 'num' | 'fn' | 'ty' | 'com' | 'pun'
 
+export interface Token {
+  start: number
+  /** Exclusive. */
+  end: number
+  cls: TokenClass
+}
+
 const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')
 
 function buildRegex(rules: HighlightRules): RegExp {
@@ -28,8 +35,8 @@ function buildRegex(rules: HighlightRules): RegExp {
 
 const cache = new WeakMap<HighlightRules, { re: RegExp; keywords: Set<string> }>()
 
-/** Returns one token class per character of `code`, using the language's rules. */
-export function tokenize(code: string, rules: HighlightRules): TokenClass[] {
+/** Splits `code` into coloured tokens using the language's rules. Whitespace is not tokenized. */
+export function tokens(code: string, rules: HighlightRules): Token[] {
   let compiled = cache.get(rules)
   if (!compiled) {
     compiled = { re: buildRegex(rules), keywords: new Set(rules.keywords) }
@@ -37,19 +44,26 @@ export function tokenize(code: string, rules: HighlightRules): TokenClass[] {
   }
   const { keywords } = compiled
   const re = new RegExp(compiled.re)
-  const classes: TokenClass[] = new Array(code.length).fill('')
+  const out: Token[] = []
   let m: RegExpExecArray | null
   while ((m = re.exec(code))) {
-    let c: TokenClass = ''
-    if (m[1]) c = 'com'
-    else if (m[2]) c = 'str'
-    else if (m[3]) c = 'num'
+    let cls: TokenClass = ''
+    if (m[1]) cls = 'com'
+    else if (m[2]) cls = 'str'
+    else if (m[3]) cls = 'num'
     else if (m[4]) {
-      if (keywords.has(m[4])) c = 'kw'
-      else if (code[re.lastIndex] === '(') c = 'fn'
-      else if (/^[A-Z]/.test(m[4])) c = 'ty'
-    } else if (m[5]) c = 'pun'
-    for (let i = m.index; i < re.lastIndex; i++) classes[i] = c
+      if (keywords.has(m[4])) cls = 'kw'
+      else if (code[re.lastIndex] === '(') cls = 'fn'
+      else if (/^[A-Z]/.test(m[4])) cls = 'ty'
+    } else if (m[5]) cls = 'pun'
+    out.push({ start: m.index, end: re.lastIndex, cls })
   }
+  return out
+}
+
+/** Returns one token class per character of `code`. */
+export function tokenize(code: string, rules: HighlightRules): TokenClass[] {
+  const classes: TokenClass[] = new Array(code.length).fill('')
+  for (const t of tokens(code, rules)) classes.fill(t.cls, t.start, t.end)
   return classes
 }

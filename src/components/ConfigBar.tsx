@@ -7,12 +7,24 @@ interface Props {
   language: Language
   length: LengthFilter
   autoIndent: boolean
+  autoClose: boolean
   onLanguage: (id: string) => void
   onLength: (l: LengthFilter) => void
   onToggleIndent: () => void
+  onToggleClose: () => void
 }
 
-export function ConfigBar({ languages, language, length, autoIndent, onLanguage, onLength, onToggleIndent }: Props) {
+export function ConfigBar({
+  languages,
+  language,
+  length,
+  autoIndent,
+  autoClose,
+  onLanguage,
+  onLength,
+  onToggleIndent,
+  onToggleClose,
+}: Props) {
   return (
     <div className="config" role="toolbar" aria-label="Test settings">
       <div className="group">
@@ -46,6 +58,15 @@ export function ConfigBar({ languages, language, length, autoIndent, onLanguage,
           onClick={onToggleIndent}
         >
           auto-indent
+        </button>
+        <button
+          id="opt-close"
+          className="chip"
+          aria-pressed={autoClose}
+          title="Insert closing brackets and quotes as you type, like VS Code"
+          onClick={onToggleClose}
+        >
+          auto-close
         </button>
       </div>
     </div>

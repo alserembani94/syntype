@@ -12,18 +12,18 @@ describe('engine', () => {
   const code = 'if (a) {\n  go();\n}'
 
   it('skips indentation after Enter when auto-indent is on', () => {
-    const run = typeAll(createRun(code, true), 'if (a) {\n')
+    const run = typeAll(createRun(code, { autoIndent: true, autoClose: false }), 'if (a) {\n')
     expect(run.chars[run.pos]).toBe('g')
     expect(run.states.slice(9, 11)).toEqual(['auto', 'auto'])
   })
 
   it('makes you type indentation when auto-indent is off', () => {
-    const run = typeAll(createRun(code, false), 'if (a) {\n')
+    const run = typeAll(createRun(code, { autoIndent: false, autoClose: false }), 'if (a) {\n')
     expect(run.chars[run.pos]).toBe(' ')
   })
 
   it('finishes a clean run with 100% accuracy and no auto chars counted', () => {
-    const run = typeAll(createRun(code, true), 'if (a) {\ngo();\n}')
+    const run = typeAll(createRun(code, { autoIndent: true, autoClose: false }), 'if (a) {\ngo();\n}')
     expect(isFinished(run)).toBe(true)
     expect(counts(run)).toEqual({ correct: code.length - 2, incorrect: 0 })
     const r = summarize(run, 6, [])
@@ -32,7 +32,7 @@ describe('engine', () => {
   })
 
   it('records mistakes against the expected key, including symbols', () => {
-    const run = typeAll(createRun('a;', true), 'a:')
+    const run = typeAll(createRun('a;', { autoIndent: true, autoClose: false }), 'a:')
     expect(run.states).toEqual(['ok', 'bad'])
     expect(run.missed).toEqual({ ';': 1 })
     expect(run.symbolTotal).toBe(1)
@@ -40,14 +40,14 @@ describe('engine', () => {
   })
 
   it('backspace from the start of an indented line goes back over the indent and newline', () => {
-    let run = typeAll(createRun(code, true), 'if (a) {\n')
+    let run = typeAll(createRun(code, { autoIndent: true, autoClose: false }), 'if (a) {\n')
     run = backspace(run)
     expect(run.pos).toBe(8)
     expect(run.states[9]).toBeUndefined()
   })
 
   it('backspace keeps keystroke history, so corrections still cost accuracy', () => {
-    let run = typeAll(createRun('ab', true), 'x')
+    let run = typeAll(createRun('ab', { autoIndent: true, autoClose: false }), 'x')
     run = backspace(run)
     run = typeAll(run, 'ab')
     expect(counts(run)).toEqual({ correct: 2, incorrect: 0 })
@@ -55,13 +55,13 @@ describe('engine', () => {
   })
 
   it('ctrl+backspace deletes the current word', () => {
-    let run = typeAll(createRun('const value = 1', true), 'const valu')
+    let run = typeAll(createRun('const value = 1', { autoIndent: true, autoClose: false }), 'const valu')
     run = backspace(run, true)
     expect(run.pos).toBe(6)
   })
 
   it('reports line and column', () => {
-    const run = typeAll(createRun(code, true), 'if (a) {\ngo')
+    const run = typeAll(createRun(code, { autoIndent: true, autoClose: false }), 'if (a) {\ngo')
     expect(caretPosition(run)).toEqual({ line: 2, col: 5 })
   })
 })

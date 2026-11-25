@@ -16,5 +16,14 @@ export const javascript: Language = {
     strings: ['"', "'"],
     multilineStrings: ['`'],
   },
+  // From VS Code's JavaScript language configuration.
+  autoClosingPairs: [
+    { open: '{', close: '}' },
+    { open: '[', close: ']' },
+    { open: '(', close: ')' },
+    { open: "'", close: "'", notIn: ['string', 'comment'] },
+    { open: '"', close: '"', notIn: ['string'] },
+    { open: '`', close: '`', notIn: ['string', 'comment'] },
+  ],
   snippets: parseSnippets(raw),
 }

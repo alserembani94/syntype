@@ -21,6 +21,13 @@ export interface HighlightRules {
   multilineStrings?: string[]
 }
 
+/** Same shape as VS Code's language-configuration `autoClosingPairs`. */
+export interface AutoClosingPair {
+  open: string
+  close: string
+  notIn?: ('string' | 'comment')[]
+}
+
 export interface Language {
   /** Stable id, used in storage keys. */
   id: string
@@ -29,5 +36,9 @@ export interface Language {
   /** File extension without the dot, e.g. "js". */
   extension: string
   highlight: HighlightRules
+  /** What auto-closes, as in VS Code. Defaults to (), [] and {}. */
+  autoClosingPairs?: AutoClosingPair[]
+  /** Characters after the caret that allow auto-closing. Defaults to VS Code's. */
+  autoCloseBefore?: string
   snippets: Snippet[]
 }

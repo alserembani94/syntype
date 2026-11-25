@@ -15,6 +15,13 @@ Other scripts: `npm test` (engine tests, Vitest), `npm run build`, `npm run lint
 
 - The timer starts on your first key. `Esc` loads a new snippet.
 - **Auto-indent** (on by default) skips the leading spaces after Enter, the way an editor would. Skipped spaces don't count toward your score. With it off, you type the indentation, and Tab inserts 2 spaces.
+- **Auto-close** (on by default) behaves like VS Code:
+  - Typing `(`, `[`, `{` or a quote inserts the closer after the caret (highlighted). Type the closer to step over it, or press `→` / `End` to move past it.
+  - Enter between `{` and its closer moves the closer down onto its own line. At the end of the block press `↓` to move past it. Pressing Enter there counts as a mistake, because VS Code would add a blank line.
+  - VS Code's rules apply: quotes don't auto-close inside strings, `'` and `` ` `` don't inside comments, and no quote closes right after a letter or digit. Nothing auto-closes unless the next character is whitespace, end of line or one of `;:.,=}])>`.
+  - Backspace on an opener also removes the closer it inserted.
+  - The one difference from VS Code: a mistyped opener doesn't auto-close anything.
+  - Closers you move past with `→`, `End` or `↓` don't count toward WPM. Personal bests are kept separately with auto-close on and off.
 - `Ctrl+Backspace` deletes a word.
 - WPM is correct characters ÷ 5 per minute. Accuracy counts every keystroke, so fixed mistakes still cost you.
 - Results show raw WPM, symbol accuracy (brackets, `=>`, `;` and so on), a speed-over-time chart, and the keys you missed most.
@@ -31,7 +38,8 @@ src/
     javascript/
       index.ts          name, extension and highlighting rules
       snippets.txt      the snippets: "=== name.js" header, then the code
-  lib/engine.ts         pure typing engine (type, backspace, auto-indent, counts)
+  lib/engine.ts         pure typing engine (type, backspace, auto-indent, auto-close, →/End/↓)
+  lib/pairs.ts          matches brackets and quotes per snippet, with VS Code's auto-close rules
   lib/stats.ts          WPM, accuracy and the results summary
   lib/tokenize.ts       highlighter driven by a language's HighlightRules
   hooks/useTypingTest.ts  engine + clock as a React reducer
@@ -42,7 +50,7 @@ src/
 ## Adding a language
 
 1. Create `src/languages/<id>/snippets.txt` with snippets in the format below. Name each file with the language's extension.
-2. Create `src/languages/<id>/index.ts`, copying `javascript/index.ts` and changing `id`, `name`, `extension` and `highlight` (keywords, comment and string syntax).
+2. Create `src/languages/<id>/index.ts`, copying `javascript/index.ts` and changing `id`, `name`, `extension`, `highlight` (keywords, comment and string syntax) and `autoClosingPairs`. Copy `autoClosingPairs` from the language's VS Code `language-configuration.json` so auto-close matches the editor.
 3. Add it to `LANGUAGES` in `src/languages/index.ts`.
 
 It then appears in the language picker. `npm test` checks every registered language's snippets.

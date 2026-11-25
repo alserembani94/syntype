@@ -2,28 +2,53 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { getLanguage, LANGUAGES, pickSnippet, type LengthFilter, type Snippet } from './languages'
 import { useTypingTest } from './hooks/useTypingTest'
 import { accuracy, MIN_ACCURACY_FOR_BEST, summarize, wpm } from './lib/stats'
-import { caretPosition, counts } from './lib/engine'
+import { atPending, caretPosition, counts, type RunOptions } from './lib/engine'
+import { computePairs } from './lib/pairs'
 import { load, save } from './lib/storage'
 import { CodeView } from './components/CodeView'
 import { ConfigBar } from './components/ConfigBar'
 import { Results } from './components/Results'
 
-/** Personal bests keyed by "languageId:length". */
+interface Settings {
+  languageId: string
+  length: LengthFilter
+  autoIndent: boolean
+  autoClose: boolean
+}
+
+/** Personal bests keyed by "languageId:length", plus ":autoclose" when it was on. */
 type Bests = Record<string, number>
-const bestKey = (languageId: string, length: LengthFilter) => `${languageId}:${length}`
+const bestKey = (s: Settings) => `${s.languageId}:${s.length}${s.autoClose ? ':autoclose' : ''}`
+
+const runOptions = (snippet: Snippet, s: Settings): RunOptions => ({
+  autoIndent: s.autoIndent,
+  autoClose: s.autoClose,
+  pairs: s.autoClose ? computePairs(snippet.code, getLanguage(s.languageId)) : undefined,
+})
+
+const NAV_KEYS: Record<string, 'right' | 'end' | 'down'> = { ArrowRight: 'right', End: 'end', ArrowDown: 'down' }
 
 export default function App() {
   const [languageId, setLanguageId] = useState(() => getLanguage(load('language', '')).id)
   const language = getLanguage(languageId)
   const [length, setLength] = useState<LengthFilter>(() => load('length', 'medium'))
   const [autoIndent, setAutoIndent] = useState(() => load('autoIndent', true))
+  const [autoClose, setAutoClose] = useState(() => load('autoClose', true))
+  const settings: Settings = { languageId, length, autoIndent, autoClose }
   const [bests, setBests] = useState<Bests>(() => load('bests', {}))
   const [firstSnippet] = useState(() => pickSnippet(language.snippets, length))
-  const { state, elapsed, load: loadSnippet, type, back } = useTypingTest(firstSnippet, autoIndent)
-  const [bestAtStart, setBestAtStart] = useState(() => bests[bestKey(languageId, length)] ?? 0)
+  const {
+    state,
+    elapsed,
+    load: loadSnippet,
+    type,
+    back,
+    move,
+  } = useTypingTest(firstSnippet, runOptions(firstSnippet, settings))
+  const [bestAtStart, setBestAtStart] = useState(() => bests[bestKey(settings)] ?? 0)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const { run, phase, snippet } = state
-  const currentKey = bestKey(languageId, length)
+  const currentKey = bestKey(settings)
 
   const result = useMemo(
     () => (phase === 'done' ? summarize(run, elapsed, state.samples) : null),
@@ -41,13 +66,14 @@ export default function App() {
   }, [isBest, currentBests])
 
   const start = useCallback(
-    (s: Snippet, opts: { languageId?: string; length?: LengthFilter; autoIndent?: boolean } = {}) => {
+    (s: Snippet, changes: Partial<Settings> = {}) => {
+      const upcoming: Settings = { languageId, length, autoIndent, autoClose, ...changes }
       setBests(currentBests)
-      setBestAtStart(currentBests[bestKey(opts.languageId ?? languageId, opts.length ?? length)] ?? 0)
-      loadSnippet(s, opts.autoIndent ?? autoIndent)
+      setBestAtStart(currentBests[bestKey(upcoming)] ?? 0)
+      loadSnippet(s, runOptions(s, upcoming))
       inputRef.current?.focus({ preventScroll: true })
     },
-    [languageId, length, autoIndent, currentBests, loadSnippet],
+    [languageId, length, autoIndent, autoClose, currentBests, loadSnippet, setBests],
   )
   const next = useCallback(
     () => start(pickSnippet(language.snippets, length, snippet.name)),
@@ -56,9 +82,9 @@ export default function App() {
   const retry = useCallback(() => start(snippet), [start, snippet])
 
   // Keyboard: the whole page listens, so typing works without clicking first.
-  const latest = useRef({ phase, autoIndent, next, retry, type, back })
+  const latest = useRef({ phase, autoIndent, next, retry, type, back, move })
   useLayoutEffect(() => {
-    latest.current = { phase, autoIndent, next, retry, type, back }
+    latest.current = { phase, autoIndent, next, retry, type, back, move }
   })
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -87,6 +113,9 @@ export default function App() {
         s.back(e.ctrlKey || e.altKey || e.metaKey)
       } else if ((e.ctrlKey && !e.altKey) || e.metaKey) {
         return // leave browser shortcuts alone
+      } else if (NAV_KEYS[e.key] && !e.shiftKey && !e.altKey) {
+        e.preventDefault()
+        s.move(NAV_KEYS[e.key])
       } else if (e.key === 'Enter') {
         e.preventDefault()
         s.type('\n')
@@ -130,6 +159,12 @@ export default function App() {
     save('autoIndent', v)
     start(snippet, { autoIndent: v })
   }
+  const toggleClose = () => {
+    const v = !autoClose
+    setAutoClose(v)
+    save('autoClose', v)
+    start(snippet, { autoClose: v })
+  }
 
   const liveWpm = Math.round(wpm(counts(run).correct, elapsed))
   const { line, col } = caretPosition(run)
@@ -149,9 +184,11 @@ export default function App() {
           language={language}
           length={length}
           autoIndent={autoIndent}
+          autoClose={autoClose}
           onLanguage={changeLanguage}
           onLength={changeLength}
           onToggleIndent={toggleIndent}
+          onToggleClose={toggleClose}
         />
       </header>
 
@@ -165,8 +202,20 @@ export default function App() {
         <span>
           <b>{Math.round(accuracy(run))}</b> %
         </span>
-        <span className="hint">
-          <kbd>esc</kbd> new snippet · timer starts on your first key
+        <span className={`hint${atPending(run) ? ' attention' : ''}`}>
+          {!atPending(run) ? (
+            <>
+              <kbd>esc</kbd> new snippet · timer starts on your first key
+            </>
+          ) : run.chars[run.pos] === '\n' ? (
+            <>
+              auto-closed below · <kbd>↓</kbd> to move past it
+            </>
+          ) : (
+            <>
+              auto-closed · type it, or <kbd>→</kbd> <kbd>end</kbd> to move past
+            </>
+          )}
         </span>
       </div>
 
@@ -200,7 +249,7 @@ export default function App() {
             {run.pos} / {run.chars.length} chars
           </span>
           <span className="push">
-            best ({language.name}, {length}): {best ? `${Math.round(best)} wpm` : '—'}
+            best ({language.name}, {length}{autoClose ? ', auto-close' : ''}): {best ? `${Math.round(best)} wpm` : '—'}
           </span>
           <span>Spaces: 2</span>
           <span>UTF-8</span>
