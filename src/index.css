@@ -105,6 +105,8 @@ kbd { font: 600 11px var(--f-code); border: 1px solid var(--line); border-bottom
 
 .statusbar { display: flex; gap: 18px; flex-wrap: wrap; padding: 7px 14px; border-top: 1px solid var(--line); background: var(--surface-2); font: 12px var(--f-code); color: var(--muted); }
 .statusbar .push { margin-left: auto; }
+.statusbar .service.starting { color: var(--accent); }
+.statusbar .service.failed { color: var(--err); }
 
 /* results: score on the left, chart on the right, then plain label/value rows */
 .results { padding: 26px 26px 22px; display: grid; gap: 24px; }
@@ -200,7 +202,9 @@ footer { color: var(--muted); font-size: 13px; display: flex; gap: 16px; flex-wr
 .suggest .icon.word, .suggest .icon.module { color: var(--muted); }
 .suggest .icon.function, .suggest .icon.method { color: var(--tok-fn); font-size: 13px; }
 .suggest .icon.variable { color: var(--tok-num); }
-.suggest .icon.class { color: var(--tok-ty); }
+.suggest .icon.class, .suggest .icon.interface, .suggest .icon.type, .suggest .icon.typeParameter { color: var(--tok-ty); }
+.suggest .icon.enum, .suggest .icon.enumMember { color: var(--tok-num); }
+.suggest .icon.string { color: var(--tok-str); }
 .suggest .icon.property { color: var(--tok-str); }
 .suggest .label { overflow: hidden; text-overflow: ellipsis; font-variant-ligatures: none; }
 .suggest .label b { color: var(--accent); font-weight: 600; }

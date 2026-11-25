@@ -30,6 +30,7 @@ export const javascript: Language = {
     wordChar: /[\w$]/,
     memberTriggers: ['.'],
     packs: [builtins, react, express],
+    memberCommitCharacters: ['.', ',', ';', '('],
   },
   snippets: parseSnippets(raw),
 }

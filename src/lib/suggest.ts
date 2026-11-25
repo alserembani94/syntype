@@ -10,12 +10,19 @@
 import type { Run } from './engine'
 import type { CompletionItem, Language, SuggestionKind } from '../languages/types'
 import { tokenize } from './tokenize'
+import type { CompletionService, ServiceEntry } from './service'
 
 export type { SuggestionKind }
 
 export interface Suggestion {
+  /** What the list shows, e.g. "email?" for an optional member. */
   label: string
+  /** What accepting inserts, when it differs from the label. */
+  insertText?: string
   kind: SuggestionKind
+  /** Characters that accept this item and are then typed (VS Code commit characters). */
+  commit?: string[]
+  preselect?: boolean
   /** Where it comes from, e.g. "react" or "Math". */
   detail?: string
   score: number
@@ -36,10 +43,14 @@ export interface SuggestConfig {
   members: Map<string, Item[]>
   /** Per snippet position: true inside strings and comments, where VS Code shows no quick suggestions. */
   quiet: boolean[]
+  memberCommitCharacters: string[]
+  /** The language's completion service, if it has one. */
+  service: CompletionService | null
+  triggerCharacters: string[]
 }
 
 /** Builds the suggestion setup for one snippet in one language. */
-export function buildSuggestConfig(code: string, lang: Language): SuggestConfig {
+export function buildSuggestConfig(code: string, lang: Language, withService = true): SuggestConfig {
   const classes = tokenize(code, lang.highlight)
   const packs = (lang.completion?.packs ?? []).filter((p) => !p.detect || p.detect.test(code))
   const globals: Item[] = []
@@ -58,7 +69,50 @@ export function buildSuggestConfig(code: string, lang: Language): SuggestConfig 
     globals,
     members,
     quiet: classes.map((c) => c === 'str' || c === 'com'),
+    memberCommitCharacters: lang.completion?.memberCommitCharacters ?? [],
+    service: withService ? (lang.completion?.service?.() ?? null) : null,
+    triggerCharacters: lang.completion?.triggerCharacters ?? [],
   }
+}
+
+/**
+ * The editor buffer a real editor would hold: what's on screen before the
+ * caret, plus auto-inserted text after it. The rest of the snippet hasn't been
+ * written yet, so it isn't there.
+ */
+export function bufferText(run: Run): { text: string; offset: number } {
+  let text = ''
+  let offset = 0
+  for (let i = 0; i < run.chars.length; i++) {
+    const s = run.states[i]
+    const ch = s === 'ok' || s === 'bad' ? run.typed[i] : s === 'auto' || s === 'skipped' || s === 'pending' ? run.chars[i] : undefined
+    if (ch === undefined) continue
+    text += ch
+    if (i < run.pos) offset = text.length
+  }
+  return { text, offset }
+}
+
+/** Filters and ranks a service's entries for the letters typed so far, as VS Code does. */
+export function filterEntries(entries: ServiceEntry[], prefix: string): Suggestion[] {
+  const out: (Suggestion & { sortText: string; name: string })[] = []
+  for (const e of entries) {
+    const m = fuzzyMatch(prefix, e.name)
+    if (!m) continue
+    out.push({
+      label: e.optional ? `${e.name}?` : e.name,
+      insertText: e.optional ? e.name : undefined,
+      name: e.name,
+      kind: e.kind,
+      commit: e.commit,
+      preselect: e.preselect,
+      sortText: e.sortText,
+      ...m,
+    })
+  }
+  // VS Code: match score, then the service's sortText, then the label.
+  out.sort((a, b) => b.score - a.score || a.sortText.localeCompare(b.sortText) || a.name.localeCompare(b.name))
+  return out.slice(0, MAX_SUGGESTIONS)
 }
 
 /** The list is capped; VS Code shows a scrolling window onto it. */
@@ -154,14 +208,18 @@ export function getSuggestions(run: Run, ctx: SuggestContext, cfg: SuggestConfig
     let text = ''
     for (let i = 0; i < ctx.start; i++) text += charAt(run, i) ?? ''
     for (const [w] of text.matchAll(new RegExp(`${cfg.wordChar.source}+`, 'g'))) {
-      if (!/^\d/.test(w) && w !== prefix) add({ label: w, kind: 'word' })
+      // VS Code's word-based list leaves out the word being typed. In a member
+      // list it stays, as TypeScript would list it, so a commit character never
+      // swaps a finished name for a longer one.
+      if (!/^\d/.test(w) && (w !== prefix || receiver !== null)) add({ label: w, kind: 'word' })
     }
   }
 
+  const commit = receiver !== null && cfg.memberCommitCharacters.length ? cfg.memberCommitCharacters : undefined
   const out: Suggestion[] = []
   for (const item of candidates.values()) {
     const m = fuzzyMatch(prefix, item.label)
-    if (m) out.push({ ...item, ...m })
+    if (m) out.push({ ...item, ...m, commit })
   }
   // Ties go the way TypeScript's sortText sends them in VS Code: names from the
   // file before globals and keywords, then alphabetical.
@@ -236,5 +294,8 @@ export function fuzzyMatch(pattern: string, word: string): { score: number; matc
   for (let i = 0, j = start; i < P; j = next[i][j], i++) matches.push(j)
   // A match from the very first letter reads as a prefix; favour it like VS Code does.
   if (start === 0) score += 4
+  // VS Code's boostFullMatch: the whole word typed beats longer words it's a prefix of,
+  // so a commit character after "fetch" commits fetch, not fetchUser.
+  if (P === W) score += 3
   return { score, matches }
 }

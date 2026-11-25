@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { getLanguage, LANGUAGES, pickSnippet, type LengthFilter, type Snippet } from './languages'
 import { useTypingTest, type TestOptions } from './hooks/useTypingTest'
 import { isTouch, usePageFocus } from './hooks/usePageFocus'
@@ -177,6 +177,21 @@ export default function App() {
   }, [focused, pause, resume])
   const overlay = phase === 'done' || focused ? null : phase === 'running' ? 'paused' : 'start'
 
+  // Language service status, shown in the status bar like VS Code's.
+  const service = state.suggestConfig?.service ?? null
+  const serviceStatus = useSyncExternalStore(
+    useCallback((cb: () => void) => (service ? service.onStatus(cb) : () => {}), [service]),
+    () => service?.status() ?? null,
+  )
+  const serviceLabel =
+    serviceStatus === 'starting'
+      ? `${language.name} IntelliSense starting…`
+      : serviceStatus === 'failed'
+        ? `${language.name} IntelliSense unavailable, using basic suggestions`
+        : serviceStatus === 'ready'
+          ? `${language.name} IntelliSense`
+          : null
+
   const onMobileInput = (text: string, deleted: boolean) => {
     if (deleted) back(false)
     for (const ch of text) type(ch)
@@ -322,6 +337,11 @@ export default function App() {
             {phase === 'done' &&
               `best (${[language.name, length, autoClose && 'auto-close', intellisense && 'intellisense'].filter(Boolean).join(', ')}): ${best ? `${Math.round(best)} wpm` : '—'}`}
           </span>
+          {serviceLabel && (
+            <span className={`service ${serviceStatus}`} title="Type-aware suggestions from the language's own service">
+              {serviceLabel}
+            </span>
+          )}
           <span>Spaces: 2</span>
           <span>UTF-8</span>
         </div>

@@ -1,0 +1,195 @@
+=== displayName.ts
+interface User {
+  id: number;
+  name: string;
+  email?: string;
+}
+
+function displayName(user: User): string {
+  return user.email ? `${user.name} <${user.email}>` : user.name;
+}
+=== result.ts
+type Result<T, E = Error> =
+  | { ok: true; value: T }
+  | { ok: false; error: E };
+
+function unwrap<T>(result: Result<T>): T {
+  if (result.ok) return result.value;
+  throw result.error;
+}
+=== area.ts
+type Shape =
+  | { kind: "circle"; radius: number }
+  | { kind: "rect"; width: number; height: number };
+
+function area(shape: Shape): number {
+  switch (shape.kind) {
+    case "circle":
+      return Math.PI * shape.radius ** 2;
+    case "rect":
+      return shape.width * shape.height;
+  }
+}
+=== first.ts
+function first<T>(items: readonly T[]): T | undefined {
+  return items[0];
+}
+=== groupBy.ts
+function groupBy<T, K extends string>(items: T[], key: (item: T) => K) {
+  const groups = {} as Record<K, T[]>;
+  for (const item of items) {
+    (groups[key(item)] ??= []).push(item);
+  }
+  return groups;
+}
+=== Stack.ts
+class Stack<T> {
+  private items: T[] = [];
+
+  push(item: T): this {
+    this.items.push(item);
+    return this;
+  }
+
+  pop(): T | undefined {
+    return this.items.pop();
+  }
+
+  get size(): number {
+    return this.items.length;
+  }
+}
+=== canEdit.ts
+enum Role {
+  Admin = "admin",
+  Editor = "editor",
+  Viewer = "viewer",
+}
+
+const canEdit = (role: Role) => role === Role.Admin || role === Role.Editor;
+=== isString.ts
+function isString(value: unknown): value is string {
+  return typeof value === "string";
+}
+=== toggle.ts
+interface Todo {
+  id: number;
+  title: string;
+  done: boolean;
+}
+
+function toggle(todos: Todo[], id: number): Todo[] {
+  return todos.map((todo) =>
+    todo.id === id ? { ...todo, done: !todo.done } : todo
+  );
+}
+=== settings.ts
+interface Settings {
+  theme: "light" | "dark";
+  fontSize: number;
+  autosave: boolean;
+}
+
+function update(settings: Settings, patch: Partial<Settings>): Settings {
+  return { ...settings, ...patch };
+}
+=== fetchUser.ts
+interface User {
+  id: number;
+  name: string;
+}
+
+async function fetchUser(id: number): Promise<User> {
+  const res = await fetch(`/api/users/${id}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return (await res.json()) as User;
+}
+=== Emitter.ts
+class Emitter<E extends Record<string, unknown>> {
+  private handlers: { [K in keyof E]?: ((payload: E[K]) => void)[] } = {};
+
+  on<K extends keyof E>(event: K, handler: (payload: E[K]) => void) {
+    (this.handlers[event] ??= []).push(handler);
+  }
+
+  emit<K extends keyof E>(event: K, payload: E[K]) {
+    this.handlers[event]?.forEach((handler) => handler(payload));
+  }
+}
+=== useToggle.ts
+import { useCallback, useState } from "react";
+
+export function useToggle(initial = false): [boolean, () => void] {
+  const [on, setOn] = useState(initial);
+  const toggle = useCallback(() => setOn((value) => !value), []);
+  return [on, toggle];
+}
+=== distance.ts
+interface Point {
+  readonly x: number;
+  readonly y: number;
+}
+
+const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y);
+=== cartTotal.ts
+interface Product {
+  name: string;
+  price: number;
+}
+
+interface CartLine {
+  product: Product;
+  quantity: number;
+}
+
+const total = (lines: CartLine[]) =>
+  lines.reduce((sum, line) => sum + line.product.price * line.quantity, 0);
+=== Account.ts
+abstract class Account {
+  constructor(protected balance: number) {}
+
+  abstract fee(): number;
+
+  withdraw(amount: number): void {
+    if (amount + this.fee() > this.balance) {
+      throw new Error("Insufficient funds");
+    }
+    this.balance -= amount + this.fee();
+  }
+}
+=== pluck.ts
+function pluck<T, K extends keyof T>(items: T[], key: K): T[K][] {
+  return items.map((item) => item[key]);
+}
+=== config.ts
+const defaults = {
+  port: 3000,
+  host: "localhost",
+  debug: false,
+} satisfies Record<string, string | number | boolean>;
+
+type Config = typeof defaults;
+=== labels.ts
+type Status = "idle" | "loading" | "success" | "error";
+
+const labels: Record<Status, string> = {
+  idle: "Waiting",
+  loading: "Loading",
+  success: "Done",
+  error: "Failed",
+};
+=== debounce.ts
+function debounce<A extends unknown[]>(fn: (...args: A) => void, wait = 200) {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  return (...args: A) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), wait);
+  };
+}
+=== redact.ts
+type Credentials = { email: string; password: string; remember: boolean };
+type PublicCredentials = Omit<Credentials, "password">;
+
+function redact({ password, ...rest }: Credentials): PublicCredentials {
+  return rest;
+}

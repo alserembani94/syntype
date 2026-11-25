@@ -1,6 +1,6 @@
 # Syntype
 
-A typing speed test for code, in the spirit of monkeytype. It uses real code snippets, colours them like an editor, and reports how fast and how accurately you type them. JavaScript is the only language so far; the game is built so more can be added.
+A typing speed test for code, in the spirit of monkeytype. It uses real code snippets, colours them like an editor, and reports how fast and how accurately you type them. Languages: JavaScript and TypeScript. The game is built so more can be added.
 
 ## Run it
 
@@ -32,6 +32,8 @@ Other scripts: `npm test` (engine tests, Vitest), `npm run build`, `npm run lint
   - The list opens as you type a word, but not inside strings or comments (VS Code's `quickSuggestions` defaults). Matching is fuzzy, so `uC` finds `useCallback`.
   - `Tab` or `Enter` accepts, `↑`/`↓` choose and `Esc` closes. Clicking or tapping a row also accepts. As in VS Code (`acceptSuggestionOnEnter: "on"`), Enter accepts even when the word is already complete. Press `Esc` first if you want a new line.
   - Accepting a wrong suggestion inserts it anyway, and its letters are checked like typed ones.
+- **TypeScript IntelliSense is type-aware.** TypeScript snippets get suggestions from TypeScript's real language service, the engine VS Code uses, running in a Web Worker. It knows the types declared in the snippet: after `interface User { name: string }`, `u.` offers `name`, `users.filter((x) => x.` knows `x` is a `User`, and `Pick<>`, generics, union narrowing, enums and string-literal unions (`"up"`) all work. It only sees what you've typed so far, as a real editor would, so a typo breaks suggestions there too. The status bar shows "TypeScript IntelliSense starting…" while it loads (about a second). Until then, and if it can't start, basic suggestions are used.
+- **Commit characters** (VS Code's): with the list open, typing `.` `,` `;` or `(` accepts the selected item and then types the character. TypeScript has them everywhere except where you're declaring a new name, because the service knows those spots. JavaScript has them only in member lists after a dot for now. Its suggestions can't yet tell when a new name is being declared, so `(a, b)` could otherwise commit `async`. An exact, fully typed word always outranks longer words it starts (VS Code's full-match boost), so typing `fetch(` commits `fetch`, not `fetchUser`.
 - **Scoring with assists:** WPM counts only characters you typed. **Code speed** counts every right character on screen, including suggested and auto-inserted text, and **keys saved** shows what suggestions saved you. Personal bests are kept separately for each combination of assists.
 - `Ctrl+Backspace` deletes a word.
 - WPM is correct typed characters ÷ 5 per minute. Accuracy counts every keystroke, so fixed mistakes still cost you.
@@ -46,12 +48,15 @@ src/
     index.ts            the LANGUAGES registry
     types.ts            Language, Snippet and HighlightRules types
     snippets.ts         parses snippets files, picks a random snippet
+    typescript/         TypeScript: highlighting, snippets, and its language service
     javascript/
       index.ts          name, extension, highlighting, auto-close and completion settings
       completions.ts    vocabulary: built-ins, React and Express packs
       snippets.txt      the snippets: "=== name.js" header, then the code
   lib/engine.ts         pure typing engine (type, backspace, auto-indent, auto-close, →/End/↓)
-  lib/suggest.ts        constrained IntelliSense: context (word or member), candidates, fuzzy matching
+  lib/suggest.ts        IntelliSense: context (word or member), local candidates, fuzzy matching, ranking
+  lib/service.ts        the interface a language's completion service implements
+  lib/ts/               TypeScript service: completer (pure), worker, client, ES library types, stubs
   lib/pairs.ts          matches brackets and quotes per snippet, with VS Code's auto-close rules
   lib/stats.ts          WPM, accuracy and the results summary
   lib/tokenize.ts       highlighter driven by a language's HighlightRules
@@ -71,6 +76,8 @@ It then appears in the language picker. `npm test` checks every registered langu
 
 ### Suggestions for a language
 
+A language can have a **completion service** (`completion.service`, see `src/lib/service.ts`) that understands the code, like TypeScript's in `src/lib/ts/`. Services run asynchronously, usually in a worker, and are asked for suggestions at the start of a word or after a trigger character (`completion.triggerCharacters`). The list is then filtered locally as you type, as VS Code does. Languages without a service use vocabulary packs, described below.
+
 A language's `completion` section sets which characters make a word (`wordChar`), what opens member lists (`memberTriggers`, e.g. `["."]` or `["::", "->"]`) and its vocabulary `packs`. See `src/languages/javascript/completions.ts`. A pack without `detect` is always on (built-ins). A pack with `detect` switches on when the snippet matches it, usually an import. Each pack has `globals` and `members`, keyed by receiver, with `"*"` for receivers whose type we can't know.
 
 `npm test` prints how many words in the snippets suggestions can offer at the moment they're typed, and which are missed most. Use it to see what vocabulary to add with new snippets.
@@ -85,3 +92,7 @@ const myThing = () => 42;
 ```
 
 Use 2-space indentation and no tabs or trailing spaces (the tests check this). Length is picked from the character count: under 120 is short, up to 300 is medium, longer is long.
+
+## TypeScript dependency note
+
+The project builds with TypeScript 7, the native Go compiler, which has no JavaScript API that runs in a browser. The in-browser language service is TypeScript **6.0.3**, the last JavaScript-based release, installed under the alias `ts-lang`. It ships as a separate worker file of about 1 MB gzipped, loaded only when TypeScript is selected. Its browser globals and React types are small stubs (`src/lib/ts/stubs.ts`) rather than the full DOM and `@types/react` declarations.

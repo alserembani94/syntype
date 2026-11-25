@@ -16,6 +16,12 @@ const KIND_ICON: Record<SuggestionKind, string> = {
   class: 'cls',
   property: 'prop',
   module: 'mod',
+  interface: 'I',
+  type: 'T',
+  enum: 'E',
+  enumMember: 'e',
+  typeParameter: '<T>',
+  string: '"a"',
 }
 const KIND_LABEL: Record<SuggestionKind, string> = {
   keyword: 'keyword',
@@ -26,6 +32,12 @@ const KIND_LABEL: Record<SuggestionKind, string> = {
   class: 'class',
   property: 'property',
   module: 'module',
+  interface: 'interface',
+  type: 'type',
+  enum: 'enum',
+  enumMember: 'enum member',
+  typeParameter: 'type parameter',
+  string: 'string',
 }
 
 const boxHeight = (count: number) => Math.min(count, VISIBLE_ROWS) * ROW_HEIGHT + 2

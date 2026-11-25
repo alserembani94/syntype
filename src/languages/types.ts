@@ -28,8 +28,24 @@ export interface AutoClosingPair {
   notIn?: ('string' | 'comment')[]
 }
 
+import type { CompletionService } from '../lib/service'
+
 /** Kinds of suggestion, shown as icons like VS Code's. */
-export type SuggestionKind = 'keyword' | 'word' | 'function' | 'method' | 'variable' | 'class' | 'property' | 'module'
+export type SuggestionKind =
+  | 'keyword'
+  | 'word'
+  | 'function'
+  | 'method'
+  | 'variable'
+  | 'class'
+  | 'property'
+  | 'module'
+  | 'interface'
+  | 'type'
+  | 'enum'
+  | 'enumMember'
+  | 'typeParameter'
+  | 'string'
 
 export interface CompletionItem {
   label: string
@@ -64,6 +80,19 @@ export interface CompletionConfig {
   /** What opens member suggestions, e.g. ["."] or ["::", "->"]. Defaults to ["."]. */
   memberTriggers?: string[]
   packs?: VocabularyPack[]
+  /**
+   * Characters that accept the selected item in a member list and are then
+   * typed, like VS Code's commit characters. Only member lists use them here,
+   * because without a service we can't tell when a new name is being declared.
+   */
+  memberCommitCharacters?: string[]
+  /**
+   * A real language service (e.g. TypeScript's). Started lazily; until it's
+   * ready, and if it fails, suggestions fall back to the packs above.
+   */
+  service?: () => CompletionService
+  /** Characters that ask the service for suggestions, e.g. "." or a quote. */
+  triggerCharacters?: string[]
 }
 
 export interface Language {

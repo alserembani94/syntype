@@ -211,6 +211,10 @@ describe('coverage of the JavaScript snippets', () => {
 })
 
 describe('ranking', () => {
+  it("ranks a fully typed word above longer words it starts, like VS Code's boostFullMatch", () => {
+    expect(fuzzyMatch('fetch', 'fetch')!.score).toBeGreaterThan(fuzzyMatch('fetch', 'fetchUser')!.score)
+  })
+
   it('puts names from the file before globals and keywords on a tie, then sorts alphabetically', () => {
     const code = 'const counter = 1;\ncounter;'
     const { run, cfg } = setup(code)
