@@ -14,6 +14,8 @@ Other scripts: `npm test` (engine tests, Vitest), `npm run build`, `npm run lint
 ## How it plays
 
 - Nothing is scored on screen while you type: no clock, no WPM, no accuracy, no personal best. Timing starts quietly on your first key, and everything appears on the results screen when you finish. `Esc` loads a new snippet.
+- When the page can't receive keys (on first load in a frame, after clicking elsewhere, or when switching tab or window), the code blurs and asks you to click, or tap on phones. Mid-run, this **pauses the clock**. Time away isn't counted, and results show how long you were paused.
+- **Results:** WPM and accuracy beside a per-second chart (wpm, raw, and errors as ✕ with their own axis). Below that: test details, raw WPM, characters (right / wrong / suggested / auto-inserted), **consistency** (100% minus the variation in your per-second speed, shown for runs of 3 seconds or more) and time. A second row has code speed, keys saved, symbol accuracy and the keys you missed most. **Review** (`v`) shows the snippet with your mistakes, suggested text and auto-inserted text marked.
 - **Auto-indent** (on by default) skips the leading spaces after Enter, the way an editor would. Skipped spaces don't count toward your score. With it off, you type the indentation, and Tab inserts 2 spaces.
 - **Auto-close** (on by default) behaves like VS Code:
   - Typing `(`, `[`, `{` or a quote inserts the closer after the caret (highlighted). Type the closer to step over it, or press `→` / `End` to move past it.
@@ -54,7 +56,8 @@ src/
   lib/stats.ts          WPM, accuracy and the results summary
   lib/tokenize.ts       highlighter driven by a language's HighlightRules
   hooks/useTypingTest.ts  engine + clock as a React reducer
-  components/           CodeView, ConfigBar, Results, SpeedChart, SuggestBox
+  components/           CodeView, ConfigBar, Results, Review, SpeedChart, SuggestBox
+  hooks/usePageFocus.ts whether keys can reach the game (drives the focus overlay and pausing)
   App.tsx               layout, keyboard handling, settings, personal bests
 ```
 

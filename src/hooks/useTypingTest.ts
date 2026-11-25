@@ -37,6 +37,10 @@ export interface TestState {
   startedAt: number
   finishedAt: number
   now: number
+  /** When the current pause began (page lost focus), or 0 when not paused. */
+  pausedAt: number
+  /** Total paused time so far, in ms; never counted as typing time. */
+  pausedMs: number
   samples: Sample[]
   /** Keys typed / mistakes made since the last sample. */
   intervalTyped: number
@@ -56,6 +60,19 @@ type Action =
   | { type: 'suggestNav'; delta: number }
   | { type: 'accept'; index?: number; now: number }
   | { type: 'dismiss' }
+  | { type: 'pause'; now: number }
+  | { type: 'resume'; now: number }
+
+/** Seconds of typing time at `now`: wall time since the first key, minus pauses. */
+export function activeSeconds(s: TestState, now: number): number {
+  if (s.phase === 'ready') return 0
+  const end = s.pausedAt || now
+  return Math.max(0, (end - s.startedAt - s.pausedMs) / 1000)
+}
+
+function resumed(s: TestState, now: number): TestState {
+  return s.pausedAt ? { ...s, pausedAt: 0, pausedMs: s.pausedMs + (now - s.pausedAt) } : s
+}
 
 /**
  * Recomputes the suggestion list after an edit. Typing a word character or a
@@ -75,7 +92,7 @@ const opensSuggest = (cfg: SuggestConfig | null, ch: string) =>
   !!cfg && (cfg.wordChar.test(ch) || cfg.memberTriggers.some((t) => t.endsWith(ch)))
 
 function sample(s: TestState, now: number): Sample {
-  const t = (now - s.startedAt) / 1000
+  const t = activeSeconds(s, now)
   const since = t - (s.samples.at(-1)?.t ?? 0)
   return {
     t,
@@ -105,6 +122,8 @@ function init(snippet: Snippet, options: TestOptions, runId: number): TestState 
     startedAt: 0,
     finishedAt: 0,
     now: 0,
+    pausedAt: 0,
+    pausedMs: 0,
     samples: [],
     intervalTyped: 0,
     intervalErrors: 0,
@@ -121,6 +140,8 @@ function reducer(s: TestState, a: Action): TestState {
 
     case 'key': {
       if (s.phase === 'done') return s
+      // A key can only arrive with focus back, so any pause is over.
+      s = resumed(s, a.now)
       const started = s.phase === 'ready' ? { phase: 'running' as const, startedAt: a.now } : {}
       const before = s.run.correctKeystrokes
       const run = typeChar(s.run, a.ch)
@@ -175,8 +196,14 @@ function reducer(s: TestState, a: Action): TestState {
     case 'dismiss':
       return s.suggest ? { ...s, suggest: null } : s
 
+    case 'pause':
+      return s.phase === 'running' && !s.pausedAt ? { ...s, pausedAt: a.now, suggest: null } : s
+
+    case 'resume':
+      return resumed(s, a.now)
+
     case 'tick':
-      if (s.phase !== 'running') return s
+      if (s.phase !== 'running' || s.pausedAt) return s
       return {
         ...s,
         now: a.now,
@@ -201,12 +228,13 @@ export function useTypingTest(first: Snippet, options: TestOptions) {
   const suggestNav = useCallback((delta: number) => dispatch({ type: 'suggestNav', delta }), [])
   const accept = useCallback((index?: number) => dispatch({ type: 'accept', index, now: performance.now() }), [])
   const dismiss = useCallback(() => dispatch({ type: 'dismiss' }), [])
+  const pause = useCallback(() => dispatch({ type: 'pause', now: performance.now() }), [])
+  const resume = useCallback(() => dispatch({ type: 'resume', now: performance.now() }), [])
   const moveCaret = useCallback((dir: Move) => dispatch({ type: 'move', dir, now: performance.now() }), [])
   const type = useCallback((ch: string) => dispatch({ type: 'key', ch, now: performance.now() }), [])
   const back = useCallback((word: boolean) => dispatch({ type: 'back', word }), [])
 
-  const elapsed =
-    state.phase === 'ready' ? 0 : ((state.phase === 'done' ? state.finishedAt : state.now) - state.startedAt) / 1000
+  const elapsed = activeSeconds(state, state.phase === 'done' ? state.finishedAt : state.now)
 
-  return { state, elapsed, load, type, back, move: moveCaret, suggestNav, accept, dismiss }
+  return { state, elapsed, load, type, back, move: moveCaret, suggestNav, accept, dismiss, pause, resume }
 }

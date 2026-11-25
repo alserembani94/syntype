@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { getLanguage, LANGUAGES, pickSnippet, type LengthFilter, type Snippet } from './languages'
 import { useTypingTest, type TestOptions } from './hooks/useTypingTest'
+import { isTouch, usePageFocus } from './hooks/usePageFocus'
 import { MIN_ACCURACY_FOR_BEST, summarize } from './lib/stats'
 import { atPending, caretPosition } from './lib/engine'
 import { buildSuggestConfig } from './lib/suggest'
@@ -55,6 +56,8 @@ export default function App() {
     suggestNav,
     accept,
     dismiss,
+    pause,
+    resume,
   } = useTypingTest(firstSnippet, runOptions(firstSnippet, settings))
   const [bestAtStart, setBestAtStart] = useState(() => bests[bestKey(settings)] ?? 0)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -62,8 +65,8 @@ export default function App() {
   const currentKey = bestKey(settings)
 
   const result = useMemo(
-    () => (phase === 'done' ? summarize(run, elapsed, state.samples) : null),
-    [phase, run, elapsed, state.samples],
+    () => (phase === 'done' ? summarize(run, elapsed, state.samples, state.pausedMs / 1000) : null),
+    [phase, run, elapsed, state.samples, state.pausedMs],
   )
   const isBest = !!result && result.wpm > bestAtStart && result.accuracy >= MIN_ACCURACY_FOR_BEST
   // Bests including the run that just finished.
@@ -166,6 +169,14 @@ export default function App() {
 
   useEffect(() => inputRef.current?.focus({ preventScroll: true }), [])
 
+  // The clock only counts while keys can reach the game; time away isn't typing time.
+  const focused = usePageFocus()
+  useEffect(() => {
+    if (focused) resume()
+    else pause()
+  }, [focused, pause, resume])
+  const overlay = phase === 'done' || focused ? null : phase === 'running' ? 'paused' : 'start'
+
   const onMobileInput = (text: string, deleted: boolean) => {
     if (deleted) back(false)
     for (const ch of text) type(ch)
@@ -236,9 +247,15 @@ export default function App() {
               <kbd>tab</kbd> <kbd>enter</kbd> accept · <kbd>↑</kbd> <kbd>↓</kbd> choose · <kbd>esc</kbd> close
             </>
           ) : !atPending(run) ? (
-            <>
-              <kbd>esc</kbd> new snippet · results appear when you finish
-            </>
+            phase === 'ready' ? (
+              <>
+                start typing when you're ready · <kbd>esc</kbd> new snippet
+              </>
+            ) : (
+              <>
+                <kbd>esc</kbd> new snippet · results appear when you finish
+              </>
+            )
           ) : run.chars[run.pos] === '\n' ? (
             <>
               auto-closed below · <kbd>↓</kbd> to move past it
@@ -261,7 +278,23 @@ export default function App() {
         </div>
 
         {result ? (
-          <Results key={state.runId} result={result} isBest={isBest} onNext={next} onRetry={retry} />
+          <Results
+            key={state.runId}
+            result={result}
+            isBest={isBest}
+            info={{
+              language: language.name,
+              length,
+              snippet: snippet.name,
+              assists: [autoIndent && 'auto-indent', autoClose && 'auto-close', intellisense && 'intellisense'].filter(
+                (a): a is string => !!a,
+              ),
+            }}
+            run={run}
+            highlight={language.highlight}
+            onNext={next}
+            onRetry={retry}
+          />
         ) : (
           <CodeView
             code={snippet.code}
@@ -272,6 +305,8 @@ export default function App() {
             onMobileInput={onMobileInput}
             suggest={state.suggest}
             onAccept={accept}
+            overlay={overlay}
+            touch={isTouch()}
           />
         )}
 

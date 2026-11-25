@@ -14,12 +14,26 @@ interface Props {
   onMobileInput: (text: string, deleted: boolean) => void
   suggest: SuggestState | null
   onAccept: (index: number) => void
+  /** Shown over the code when keys can't reach the game. */
+  overlay: 'start' | 'paused' | null
+  touch: boolean
 }
 
 /** Kept in the hidden textarea so a mobile Backspace still fires an input event. */
 const SENTINEL = ' '
 
-export function CodeView({ code, highlight, run, typing, inputRef, onMobileInput, suggest, onAccept }: Props) {
+export function CodeView({
+  code,
+  highlight,
+  run,
+  typing,
+  inputRef,
+  onMobileInput,
+  suggest,
+  onAccept,
+  overlay,
+  touch,
+}: Props) {
   const classes = useMemo(() => tokenize(code, highlight), [code, highlight])
   const lineCount = useMemo(() => code.split('\n').length, [code])
   const scrollerRef = useRef<HTMLDivElement>(null)
@@ -50,7 +64,10 @@ export function CodeView({ code, highlight, run, typing, inputRef, onMobileInput
   }
 
   return (
-    <div ref={editorRef} className={`editor${typing ? ' typing' : ''}`} onClick={() => inputRef.current?.focus({ preventScroll: true })}>
+    <div
+      ref={editorRef}
+      className={`editor${typing ? ' typing' : ''}${overlay ? ' unfocused' : ''}`}
+      onClick={() => inputRef.current?.focus({ preventScroll: true })}>
       <textarea
         ref={inputRef}
         id="type-input"
@@ -87,7 +104,17 @@ export function CodeView({ code, highlight, run, typing, inputRef, onMobileInput
           })}
         </pre>
       </div>
-      {suggest && (
+      {overlay && (
+        <button type="button" className="focus-overlay" onClick={() => inputRef.current?.focus({ preventScroll: true })}>
+          <strong>{overlay === 'paused' ? 'Paused' : touch ? 'Tap to start typing' : 'Click here to start typing'}</strong>
+          <span>
+            {overlay === 'paused'
+              ? `${touch ? 'Tap' : 'Click'} to continue. Time away isn't counted.`
+              : 'The clock starts on your first key.'}
+          </span>
+        </button>
+      )}
+      {suggest && !overlay && (
         <SuggestBox
           suggest={suggest}
           editorRef={editorRef}
