@@ -25,9 +25,11 @@ interface Place {
 interface Props {
   languages: Language[]
   history: Promise<History | null>
-  /** The game's current language and length, for where the board opens. */
+  /** The app's language and length, shared by every view; changing them here changes them everywhere. */
   language: string
   length: SnippetLength
+  onLanguage: (id: string) => void
+  onLength: (l: SnippetLength) => void
   /** On the site itself: keep the board's place in the address (/runs?lang=…). */
   inAddress: boolean
   /** "Type this snippet": switch to the game with it loaded. */
@@ -53,9 +55,19 @@ const addressOf = (p: Place) => {
 }
 
 /** The personal board: every run kept on this device (docs/leaderboard.md). */
-export function RunsView({ languages, history, language, length, inAddress, onType }: Props) {
+export function RunsView({ languages, history, language, length, onLanguage, onLength, inAddress, onType }: Props) {
   const fallback: Place = { language, length, snippet: null, replay: null }
-  const [place, setPlace] = useState<Place>(() => (inAddress ? placeFromAddress(fallback) : fallback))
+  const [own, setPlace] = useState<Place>(() => (inAddress ? placeFromAddress(fallback) : fallback))
+  // The language and length are the app's; the rest is this view's own.
+  const place: Place = { ...own, language, length }
+  const fallbackRef = useRef(fallback)
+  const onLanguageRef = useRef(onLanguage)
+  const onLengthRef = useRef(onLength)
+  useEffect(() => {
+    fallbackRef.current = fallback
+    onLanguageRef.current = onLanguage
+    onLengthRef.current = onLength
+  })
   const [runs, setRuns] = useState<StoredRun[] | null>(null)
   const [store, setStore] = useState<History | null | undefined>(undefined)
   const [reload, setReload] = useState(0)
@@ -75,7 +87,12 @@ export function RunsView({ languages, history, language, length, inAddress, onTy
   // The back button steps out of a snippet or a replay.
   useEffect(() => {
     if (!inAddress) return
-    const onPop = () => setPlace((p) => placeFromAddress(p))
+    const onPop = () => {
+      const next = placeFromAddress(fallbackRef.current)
+      setPlace(next)
+      if (next.language !== fallbackRef.current.language) onLanguageRef.current(next.language)
+      if (next.length !== fallbackRef.current.length) onLengthRef.current(next.length)
+    }
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
   }, [inAddress])
@@ -83,6 +100,8 @@ export function RunsView({ languages, history, language, length, inAddress, onTy
   const go = (changes: Partial<Place>, push = false) => {
     const next = { ...place, ...changes }
     setPlace(next)
+    if (next.language !== language) onLanguage(next.language)
+    if (next.length !== length) onLength(next.length)
     if (!inAddress) return
     if (push) history_.push(addressOf(next))
     else history_.replace(addressOf(next))

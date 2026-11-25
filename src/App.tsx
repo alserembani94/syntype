@@ -54,7 +54,12 @@ const runOptions = (snippet: Snippet, s: Settings): TestOptions => {
  * address is left alone.
  */
 const onSite = typeof location !== 'undefined' && /^https?:$/.test(location.protocol) && isSitePath(location.pathname, LANGUAGES)
-const languageInAddress = onSite ? languageFromPath(location.pathname, LANGUAGES) : null
+/** The language and length a page's address names: /python, or ?lang= and ?length= on /runs and /leaderboard. One setting for the whole app. */
+const boardQuery = onSite && (isRunsPath(location.pathname) || isLeaderboardPath(location.pathname)) ? new URLSearchParams(location.search) : null
+const languageInAddress = onSite
+  ? (languageFromPath(location.pathname, LANGUAGES) ?? (LANGUAGES.some((l) => l.id === boardQuery?.get('lang')) ? boardQuery!.get('lang') : null))
+  : null
+const lengthInAddress = boardQuery?.get('length') ?? null
 
 /** Typing, the personal board (My runs, at /runs) or the global leaderboards (/leaderboard). */
 type View = 'type' | 'runs' | 'board'
@@ -79,7 +84,7 @@ export default function App() {
   // A language page (/python) wins over the language saved from last time.
   const [languageId, setLanguageId] = useState(() => getLanguage(languageInAddress ?? load('language', '')).id)
   const language = getLanguage(languageId)
-  const [length, setLength] = useState<SnippetLength>(() => savedLength(load('length', 'medium')))
+  const [length, setLength] = useState<SnippetLength>(() => savedLength(lengthInAddress ?? load('length', 'medium')))
   const [view, setView] = useState<View>(viewInAddress)
   // A caret that glides between letters (on by default; switched in the theme dialog).
   const [smoothCaret, setSmoothCaret] = useState(() => load('smoothCaret', true))
@@ -503,9 +508,9 @@ export default function App() {
       </header>
 
       {view === 'board' ? (
-        <LeaderboardView languages={LANGUAGES} language={languageId} length={length} player={player.player} onType={typeSnippet} />
+        <LeaderboardView languages={LANGUAGES} language={languageId} length={length} onLanguage={changeLanguage} onLength={changeLength} player={player.player} onType={typeSnippet} />
       ) : view === 'runs' ? (
-        <RunsView languages={LANGUAGES} history={runHistory} language={languageId} length={length} inAddress={onSite} onType={typeSnippet} />
+        <RunsView languages={LANGUAGES} history={runHistory} language={languageId} length={length} onLanguage={changeLanguage} onLength={changeLength} inAddress={onSite} onType={typeSnippet} />
       ) : (
         <>
           {/* Everything that changes the run, next to the code it changes. No clock or score while typing. */}

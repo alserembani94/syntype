@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { LANGUAGES } from '../languages'
+import { LANGUAGES, type SnippetLength } from '../languages'
 import type { Player } from '../lib/account'
 import { LeaderboardView } from '../components/LeaderboardView'
 import { ME } from './sample'
@@ -9,6 +9,9 @@ const player: Player = { id: ME.id, provider: 'github', name: ME.name, suggested
 /** The leaderboard as it appears on the site, with a header and a note that the data is made up. */
 export function Preview() {
   const [signedIn, setSignedIn] = useState(true)
+  // On the site, these are the app's own language and length, shared by Type, My runs and Leaderboard.
+  const [language, setLanguage] = useState('python')
+  const [length, setLength] = useState<SnippetLength>('short')
   const [notice, setNotice] = useState<string | null>(null)
   useEffect(() => {
     if (!notice) return
@@ -57,8 +60,10 @@ export function Preview() {
       <LeaderboardView
         key={signedIn ? 'in' : 'out'}
         languages={LANGUAGES}
-        language="python"
-        length="short"
+        language={language}
+        length={length}
+        onLanguage={setLanguage}
+        onLength={setLength}
         player={signedIn ? player : null}
         inAddress={false}
         onType={(_, name) => setNotice(`On the site, this opens ${name} to type.`)}
