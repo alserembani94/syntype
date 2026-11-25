@@ -11,6 +11,7 @@ import { aidsKey, aidsOf, fetchBoard, fetchLanguageBoards, fetchMyPlace, fetchRe
 import { fingerprint } from '../lib/runlog'
 import { whenPlayed } from '../lib/board'
 import { ReplayView } from './ReplayView'
+import { LanguagePicker } from './LanguagePicker'
 
 const LENGTHS: SnippetLength[] = ['short', 'medium', 'long']
 
@@ -125,6 +126,7 @@ function LanguageOverview({
   onLength: (l: SnippetLength) => void
   onOpen: (name: string, version: string | null) => void
 }) {
+  const [picking, setPicking] = useState(false)
   const [data, setData] = useState<{ language: string; boards: LanguageBoards } | { language: string; error: string } | null>(null)
   useEffect(() => {
     let live = true
@@ -148,20 +150,33 @@ function LanguageOverview({
         <h2 id="boards-title">Leaderboards</h2>
         <p className="runs-muted">Each snippet has its own board: signed-in players’ best runs, at least 75% accurate, checked by replaying their keystrokes.</p>
       </div>
-      <div className="lang-chips" role="group" aria-label="Language">
-        {languages.map((l) => (
-          <button key={l.id} type="button" className="chip" aria-pressed={l.id === lang.id} onClick={() => onLanguage(l.id)}>
-            {l.name}
-          </button>
-        ))}
+      {/* The game's own language button and picker (search, sections), so the list can keep growing. */}
+      <div className="settings boards-settings">
+        <button type="button" className="lang-button" onClick={() => setPicking(true)} aria-haspopup="dialog" title="Change language">
+          <span className="lang-icon" aria-hidden="true">
+            {'</>'}
+          </span>
+          {lang.name}
+        </button>
+        <div className="seg" role="group" aria-label="Length">
+          {LENGTHS.map((l) => (
+            <button key={l} type="button" className="chip" aria-pressed={l === length} onClick={() => onLength(l)}>
+              {l}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="seg" role="group" aria-label="Length">
-        {LENGTHS.map((l) => (
-          <button key={l} type="button" className="chip" aria-pressed={l === length} onClick={() => onLength(l)}>
-            {l}
-          </button>
-        ))}
-      </div>
+      {picking && (
+        <LanguagePicker
+          languages={languages}
+          currentId={lang.id}
+          onSelect={(id) => {
+            setPicking(false)
+            onLanguage(id)
+          }}
+          onClose={() => setPicking(false)}
+        />
+      )}
       {loaded && 'error' in loaded ? (
         <p className="runs-note problem">{loaded.error}</p>
       ) : (
