@@ -11,6 +11,7 @@ const TYPES = 'int float string bool void mixed never iterable object'
 export const php: Language = {
   id: 'php',
   name: 'PHP',
+  category: 'Web',
   extension: 'php',
   // PSR-12.
   indentSize: 4,

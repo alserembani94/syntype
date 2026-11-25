@@ -108,11 +108,19 @@ export interface CompletionConfig {
   serviceMode?: string
 }
 
+/** Sections of the language picker, in the order they're shown. */
+export const CATEGORIES = ['Web', 'Systems', 'Scripting', 'Data & config', 'Mainframe'] as const
+export type LanguageCategory = (typeof CATEGORIES)[number]
+
 export interface Language {
   /** Stable id, used in storage keys. */
   id: string
   /** Display name, e.g. "JavaScript". */
   name: string
+  /** The picker section it's listed under. */
+  category: LanguageCategory
+  /** Other names people search for, e.g. "golang" or "sql". */
+  aliases?: string[]
   /** File extension without the dot, e.g. "js". */
   extension: string
   highlight: HighlightRules

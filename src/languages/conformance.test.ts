@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { LANGUAGES } from '.'
-import type { SnippetLength } from './types'
+import { CATEGORIES, type SnippetLength } from './types'
 import { tokenize } from '../lib/tokenize'
 import { counts } from '../lib/engine'
 import { firstMistake, hasService, play, TEST_COMPLETERS } from '../test/harness'
@@ -26,8 +26,9 @@ describe('R1 · every language has a unique id', () => {
 describe.each(LANGUAGES.map((l) => [l.name, l] as const))('%s', (_, lang) => {
   const snippets = lang.snippets.map((s) => [s.name, s] as const)
 
-  it('R1 · has a name, a lowercase extension without a dot, and keywords', () => {
+  it('R1 · has a name, a picker section, a lowercase extension without a dot, and keywords', () => {
     expect(lang.name.trim()).not.toBe('')
+    expect(CATEGORIES).toContain(lang.category)
     expect(lang.extension).toMatch(/^[a-z0-9]+$/)
     expect(lang.highlight.keywords.length).toBeGreaterThan(0)
   })

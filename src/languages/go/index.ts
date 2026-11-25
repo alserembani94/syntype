@@ -6,6 +6,8 @@ import raw from './snippets.txt?raw'
 export const go: Language = {
   id: 'go',
   name: 'Go',
+  category: 'Systems',
+  aliases: ['golang'],
   extension: 'go',
   // gofmt indents with tabs; they display 4 columns wide.
   indentWithTabs: true,

@@ -6,6 +6,8 @@ import raw from './snippets.txt?raw'
 export const python: Language = {
   id: 'python',
   name: 'Python',
+  category: 'Scripting',
+  aliases: ['py'],
   extension: 'py',
   // PEP 8.
   indentSize: 4,

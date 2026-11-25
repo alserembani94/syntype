@@ -6,6 +6,8 @@ import raw from './snippets.txt?raw'
 export const rust: Language = {
   id: 'rust',
   name: 'Rust',
+  category: 'Systems',
+  aliases: ['rs'],
   extension: 'rs',
   // rustfmt's default.
   indentSize: 4,

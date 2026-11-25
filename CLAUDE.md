@@ -13,7 +13,7 @@ A typing speed test for code (Vite + React + TypeScript). See README.md for how 
 
 Every language must meet these. `src/languages/conformance.test.ts` checks them for every entry in `LANGUAGES`, so adding a language to the registry is enough to hold it to all of them. When adding or changing a language, go through this list; when a rule changes, change it here and in that test together.
 
-- **R1 · Identity.** A unique `id`, a display `name`, a lowercase `extension` without a dot, and highlighting keywords.
+- **R1 · Identity.** A unique `id`, a display `name`, a picker section (`category`, one of `CATEGORIES` in `src/languages/types.ts`: Web, Systems, Scripting, Data & config, Mainframe; add a section there if none fits), a lowercase `extension` without a dot, and highlighting keywords. Add `aliases` for other names people search for (`golang`, `sql`).
 - **R2 · Variety.** At least 4 snippets for each length: short (under 120 characters), medium (up to 300) and long. More is welcome.
 - **R3 · Snippet names.** Unique within the language, each ending in the language's extension (`debounce.js`).
 - **R4 · Formatting.** Printable ASCII only; no trailing whitespace; indentation in steps of the language's `indentSize` (2 by default, 4 for Python and Rust) after its `indentOffset` (0 by default, 7 for fixed-format COBOL), or tabs only for a language with `indentWithTabs` (Go, as gofmt does), and no tabs anywhere else; lines of 88 columns or fewer (or the language's `maxLineLength`, 72 for COBOL), counting a tab as `indentSize`; no leading blank line.

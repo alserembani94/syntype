@@ -19,5 +19,6 @@ export function getLanguage(id: string): Language {
   return LANGUAGES.find((l) => l.id === id) ?? LANGUAGES[0]
 }
 
-export type { Language, LengthFilter, Snippet, SnippetLength, HighlightRules, AutoClosingPair, CompletionConfig, CompletionItem, SuggestionKind, VocabularyPack } from './types'
+export { CATEGORIES } from './types'
+export type { Language, LanguageCategory, LengthFilter, Snippet, SnippetLength, HighlightRules, AutoClosingPair, CompletionConfig, CompletionItem, SuggestionKind, VocabularyPack } from './types'
 export { pickSnippet } from './snippets'

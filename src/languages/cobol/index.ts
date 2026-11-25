@@ -9,6 +9,8 @@ const KEYWORDS =
 export const cobol: Language = {
   id: 'cobol',
   name: 'COBOL',
+  category: 'Mainframe',
+  aliases: ['cbl'],
   extension: 'cbl',
   // Fixed format: code starts at column 8 (Area A); statements at column 12
   // (Area B), then 4 columns per level. Nothing past column 72.

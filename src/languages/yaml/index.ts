@@ -6,6 +6,8 @@ import raw from './snippets.txt?raw'
 export const yaml: Language = {
   id: 'yaml',
   name: 'YAML',
+  category: 'Data & config',
+  aliases: ['yml'],
   extension: 'yaml',
   indentSize: 2,
   highlight: {

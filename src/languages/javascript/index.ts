@@ -6,6 +6,8 @@ import { getTypeScriptService } from '../../lib/ts/client'
 export const javascript: Language = {
   id: 'javascript',
   name: 'JavaScript',
+  category: 'Web',
+  aliases: ['js', 'node', 'ecmascript'],
   extension: 'js',
   highlight: {
     keywords:

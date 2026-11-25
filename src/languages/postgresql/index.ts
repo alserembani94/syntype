@@ -9,6 +9,8 @@ const KEYWORDS =
 export const postgresql: Language = {
   id: 'postgresql',
   name: 'PostgreSQL',
+  category: 'Data & config',
+  aliases: ['postgres', 'psql', 'sql'],
   extension: 'sql',
   indentSize: 2,
   highlight: {

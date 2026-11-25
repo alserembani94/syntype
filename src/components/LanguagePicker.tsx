@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
-import type { Language } from '../languages'
+import { CATEGORIES, type Language } from '../languages'
 import { fuzzyMatch } from '../lib/suggest'
 
 interface Props {
@@ -9,7 +9,10 @@ interface Props {
   onClose: () => void
 }
 
-/** Matches on name, id or extension; fuzzy on the name, so "ts" finds TypeScript. */
+/**
+ * Matches on name, id, extension, aliases ("golang", "sql") or section
+ * ("web" lists all web languages); fuzzy on the name, so "ts" finds TypeScript.
+ */
 function matches(lang: Language, query: string): boolean {
   const q = query.trim().toLowerCase()
   if (!q) return true
@@ -17,6 +20,8 @@ function matches(lang: Language, query: string): boolean {
     lang.name.toLowerCase().includes(q) ||
     lang.id.includes(q) ||
     lang.extension.includes(q.replace(/^\./, '')) ||
+    (lang.aliases ?? []).some((a) => a.includes(q)) ||
+    lang.category.toLowerCase().includes(q) ||
     fuzzyMatch(q, lang.name) !== null
   )
 }
@@ -24,12 +29,25 @@ function matches(lang: Language, query: string): boolean {
 /** A searchable list of languages in a modal, opened from the language button. */
 export function LanguagePicker({ languages, currentId, onSelect, onClose }: Props) {
   const [query, setQuery] = useState('')
-  const [active, setActive] = useState(() => Math.max(0, languages.findIndex((l) => l.id === currentId)))
+  // Start on the current language, counted in the grouped order the list shows.
+  const [active, setActive] = useState(() =>
+    Math.max(0, CATEGORIES.flatMap((c) => languages.filter((l) => l.category === c)).findIndex((l) => l.id === currentId)),
+  )
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLUListElement>(null)
   const listId = useId()
 
-  const shown = useMemo(() => languages.filter((l) => matches(l, query)), [languages, query])
+  // Grouped by section, in CATEGORIES order; sections with no match are left out.
+  const sections = useMemo(
+    () =>
+      CATEGORIES.map((category) => ({
+        category,
+        langs: languages.filter((l) => l.category === category && matches(l, query)),
+      })).filter((s) => s.langs.length > 0),
+    [languages, query],
+  )
+  // The keyboard moves through languages in the order they're shown, skipping headers.
+  const shown = useMemo(() => sections.flatMap((s) => s.langs), [sections])
   const index = Math.min(active, Math.max(0, shown.length - 1))
 
   useEffect(() => inputRef.current?.focus(), [])
@@ -82,26 +100,38 @@ export function LanguagePicker({ languages, currentId, onSelect, onClose }: Prop
           <kbd>esc</kbd>
         </label>
         <ul ref={listRef} id={listId} role="listbox" className="picker-list">
-          {shown.map((lang, i) => (
-            <li
-              key={lang.id}
-              id={`${listId}-${lang.id}`}
-              data-index={i}
-              role="option"
-              aria-selected={i === index}
-              className={i === index ? 'active' : undefined}
-              onMouseMove={() => i !== index && setActive(i)}
-              onMouseDown={(e) => {
-                e.preventDefault()
-                onSelect(lang.id)
-              }}
-            >
-              <span className="check" aria-hidden="true">
-                {lang.id === currentId ? '✓' : ''}
+          {sections.map(({ category, langs }) => (
+            <li key={category} role="presentation" className="section">
+              <span className="section-label" id={`${listId}-${category}`}>
+                {category}
               </span>
-              <span className="name">{lang.name}</span>
-              <span className="ext">.{lang.extension}</span>
-              <span className="count">{lang.snippets.length} snippets</span>
+              <ul role="group" aria-labelledby={`${listId}-${category}`}>
+                {langs.map((lang) => {
+                  const i = shown.indexOf(lang)
+                  return (
+                    <li
+                      key={lang.id}
+                      id={`${listId}-${lang.id}`}
+                      data-index={i}
+                      role="option"
+                      aria-selected={i === index}
+                      className={i === index ? 'active' : undefined}
+                      onMouseMove={() => i !== index && setActive(i)}
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        onSelect(lang.id)
+                      }}
+                    >
+                      <span className="check" aria-hidden="true">
+                        {lang.id === currentId ? '✓' : ''}
+                      </span>
+                      <span className="name">{lang.name}</span>
+                      <span className="ext">.{lang.extension}</span>
+                      <span className="count">{lang.snippets.length} snippets</span>
+                    </li>
+                  )
+                })}
+              </ul>
             </li>
           ))}
           {!shown.length && <li className="empty">No language matches “{query}”</li>}

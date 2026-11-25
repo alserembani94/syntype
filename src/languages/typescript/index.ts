@@ -12,6 +12,8 @@ const TS_KEYWORDS =
 export const typescript: Language = {
   id: 'typescript',
   name: 'TypeScript',
+  category: 'Web',
+  aliases: ['ts'],
   extension: 'ts',
   highlight: {
     ...javascript.highlight,
