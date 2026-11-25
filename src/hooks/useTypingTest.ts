@@ -70,16 +70,36 @@ export interface TestState {
   serviceReady: boolean
   request: PendingRequest | null
   nextRequestId: number
+  /**
+   * Everything that changed the run, in order, as actions that replay it
+   * without suggestions (an accepted suggestion is logged as an 'insert').
+   * See src/lib/runlog.ts.
+   */
+  log: LoggedAction[]
 }
+
+/** The actions a run's log is made of. */
+export type LoggedAction =
+  | { type: 'key'; ch: string; now: number }
+  | { type: 'back'; word: boolean; now: number }
+  | { type: 'move'; dir: Move; now: number }
+  | { type: 'insert'; start: number; text: string; now: number }
+  | { type: 'pause'; now: number }
+  | { type: 'resume'; now: number }
+  | { type: 'tick'; now: number }
+
+const logged = (s: TestState, a: LoggedAction): TestState => ({ ...s, log: [...s.log, a] })
 
 export type Action =
   | { type: 'load'; snippet: Snippet; options: TestOptions }
   | { type: 'key'; ch: string; now: number }
   | { type: 'move'; dir: Move; now: number }
-  | { type: 'back'; word: boolean }
+  | { type: 'back'; word: boolean; now?: number }
   | { type: 'tick'; now: number }
   | { type: 'suggestNav'; delta: number }
   | { type: 'accept'; index?: number; now: number }
+  /** Inserts text as an accepted suggestion would, without a list: how logs are replayed. */
+  | { type: 'insert'; start: number; text: string; now: number }
   | { type: 'dismiss' }
   | { type: 'pause'; now: number }
   | { type: 'resume'; now: number }
@@ -161,11 +181,13 @@ function afterTyping(s: TestState, ch: string): TestState {
 }
 
 /** Accepts a suggestion: one keystroke, which replaces the word typed so far. */
-function accept(s: TestState, item: Suggestion, start: number, now: number): TestState {
+const accept = (s: TestState, item: Suggestion, start: number, now: number) => insert(s, start, item.insertText ?? item.label, now)
+
+function insert(s: TestState, start: number, text: string, now: number): TestState {
   const before = s.run.correctKeystrokes
-  const run = acceptCompletion(s.run, start, item.insertText ?? item.label)
+  const run = acceptCompletion(s.run, start, text)
   return {
-    ...s,
+    ...logged(s, { type: 'insert', start, text, now }),
     run,
     now,
     suggest: null,
@@ -219,6 +241,7 @@ export function init(snippet: Snippet, options: TestOptions, runId: number): Tes
     serviceReady: options.suggest?.service?.status() === 'ready',
     request: null,
     nextRequestId: 1,
+    log: [],
   }
 }
 
@@ -240,7 +263,7 @@ export function reducer(s: TestState, a: Action): TestState {
       const before = cur.run.correctKeystrokes
       const run = typeChar(cur.run, a.ch)
       const next: TestState = {
-        ...cur,
+        ...logged(cur, { type: 'key', ch: a.ch, now: a.now }),
         ...started,
         run,
         now: a.now,
@@ -252,12 +275,17 @@ export function reducer(s: TestState, a: Action): TestState {
 
     case 'move': {
       if (s.phase !== 'running') return s
-      return finishIfDone({ ...s, run: move(s.run, a.dir), now: a.now, suggest: null, request: null }, a.now)
+      const run = move(s.run, a.dir)
+      if (run === s.run) return s
+      const next = { ...logged(s, { type: 'move', dir: a.dir, now: a.now }), run, now: a.now, suggest: null, request: null }
+      return finishIfDone(next, a.now)
     }
 
     case 'back': {
       if (s.phase === 'done') return s
-      const next = { ...s, run: backspace(s.run, a.word) }
+      const run = backspace(s.run, a.word)
+      if (run === s.run) return s
+      const next = { ...logged(s, { type: 'back', word: a.word, now: a.now ?? s.now }), run }
       if (next.request && next.run.pos <= next.request.start) next.request = null
       if (s.suggest?.entries) next.suggest = next.run.pos > s.suggest.start ? refilter(next.run, s.suggest) : null
       else next.suggest = localSuggest(next, false)
@@ -276,14 +304,20 @@ export function reducer(s: TestState, a: Action): TestState {
       return finishIfDone(accept(s, item, s.suggest.start, a.now), a.now)
     }
 
+    case 'insert':
+      if (s.phase !== 'running') return s
+      return finishIfDone(insert(s, a.start, a.text, a.now), a.now)
+
     case 'dismiss':
       return s.suggest || s.request ? { ...s, suggest: null, request: null } : s
 
     case 'pause':
-      return s.phase === 'running' && !s.pausedAt ? { ...s, pausedAt: a.now, suggest: null, request: null } : s
+      return s.phase === 'running' && !s.pausedAt
+        ? { ...logged(s, { type: 'pause', now: a.now }), pausedAt: a.now, suggest: null, request: null }
+        : s
 
     case 'resume':
-      return resumed(s, a.now)
+      return s.pausedAt ? resumed(logged(s, { type: 'resume', now: a.now }), a.now) : s
 
     case 'serviceStatus':
       return s.serviceReady === a.ready ? s : { ...s, serviceReady: a.ready, suggest: null, request: null }
@@ -300,7 +334,7 @@ export function reducer(s: TestState, a: Action): TestState {
     case 'tick':
       if (s.phase !== 'running' || s.pausedAt) return s
       return {
-        ...s,
+        ...logged(s, { type: 'tick', now: a.now }),
         now: a.now,
         samples: [...s.samples, sample(s, a.now)],
         intervalTyped: 0,
@@ -347,7 +381,7 @@ export function useTypingTest(first: Snippet, options: TestOptions) {
   const resume = useCallback(() => dispatch({ type: 'resume', now: performance.now() }), [])
   const moveCaret = useCallback((dir: Move) => dispatch({ type: 'move', dir, now: performance.now() }), [])
   const type = useCallback((ch: string) => dispatch({ type: 'key', ch, now: performance.now() }), [])
-  const back = useCallback((word: boolean) => dispatch({ type: 'back', word }), [])
+  const back = useCallback((word: boolean) => dispatch({ type: 'back', word, now: performance.now() }), [])
 
   const elapsed = activeSeconds(state, state.phase === 'done' ? state.finishedAt : state.now)
 

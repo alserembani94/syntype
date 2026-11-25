@@ -26,10 +26,29 @@ const syncService: CompletionService = {
 
 export const hasService = (lang: Language) => !!lang.completion?.service
 
-function start(lang: Language, snippet: Snippet, service: boolean): TestState {
-  const suggest = buildSuggestConfig(snippet.code, lang, false)
-  if (service) suggest.service = syncService
-  return init(snippet, { autoIndent: true, autoClose: true, pairs: computePairs(snippet.code, lang), suggest }, 0)
+export interface Aids {
+  autoIndent: boolean
+  autoClose: boolean
+  autocomplete: boolean
+}
+const ALL_AIDS: Aids = { autoIndent: true, autoClose: true, autocomplete: true }
+
+function start(lang: Language, snippet: Snippet, service: boolean, aids: Aids): TestState {
+  const suggest = aids.autocomplete ? buildSuggestConfig(snippet.code, lang, false) : null
+  if (suggest && service) suggest.service = syncService
+  const pairs = aids.autoClose ? computePairs(snippet.code, lang) : undefined
+  return init(snippet, { autoIndent: aids.autoIndent, autoClose: aids.autoClose, pairs, suggest }, 0)
+}
+
+/**
+ * A human-like typist, seeded so a test always plays the same way: 70-110 ms
+ * between keys, a typo now and then fixed with Backspace, the once-a-second
+ * sample, and one pause partway through.
+ */
+export interface Typist {
+  seed: number
+  /** Chance of a typo before a character, e.g. 0.03. */
+  typos: number
 }
 
 /** Dispatches, then answers any service request on the spot, as the worker would. */
@@ -51,29 +70,69 @@ function step(lang: Language, s: TestState, a: Action): TestState {
  * language's service (when it has one) or only basic suggestions, as while the
  * service is starting.
  */
-export function play(lang: Language, snippet: Snippet, opts: { acceptSuggestions: boolean; service: boolean }) {
-  let s = start(lang, snippet, opts.service && hasService(lang))
+export function play(
+  lang: Language,
+  snippet: Snippet,
+  opts: { acceptSuggestions: boolean; service: boolean; aids?: Aids; typist?: Typist },
+) {
+  const aids = opts.aids ?? ALL_AIDS
+  let s = start(lang, snippet, opts.service && hasService(lang), aids)
+  // Without a typist, every action happens at time 1, as the rule tests need nothing more.
+  let now = 1
+  let seed = opts.typist?.seed ?? 0
+  const rand = () => (seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31
+  let nextTick = 1000
+  let paused = false
+  /** The once-a-second samples due by `t`, in time order, as the browser's timer delivers them. */
+  const ticksUntil = (t: number) => {
+    while (opts.typist && s.phase === 'running' && !s.pausedAt && t >= s.startedAt + nextTick) {
+      s = step(lang, s, { type: 'tick', now: s.startedAt + nextTick })
+      nextTick += 1000
+    }
+  }
   for (let guard = 0; s.phase !== 'done' && guard < 10000; guard++) {
+    if (opts.typist) {
+      now += 70 + Math.floor(rand() * 40)
+      ticksUntil(now)
+      if (s.phase === 'running') {
+        if (!paused && s.run.pos > s.run.chars.length / 2) {
+          // Away from the page for 3 s: paused time never counts.
+          paused = true
+          s = step(lang, s, { type: 'pause', now })
+          now += 3000
+          s = step(lang, s, { type: 'resume', now })
+          nextTick += 3000
+        }
+      }
+    }
     const { run } = s
     const ch = run.chars[run.pos]
+    if (opts.typist && ch !== '\n' && run.states[run.pos] !== 'pending' && !s.suggest && rand() < opts.typist.typos) {
+      s = step(lang, s, { type: 'key', ch: ch === 'q' ? 'z' : 'q', now })
+      now += 120
+      ticksUntil(now)
+      s = step(lang, s, { type: 'back', word: false, now })
+      now += 90
+      continue
+    }
     if (opts.acceptSuggestions && s.suggest) {
       const item = s.suggest.items[s.suggest.selected]
       const text = item.insertText ?? item.label
       const target = run.chars.slice(s.suggest.start, s.suggest.start + text.length).join('')
       const after = run.chars[s.suggest.start + text.length]
       if (text === target && !/[\w$]/.test(after ?? '') && s.suggest.start + text.length > run.pos) {
-        s = step(lang, s, { type: 'accept', now: 1 })
+        s = step(lang, s, { type: 'accept', now })
         continue
       }
     }
     if (run.states[run.pos] === 'pending' && ch === '\n') {
       // An open list would take ↓, so close it first, as a VS Code user would.
       if (s.suggest) s = step(lang, s, { type: 'dismiss' })
-      s = step(lang, s, { type: 'move', dir: 'down', now: 1 })
+      s = step(lang, s, { type: 'move', dir: 'down', now })
     } else if (ch === '\n' && s.suggest) {
       // Enter would accept; someone who wants a new line presses Esc first.
       s = step(lang, s, { type: 'dismiss' })
-    } else s = step(lang, s, { type: 'key', ch, now: 1 })
+    } else s = step(lang, s, { type: 'key', ch, now })
   }
   return s
 }

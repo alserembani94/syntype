@@ -110,6 +110,8 @@ src/
   lib/ts/               TypeScript service: completer (pure), worker, client, ES library types, stubs
   lib/pairs.ts          matches brackets and quotes per snippet, with VS Code's auto-close rules
   lib/stats.ts          WPM, accuracy and the results summary
+  lib/runlog.ts         run records and keystroke logs: record, encode, replay (docs/leaderboard.md)
+  lib/settings.ts       migrating settings and bests saved by older versions
   lib/tokenize.ts       highlighter driven by a language's HighlightRules
   lib/storage.ts        localStorage wrapper for settings and personal bests
   hooks/useTypingTest.ts  engine, clock and suggestion requests as a React reducer

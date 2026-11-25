@@ -48,6 +48,8 @@ The claude.ai artifact has no backend: it hides sign-in and the global board, an
    - WPM, raw WPM, accuracy, time, typing aids, finished at
    - its keystroke log
 3. **Keystroke log format:** one entry per action, with the character (or action) and the milliseconds since the previous one. Compressed, real logs average 0.3 KB (short), 0.6 KB (medium) and 1.1 KB (long); uncompressed about 0.6, 1.7 and 3.8 KB.
+Built in `src/lib/runlog.ts` (task 2): the reducer logs every action that changed the run, with an accepted suggestion logged as the text it inserted; `replay` rebuilds the run from a log with suggestions off; `recordRun` makes the record. `src/lib/runlog.test.ts` replays a recorded run of every snippet in every language, with typos, a pause and every typing aid on or off, and checks the run and result come out the same. The longest snippets replay in about 1.4–1.8 ms (2.4–4.6 ms on a first run), and their logs are about 7 KB of JSON before compression.
+
 4. **A snippet fingerprint:** a hash of the snippet's code. Editing a snippet's text gives it a new fingerprint, so old and new scores are never mixed.
 
 ## Personal board (on the device)
