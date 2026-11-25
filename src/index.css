@@ -522,3 +522,6 @@ svg.chart .runs-dot.best { fill: var(--accent); }
 }
 .toast-close { border: 0; background: transparent; color: inherit; cursor: pointer; font-size: 13px; opacity: .7; }
 @media (max-width: 640px) { .account-label { display: none; } .account-button { padding: 0 8px; } .account-button .avatar { margin-left: 0; } }
+/* The leaderboard preview page (src/preview): a note that the data is made up. */
+.preview-banner { margin: 0; display: flex; gap: 6px 16px; flex-wrap: wrap; align-items: center; padding: 10px 14px; border-radius: 10px; font-size: 13px; color: var(--fg); background: var(--accent-soft); }
+.preview-banner label { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); cursor: pointer; }

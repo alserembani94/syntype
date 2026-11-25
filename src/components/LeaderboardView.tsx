@@ -33,6 +33,8 @@ interface Props {
   /** The signed-in player, for "You" and reports. */
   player: Player | null
   onType: (language: string, snippet: string) => void
+  /** On the site: keep the board's place in the address (/leaderboard?lang=…), so Back and links work. */
+  inAddress?: boolean
 }
 
 const placeFromAddress = (fallback: Place): Place => {
@@ -62,17 +64,19 @@ const addressOf = (p: Place) => {
 
 const AID_NAMES = ['auto-indent', 'auto-close', 'autocomplete']
 
-export function LeaderboardView({ languages, language, length, player, onType }: Props) {
+export function LeaderboardView({ languages, language, length, player, onType, inAddress = true }: Props) {
   const fallback: Place = { language, length, snippet: null, version: null, aids: 'any', replay: null, admin: false }
-  const [place, setPlace] = useState<Place>(() => placeFromAddress(fallback))
+  const [place, setPlace] = useState<Place>(() => (inAddress ? placeFromAddress(fallback) : fallback))
   useEffect(() => {
+    if (!inAddress) return
     const onPop = () => setPlace((p) => placeFromAddress(p))
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
-  }, [])
+  }, [inAddress])
   const go = (changes: Partial<Place>, push = false) => {
     const next = { ...place, ...changes }
     setPlace(next)
+    if (!inAddress) return
     if (push) window.history.pushState(null, '', addressOf(next))
     else window.history.replaceState(null, '', addressOf(next))
   }
