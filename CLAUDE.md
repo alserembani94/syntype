@@ -30,6 +30,7 @@ Beyond the automated rules, a new language also needs:
 - **VS Code parity.** Auto-close pairs copied from the language's VS Code `language-configuration.json`. If VS Code has no built-in support for the language (COBOL), use the configuration of its most widely used VS Code extension and say which in a comment. If it has a language service, completion behaviour (triggers, commit characters, ranking) taken from VS Code's extension for that language, checked against its source rather than memory.
 - **Snippets that are real code.** Idiomatic, the kind people actually write. Prefer declaring the types and names a snippet uses, so suggestions have something to work with. Names from code outside the snippet (`items`, `todos`) are fine as long as R8 passes.
 - **Framework tracks** (Playwright, Selenium, pytest) are entries built on a language Syntype already has: spread the base language (`...typescript`), set `basedOn`, and add only what's new: snippets, plus a vocabulary pack (`seleniumPack`) or, for a language with a service, a type stub in `src/lib/ts/stubs.ts` (`@playwright/test`) loaded by both the worker and `src/test/tsCompleter.ts`. A track on a service language also needs an entry in `TEST_COMPLETERS` (R7). Tracks meet every rule like any language; their snippets must be self-contained, since R8 catches fragments that use names like `page` without declaring them.
+- **Its own page.** A line in `BLURBS` (`src/seo/site.ts`) on what its snippets cover, written from the snippets; it becomes the page `/<id>` with its own title and description (`src/seo/site.test.ts` checks it). Then re-render the link preview image, which counts the languages: `node scripts/og-image.mjs`.
 - **Don't copy JavaScript's service settings** (`completion.service`, `serviceMode`, `triggerCharacters`) into a language that doesn't use TypeScript's service.
 
 ## Theme rules
@@ -43,6 +44,10 @@ Every theme in `THEMES` (`src/themes/index.ts`) must meet these; `src/themes/the
 - **T4 · Colour vision.** A theme made for a colour vision deficiency (`vision` in `THEMES`) keeps plain text, comments, mistakes and the five code colours at least 12 apart (CIEDE2000) from each other, both as its audience sees them (Machado et al. 2009 simulation, full severity, in `src/test/colour.ts`) and with normal vision; mistakes and success at least 30 apart; and its text and signal colours readable as its audience sees them. Pick colours from the base palette's own scales; don't trust a palette's colour-blind label without running the check (GitHub's own syntax colours fail it).
 
 A theme borrowed from an editor takes its colours from that theme's source files, not memory, with the file named in a comment above its block.
+
+## SEO
+
+The site is https://syntype.vercel.my (`SITE_URL` in `src/seo/site.ts`). `npm run build` writes a page per language (`dist/python.html`, served at `/python`) plus `sitemap.xml` and `robots.txt` (`scripts/build-pages.mjs`), each page with its own title, description, canonical URL, link preview tags, structured data and an intro in the HTML itself. Titles stay within 60 characters and descriptions within 70–160 (`src/seo/site.test.ts`). The FAQ in `scripts/build-pages.mjs` describes how the app behaves: keep it true when that changes.
 
 ## Working in this repo
 

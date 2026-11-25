@@ -4,8 +4,14 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="A typing speed test for code." />
+    <meta name="theme-color" content="#eef0f4" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#12151c" media="(prefers-color-scheme: dark)" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- Title, description, canonical URL, link previews and structured data: written per page by scripts/build-pages.mjs from src/seo/site.ts. -->
+    <!-- seo:start -->
     <title>Syntype</title>
+    <meta name="description" content="A typing speed test for code." />
+    <!-- seo:end -->
     <!-- The saved theme, applied before the first paint so the page never flashes the default (see src/themes). -->
     <script id="theme-boot">
       try {
@@ -15,13 +21,25 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Fonts load without holding up the first paint; the system fallbacks show until they arrive. -->
     <link
-      rel="stylesheet"
+      rel="preload"
+      as="style"
       href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap"
+      onload="this.onload = null; this.rel = 'stylesheet'"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap"
+      />
+    </noscript>
   </head>
   <body>
     <div id="root"></div>
+    <!-- What the site is, in the HTML itself for search engines and link previews: written per page by scripts/build-pages.mjs. -->
+    <!-- about:start -->
+    <!-- about:end -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

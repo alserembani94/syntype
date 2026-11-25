@@ -260,3 +260,22 @@ footer { color: var(--muted); font-size: 13px; display: flex; gap: 16px; flex-wr
 
 /* A theme's glow (the retro terminal's): on code and the big numbers. */
 .code, .gutter, .brand h1, .big .v, .r-row dd.num { text-shadow: var(--glow); transition: text-shadow 0.7s ease; }
+
+/* What the site is (written into each page by scripts/build-pages.mjs): below the app, quiet. */
+.about { max-width: 920px; margin: 64px auto 0; padding-top: 28px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; line-height: 1.65; }
+.about h2 { font: 700 20px var(--f-display); color: var(--fg); margin: 0 0 8px; letter-spacing: -0.01em; }
+.about h3 { font: 600 12px var(--f-ui); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+.about > p { margin: 0 0 24px; max-width: 72ch; }
+.about-columns { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 32px; }
+.about dl { margin: 0; }
+.about dt { color: var(--fg); font-weight: 600; }
+.about dd { margin: 2px 0 14px; }
+.about ul { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 20px; }
+.about li { margin-bottom: 4px; break-inside: avoid; }
+.about a { color: var(--fg); text-decoration: none; border-bottom: 1px solid var(--line); }
+.about a:hover { color: var(--accent); border-color: var(--accent); }
+.about a[aria-current="page"] { color: var(--accent); border-color: transparent; }
+@media (max-width: 640px) {
+  .about { margin-top: 40px; }
+  .about-columns { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+}

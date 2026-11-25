@@ -14,6 +14,7 @@ import { AdSlot } from './components/AdSlot'
 import { LanguagePicker } from './components/LanguagePicker'
 import { ThemePicker } from './components/ThemePicker'
 import { applyTheme, getTheme, loadTheme, saveTheme } from './themes'
+import { isSitePath, languageFromPath, languagePage } from './seo/site'
 import { Results } from './components/Results'
 
 interface Settings {
@@ -43,10 +44,31 @@ const runOptions = (snippet: Snippet, s: Settings): TestOptions => {
   }
 }
 
+/**
+ * On the site itself (home or a language page such as /python), the address
+ * names the language: opening /python starts in Python, and choosing another
+ * language moves to its page. Elsewhere (the single-file artifact) the
+ * address is left alone.
+ */
+const onSite = typeof location !== 'undefined' && /^https?:$/.test(location.protocol) && isSitePath(location.pathname, LANGUAGES)
+const languageInAddress = onSite ? languageFromPath(location.pathname, LANGUAGES) : null
+
+function showLanguageInAddress(id: string) {
+  if (!onSite) return
+  const page = languagePage(getLanguage(id))
+  document.title = page.title
+  try {
+    if (location.pathname !== page.path) history.replaceState(null, '', page.path + location.search + location.hash)
+  } catch {
+    /* some embedded pages can't change their address */
+  }
+}
+
 const NAV_KEYS: Record<string, 'right' | 'end' | 'down'> = { ArrowRight: 'right', End: 'end', ArrowDown: 'down' }
 
 export default function App() {
-  const [languageId, setLanguageId] = useState(() => getLanguage(load('language', '')).id)
+  // A language page (/python) wins over the language saved from last time.
+  const [languageId, setLanguageId] = useState(() => getLanguage(languageInAddress ?? load('language', '')).id)
   const language = getLanguage(languageId)
   const [length, setLength] = useState<LengthFilter>(() => load('length', 'medium'))
   const [autoIndent, setAutoIndent] = useState(() => load('autoIndent', true))
@@ -269,6 +291,7 @@ export default function App() {
     const lang = getLanguage(id)
     setLanguageId(lang.id)
     save('language', lang.id)
+    showLanguageInAddress(lang.id)
     start(pickSnippet(lang.snippets, length), { languageId: lang.id })
   }
   const changeLength = (l: LengthFilter) => {

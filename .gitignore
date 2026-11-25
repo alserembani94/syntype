@@ -27,3 +27,4 @@ dist-page
 
 # Wrangler (Cloudflare) local dev state
 .wrangler
+scripts/og/.render.html
