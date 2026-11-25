@@ -5,6 +5,7 @@
  * in lib/api.ts (docs/leaderboard.md).
  */
 import { handle } from './lib/api'
+import { deleteInactive } from './lib/account'
 
 /** Answers that are the same for everyone (boards and replays), kept at the edge for a minute. */
 const isShared = (request: Request, url: URL) =>
@@ -30,5 +31,10 @@ export default {
     }
     // Anything else that reaches the Worker is a file request.
     return env.ASSETS.fetch(request)
+  },
+  // Daily (triggers.crons in wrangler.jsonc): delete accounts unused for two years.
+  async scheduled(_controller, env) {
+    const deleted = await deleteInactive(env.DB, new Date())
+    if (deleted) console.log(`Deleted ${deleted} inactive accounts`)
   },
 } satisfies ExportedHandler<Env>

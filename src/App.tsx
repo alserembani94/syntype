@@ -482,7 +482,7 @@ export default function App() {
           )}
         </nav>
         <div className="top-actions">
-          <Account available={onSite} onOpenChange={setAccountOpen} onMyRuns={() => showView('runs')} onPlayer={onPlayer} />
+          <Account available={onSite} onOpenChange={setAccountOpen} onMyRuns={() => showView('runs')} onPlayer={onPlayer} history={runHistory} />
           {aboutSection && (
             <button type="button" className="icon-button" onClick={() => setAboutOpen(true)} aria-haspopup="dialog" aria-label="About Syntype" title="About Syntype">
               <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">

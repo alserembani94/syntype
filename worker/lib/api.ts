@@ -8,6 +8,11 @@
  *   POST /api/auth/signout                sign out
  *   GET  /api/me                          the signed-in player, or { signedIn: false }
  *   POST /api/me/name                     set or change the leaderboard name
+ *   POST /api/me/hide                     hide from the boards, or show again ({ hidden })
+ *   GET  /api/me/runs                     the player's leaderboard entries
+ *   POST /api/me/runs/:runId/delete       delete one of them
+ *   GET  /api/me/data                     download everything kept about the player
+ *   POST /api/me/delete                   delete the account ({ confirm: their name })
  *   POST /api/reports                     report a player or one of their runs
  *   POST /api/runs/start                  a run token, when a signed-in player starts a snippet
  *   POST /api/runs                        submit a finished run (runs.ts)
@@ -35,6 +40,7 @@ import { authorizeUrl, exchange, PROVIDERS, SignInError, type OAuthConfig, type 
 import { accessEmail, type AccessConfig } from './access'
 import { actionLog, actOnPlayer, closeReports, findPlayers, PLAYER_ACTIONS, removeRun, report, reportQueue, type PlayerAction } from './moderation'
 import { board, BOARD_CACHE_SECONDS, languageBoards, myPlace, runForReplay, validAids } from './boards'
+import { deleteAccount, deleteMyRun, myData, myEntries, setHidden } from './account'
 import { MAX_BODY, gunzip, rejectionMessage, startRun, submitRun, type Assets } from './runs'
 import { getPlayer, playerFor, publicPlayer, setName, touch, type PlayerRow } from './players'
 
@@ -186,6 +192,37 @@ export async function handle(request: Request, deps: Deps): Promise<Response> {
     const body = (await request.json().catch(() => null)) as { name?: unknown } | null
     const result = await setName(db, player, body?.name, now)
     return result.ok ? json({ signedIn: true, player: publicPlayer(result.player) }) : json({ error: result.error }, result.status)
+  }
+
+  // The player's own data (account.ts).
+  const mine = url.pathname.match(/^\/api\/me\/(hide|runs|data|delete)$|^\/api\/me\/runs\/([\w-]{1,64})\/delete$/)
+  if (mine) {
+    const action = mine[1] ?? 'delete-run'
+    const post = action === 'hide' || action === 'delete' || action === 'delete-run'
+    if (method !== (post ? 'POST' : 'GET')) return json({ error: 'Not found' }, 404)
+    if (post && !fromOurPages(request, config)) return json({ error: 'Not allowed from here.' }, 403)
+    const player = await signedIn(request, deps)
+    if (!player) return json({ error: 'Sign in first.' }, 401)
+    const body = post ? await request.json().catch(() => null) : null
+    switch (action) {
+      case 'hide': {
+        const r = await setHidden(db, player, (body as { hidden?: unknown } | null)?.hidden)
+        return r.ok ? json({ signedIn: true, player: publicPlayer((await getPlayer(db, player.id))!) }) : json({ error: r.error }, r.status)
+      }
+      case 'runs':
+        return json({ entries: await myEntries(db, player) })
+      case 'delete-run': {
+        const r = await deleteMyRun(db, player, mine[2])
+        return r.ok ? json({ ok: true }) : json({ error: r.error }, r.status)
+      }
+      case 'data':
+        return json(await myData(db, player, now), 200, { 'Content-Disposition': 'attachment; filename="syntype-account-data.json"' })
+      case 'delete': {
+        const r = await deleteAccount(db, player, body)
+        if (!r.ok) return json({ error: r.error }, r.status)
+        return json({ deleted: true }, 200, { 'Set-Cookie': cookie(SESSION_COOKIE, '', { maxAge: 0, secure }) })
+      }
+    }
   }
 
   if (url.pathname === '/api/reports' && method === 'POST') {

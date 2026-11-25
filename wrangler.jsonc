@@ -44,5 +44,7 @@
   "secrets": {
     "required": ["GITHUB_CLIENT_SECRET", "GOOGLE_CLIENT_SECRET", "TURNSTILE_SECRET_KEY", "SESSION_SECRET"]
   },
+  // Daily at 03:41 UTC: delete accounts nobody has signed in to for two years (docs/leaderboard.md, "Privacy").
+  "triggers": { "crons": ["41 3 * * *"] },
   "observability": { "enabled": true }
 }

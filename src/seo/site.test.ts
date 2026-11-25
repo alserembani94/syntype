@@ -75,3 +75,17 @@ describe('SEO pages', () => {
     }
   })
 })
+
+describe('privacy and fair-play pages', () => {
+  it('have their own address, a title within 60 characters and a description of 70–160', async () => {
+    const { privacyPage, fairPlayPage, policyPages, PRIVACY_CONTACT } = await import('./policies')
+    for (const p of [privacyPage, fairPlayPage]) {
+      expect(p.title.length, p.title).toBeLessThanOrEqual(60)
+      expect(p.description.length, p.description).toBeGreaterThanOrEqual(70)
+      expect(p.description.length, p.description).toBeLessThanOrEqual(160)
+      expect(LANGUAGES.some((l) => `/${l.id}` === p.path)).toBe(false)
+    }
+    // The privacy page goes up only with a way to contact whoever runs the site.
+    expect(policyPages().includes(privacyPage)).toBe(PRIVACY_CONTACT !== null)
+  })
+})

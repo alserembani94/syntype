@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
+import type { History } from '../lib/history'
+import { AccountSettings } from './AccountSettings'
+import { POLICY_LINKS } from '../seo/policies'
 import { justSignedIn, nameHint, saveName, signIn, signInProblem, signOut, fetchAccount, type Account as AccountState, type Player, type Provider } from '../lib/account'
 
 interface Props {
@@ -9,17 +12,21 @@ interface Props {
   onMyRuns: () => void
   /** The signed-in player as it changes (null when signed out), and Turnstile's sitekey for submitting runs. */
   onPlayer?: (player: Player | null, turnstileSiteKey: string | null) => void
+  /** This device's run history, cleared if the player deletes their account and asks to. */
+  history?: Promise<History | null>
 }
 
-type Open = null | 'signin' | 'name' | 'menu'
+type Open = null | 'signin' | 'name' | 'menu' | 'settings'
 
 const PROVIDER_NAMES: Record<Provider, string> = { github: 'GitHub', google: 'Google' }
 
 /** Sign in, the leaderboard name step, and the account menu, in the header. */
-export function Account({ available, onOpenChange, onMyRuns, onPlayer }: Props) {
+export function Account({ available, onOpenChange, onMyRuns, onPlayer, history }: Props) {
   const [account, setAccount] = useState<AccountState>({ state: 'loading' })
   const [open, setOpenState] = useState<Open>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  // The player the Account & data dialog is about; kept after the account is deleted, for its last step.
+  const [settingsFor, setSettingsFor] = useState<Player | null>(null)
   const setOpen = (o: Open) => {
     setOpenState(o)
     onOpenChange(o !== null)
@@ -98,11 +105,27 @@ export function Account({ available, onOpenChange, onMyRuns, onPlayer }: Props) 
           }}
         />
       )}
+      {open === 'settings' && (player ?? settingsFor) && (
+        <AccountSettings
+          player={(player ?? settingsFor)!}
+          onClose={() => setOpen(null)}
+          onRename={() => setOpen('name')}
+          onPlayer={(p) => setAccount((a) => (a.state === 'signed-in' ? { ...a, player: p } : a))}
+          onDeleted={async (clearLocal) => {
+            if (clearLocal) await (await history)?.clear()
+            setAccount({ state: 'signed-out' })
+          }}
+        />
+      )}
       {open === 'menu' && player && (
         <AccountMenu
           player={player}
           onClose={() => setOpen(null)}
           onRename={() => setOpen('name')}
+          onSettings={() => {
+            setSettingsFor(player)
+            setOpen('settings')
+          }}
           onMyRuns={() => {
             setOpen(null)
             onMyRuns()
@@ -119,7 +142,7 @@ export function Account({ available, onOpenChange, onMyRuns, onPlayer }: Props) 
 }
 
 /** A modal panel: Esc or a click outside closes it, and focus starts inside. */
-function Dialog({ label, onClose, children, className = '' }: { label: string; onClose: () => void; children: React.ReactNode; className?: string }) {
+export function Dialog({ label, onClose, children, className = '' }: { label: string; onClose: () => void; children: React.ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     ref.current?.querySelector<HTMLElement>('[data-autofocus], input, button')?.focus()
@@ -169,7 +192,17 @@ function SignInDialog({ onClose }: { onClose: () => void }) {
           Continue with Google
         </button>
       </div>
-      <p className="dialog-note">Your run history stays on this device either way.</p>
+      <p className="dialog-note">
+        Your run history stays on this device either way.
+        {POLICY_LINKS.map((l) => (
+          <span key={l.path}>
+            {' '}
+            <a href={l.path} target="_blank" rel="noreferrer">
+              {l.label}
+            </a>
+          </span>
+        ))}
+      </p>
       <div className="dialog-actions">
         <button type="button" className="btn" onClick={onClose}>
           Not now
@@ -242,12 +275,14 @@ function AccountMenu({
   player,
   onClose,
   onRename,
+  onSettings,
   onMyRuns,
   onSignOut,
 }: {
   player: Player
   onClose: () => void
   onRename: () => void
+  onSettings: () => void
   onMyRuns: () => void
   onSignOut: () => void
 }) {
@@ -262,6 +297,9 @@ function AccountMenu({
       </button>
       <button type="button" className="menu-item" onClick={onMyRuns}>
         My runs
+      </button>
+      <button type="button" className="menu-item" onClick={onSettings}>
+        Account &amp; data
       </button>
       <button type="button" className="menu-item" onClick={onSignOut}>
         Sign out

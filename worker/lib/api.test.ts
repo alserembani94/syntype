@@ -12,6 +12,7 @@ import type { Db } from './db'
 import { RENAME_EVERY_MS } from './names'
 import { AUD, fakeAccess, TEAM } from './test-access'
 import { gunzip, LOGS_KEPT } from './runs'
+import { deleteInactive } from './account'
 import { LANGUAGES } from '../../src/languages'
 import { snippetFiles, type SnippetFile } from '../../src/lib/snippetfiles'
 import { encodeLog, replayLog, resultOf, type LogEntry, type TypingAids } from '../../src/lib/runcore'
@@ -93,6 +94,8 @@ const me = async (session?: string, now?: Date) =>
     signedIn: boolean
     player?: { id: string; name: string | null; suggestedName: string; provider: string }
   }
+
+const me_ = (session?: string, now?: Date) => me(session, now)
 
 const rename = (session: string, name: unknown, origin: string | null = SITE, now?: Date) =>
   handle(
@@ -690,6 +693,82 @@ describe('submitting runs', () => {
       { aids: '000', run_id: 'slower-run' },
       { aids: 'any', run_id: 'slower-run' },
     ])
+  })
+
+  it('players hide, list and delete their entries, download their data, and delete their account', async () => {
+    const saved = { snippet, fp }
+    snippet = lang.snippets.filter((x) => x.length === 'medium')[1]
+    fp = [...snippetData.values()].find((f) => f.language === 'python' && f.name === snippet.name)!.fingerprint
+    try {
+      const call = async <T,>(path: string, session: string, body?: unknown) => {
+        const res = await handle(
+          new Request(`${SITE}${path}`, {
+            method: body === undefined ? 'GET' : 'POST',
+            headers: { Cookie: `${SESSION_COOKIE}=${session}`, ...(body === undefined ? {} : { Origin: SITE, 'Content-Type': 'application/json' }) },
+            body: body === undefined ? undefined : JSON.stringify(body),
+          }),
+          deps(),
+        )
+        return { status: res.status, headers: res.headers, body: (await res.json()) as T }
+      }
+      const boardNames = async () =>
+        ((await (await handle(new Request(`${SITE}/api/boards/${fp}`), deps())).json()) as { rows: { player: { name: string } }[] }).rows.map((r) => r.player.name)
+      const me = await named('data-owner')
+      const other = await named('data-other')
+      const mine = await submit(me.session, honestRun(1.2, 91))
+      const theirs = await submit(other.session, honestRun(1, 92))
+      expect(await boardNames()).toEqual(['data-owner', 'data-other'])
+
+      // Hide and show again.
+      const hid = await call<{ player: { hidden: boolean } }>('/api/me/hide', me.session, { hidden: true })
+      expect(hid.body.player.hidden).toBe(true)
+      expect(await boardNames()).toEqual(['data-other'])
+      await call('/api/me/hide', me.session, { hidden: false })
+      expect(await boardNames()).toEqual(['data-owner', 'data-other'])
+
+      // Entries, and deleting one; another player's runs aren't yours to delete.
+      const entries = await call<{ entries: { runId: string; snippet: string; hasLog: boolean }[] }>('/api/me/runs', me.session)
+      expect(entries.body.entries).toEqual([expect.objectContaining({ runId: mine.body.runId, snippet: snippet.name, hasLog: true })])
+      expect((await call(`/api/me/runs/${theirs.body.runId}/delete`, me.session, {})).status).toBe(404)
+      expect((await call(`/api/me/runs/${mine.body.runId}/delete`, me.session, {})).status).toBe(200)
+      expect(await boardNames()).toEqual(['data-other'])
+
+      // Download: everything kept, with logs readable.
+      const again = await submit(me.session, honestRun(1.1, 93))
+      await reportAs(me.session, { player: other.id, reason: 'other', note: 'checking' })
+      const data = await call<{ player: { name: string }; bests: unknown[]; logs: { runId: string; log: unknown[] }[]; reportsMade: { note: string }[] }>('/api/me/data', me.session)
+      expect(data.headers.get('Content-Disposition')).toMatch(/attachment/)
+      expect(data.body.player.name).toBe('data-owner')
+      expect(data.body.bests.length).toBe(2)
+      expect(data.body.logs).toEqual([expect.objectContaining({ runId: again.body.runId })])
+      expect(data.body.logs[0].log.length).toBeGreaterThan(10)
+      expect(data.body.reportsMade).toEqual([expect.objectContaining({ note: 'checking' })])
+      expect((await call('/api/me/data', 'not-a-session')).status).toBe(401)
+
+      // Delete the account: confirmed by name; data gone, reports made kept without a name, reports about them gone.
+      await reportAs(other.session, { player: me.id, reason: 'name' })
+      expect((await call('/api/me/delete', me.session, { confirm: 'someone else' })).status).toBe(400)
+      const gone = await call<{ deleted: boolean }>('/api/me/delete', me.session, { confirm: 'DATA-OWNER' })
+      expect(gone.body.deleted).toBe(true)
+      expect(gone.headers.get('Set-Cookie')).toMatch(/^syntype_session=; /)
+      expect((await me_(me.session)).signedIn).toBe(false)
+      expect(await boardNames()).toEqual(['data-other'])
+      for (const table of ['bests', 'logs']) expect(await db.prepare(`SELECT count(*) AS n FROM ${table} WHERE player_id = ?`).bind(me.id).first()).toEqual({ n: 0 })
+      expect(await db.prepare('SELECT reporter_id FROM reports WHERE note = ?').bind('checking').first()).toEqual({ reporter_id: null })
+      expect(await db.prepare('SELECT count(*) AS n FROM reports WHERE target_player_id = ?').bind(me.id).first()).toEqual({ n: 0 })
+    } finally {
+      ;({ snippet, fp } = saved)
+    }
+  })
+
+  it('accounts unused for two years are deleted; others stay', async () => {
+    const old = await named('long-gone')
+    const recent = await named('still-here')
+    const now = new Date()
+    await db.prepare('UPDATE players SET last_seen_at = ? WHERE id = ?').bind(new Date(now.getTime() - 2.1 * 365 * 86_400_000).toISOString(), old.id).run()
+    await db.prepare('UPDATE players SET last_seen_at = ? WHERE id = ?').bind(new Date(now.getTime() - 1.9 * 365 * 86_400_000).toISOString(), recent.id).run()
+    expect(await deleteInactive(db, now)).toBeGreaterThanOrEqual(1)
+    expect(await db.prepare('SELECT id FROM players WHERE id IN (?, ?)').bind(old.id, recent.id).all()).toMatchObject({ results: [{ id: recent.id }] })
   })
 
   it('a token is the player’s own', async () => {

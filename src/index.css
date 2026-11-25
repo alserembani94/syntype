@@ -525,3 +525,46 @@ svg.chart .runs-dot.best { fill: var(--accent); }
 /* The leaderboard preview page (src/preview): a note that the data is made up. */
 .preview-banner { margin: 0; display: flex; gap: 6px 16px; flex-wrap: wrap; align-items: center; padding: 10px 14px; border-radius: 10px; font-size: 13px; color: var(--fg); background: var(--accent-soft); }
 .preview-banner label { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); cursor: pointer; }
+/* Account & data (AccountSettings). */
+.dialog.account-settings { width: min(560px, 100%); max-height: calc(100vh - 48px); overflow-y: auto; }
+.settings-block { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+.settings-block h3 { margin: 0; font: 600 13px var(--f-ui); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.danger-zone h3 { color: var(--err); }
+.switch-row { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; cursor: pointer; }
+.switch-row input { margin-top: 3px; accent-color: var(--accent); }
+.switch-row > span { display: grid; gap: 2px; }
+.inline-link { border: 0; padding: 0; background: none; cursor: pointer; color: var(--accent); font: inherit; }
+.inline-link:hover { text-decoration: underline; }
+.inline-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.entries { list-style: none; margin: 0; padding: 0; display: grid; max-height: 220px; overflow-y: auto; border: 1px solid var(--line); border-radius: 9px; }
+.entries li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 4px 12px; align-items: center; padding: 8px 12px; font-size: 13px; }
+.entries li + li { border-top: 1px solid var(--line); }
+.entry-name { font-family: var(--f-code); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.entry-stat { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.entry-actions { display: flex; gap: 6px; }
+.entry-actions .btn { padding: 4px 9px; font-size: 12px; }
+.delete-form { display: grid; gap: 10px; }
+.dialog-actions.spread { justify-content: space-between; align-items: center; }
+.policy-links { display: flex; gap: 14px; font-size: 13px; }
+.policy-links a, .dialog-text a { color: var(--accent); }
+@media (max-width: 520px) { .entries li { grid-template-columns: minmax(0, 1fr) auto; } .entry-stat { grid-column: 1; } }
+
+/* The privacy and fair-play pages (scripts/build-pages.mjs). */
+.policy { max-width: 720px; margin: 0 auto; display: grid; gap: 22px; line-height: 1.6; }
+.policy-top { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.policy-top a.brand-link { text-decoration: none; color: inherit; }
+.policy-top nav { display: flex; gap: 16px; margin-left: auto; font-size: 14px; }
+.policy-top nav a { color: var(--muted); text-decoration: none; }
+.policy-top nav a:hover, .policy-top nav a[aria-current="page"] { color: var(--accent); }
+.policy h1 { font: 700 34px var(--f-display); letter-spacing: -0.02em; margin: 8px 0 0; text-wrap: balance; }
+.policy h2 { font: 700 19px var(--f-display); margin: 0 0 6px; }
+.policy p, .policy ul { margin: 0 0 10px; }
+.policy ul { padding-left: 20px; display: grid; gap: 4px; }
+.policy a { color: var(--accent); }
+.policy .lede { font-size: 17px; color: var(--fg); }
+.policy section { padding-top: 14px; border-top: 1px solid var(--line); }
+.brand-word { font: 700 26px var(--f-display); letter-spacing: -0.02em; }
+.brand-word span { color: var(--accent); }
+.about-links { margin: 12px 0 0; font-size: 14px; }
+.about-links a { color: var(--accent); }
+.dialog-note a { color: var(--accent); }

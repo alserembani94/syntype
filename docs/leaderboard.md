@@ -238,6 +238,12 @@ Indexes:
 
 Have the privacy page checked against the laws that apply: Malaysia's PDPA for a `.my` site, and the EU's GDPR for European players.
 
+**As built** (task 9):
+- **Account & data** (`src/components/AccountSettings.tsx`, from the account menu): change name, a "Show me on the leaderboards" switch, the player's entries with a delete for each, **Download my data** (a JSON file of the player row, bests, kept logs decoded, and reports they sent), and **Delete my account** (type the name to confirm; optionally clear this device's history; then links to GitHub's and Google's connected-apps settings).
+- **Server** (`worker/lib/account.ts`): `POST /api/me/hide`, `GET /api/me/runs`, `POST /api/me/runs/:runId/delete` (as the admin's removal: the player's best with other aids takes its place), `GET /api/me/data`, `POST /api/me/delete`. Deleting an account, in one transaction: reports they sent lose their name, reports about them, their logs, bests and player row go, and renames in the moderation log lose their old and new names.
+- **Inactive accounts:** a daily Cron Trigger (`triggers.crons` in `wrangler.jsonc`, `scheduled` in `worker/index.ts`) deletes accounts not seen for two years, 200 a day at most.
+- **Pages:** `/privacy` and `/fair-play` (`src/seo/policies.ts`, written by `scripts/build-pages.mjs` as plain pages without the app, in the sitemap). The privacy page is published only once `PRIVACY_CONTACT` is set, since data protection law expects a way to reach the site's operator; until then only fair play is live. The privacy text is a careful draft, not legal advice: have it checked against the PDPA and GDPR.
+
 ## Cost and limits
 
 Cloudflare's free plan:

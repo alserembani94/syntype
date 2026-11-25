@@ -6,6 +6,7 @@
 import type { Db } from './db'
 import { nameKey, nameProblem, tidyName } from './names'
 import { getPlayer, type PlayerRow } from './players'
+import { runRemoval } from './boards'
 
 export const REASONS = ['cheating', 'name', 'other'] as const
 export type Reason = (typeof REASONS)[number]
@@ -180,28 +181,10 @@ export function actOnPlayer(db: Db, admin: string, id: string, action: PlayerAct
  * still stands.
  */
 export async function removeRun(db: Db, admin: string, runId: string, now: Date): Promise<Result<{ removed: number }>> {
-  const rows = (await db.prepare('SELECT player_id, fingerprint, aids FROM bests WHERE run_id = ?').bind(runId).all<{ player_id: string; fingerprint: string; aids: string }>()).results
-  if (!rows.length) return fail(404, 'That run isn’t on the boards.')
-  const { player_id: player, fingerprint } = rows[0]
-  const writes = [
-    db.prepare('DELETE FROM bests WHERE run_id = ?').bind(runId),
-    db.prepare('DELETE FROM logs WHERE run_id = ?').bind(runId),
-  ]
-  if (rows.some((r) => r.aids === 'any')) {
-    writes.push(
-      db
-        .prepare(
-          `INSERT INTO bests (player_id, fingerprint, aids, language, run_id, wpm, raw_wpm, accuracy, seconds, run_aids, finished_at)
-           SELECT player_id, fingerprint, 'any', language, run_id, wpm, raw_wpm, accuracy, seconds, run_aids, finished_at
-           FROM bests WHERE player_id = ? AND fingerprint = ? AND aids != 'any' AND run_id != ?
-           ORDER BY wpm DESC, accuracy DESC, finished_at LIMIT 1`,
-        )
-        .bind(player, fingerprint, runId),
-    )
-  }
-  writes.push(logAction(db, admin, 'remove-run', player, runId, JSON.stringify({ fingerprint }), now))
-  await db.batch(writes)
-  return { ok: true, removed: rows.length }
+  const removal = await runRemoval(db, runId)
+  if (!removal) return fail(404, 'That run isn’t on the boards.')
+  await db.batch([...removal.writes, logAction(db, admin, 'remove-run', removal.player, runId, JSON.stringify({ fingerprint: removal.fingerprint }), now)])
+  return { ok: true, removed: removal.rows }
 }
 
 export interface ReportGroup {

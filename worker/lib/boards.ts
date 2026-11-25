@@ -179,3 +179,28 @@ export async function runForReplay(db: Db, runId: string, opts: { admin: boolean
     log: row.log,
   }
 }
+
+/**
+ * The writes that take a run off the boards: its best rows and its log go,
+ * and if it was the player's overall best, their best with other typing aids
+ * takes its place. Null if the run isn't on the boards (or isn't `playerId`'s).
+ */
+export async function runRemoval(db: Db, runId: string, playerId?: string) {
+  const rows = (await db.prepare('SELECT player_id, fingerprint, aids FROM bests WHERE run_id = ?').bind(runId).all<{ player_id: string; fingerprint: string; aids: string }>()).results
+  if (!rows.length || (playerId && rows[0].player_id !== playerId)) return null
+  const { player_id: player, fingerprint } = rows[0]
+  const writes = [db.prepare('DELETE FROM bests WHERE run_id = ?').bind(runId), db.prepare('DELETE FROM logs WHERE run_id = ?').bind(runId)]
+  if (rows.some((r) => r.aids === 'any')) {
+    writes.push(
+      db
+        .prepare(
+          `INSERT INTO bests (player_id, fingerprint, aids, language, run_id, wpm, raw_wpm, accuracy, seconds, run_aids, finished_at)
+           SELECT player_id, fingerprint, 'any', language, run_id, wpm, raw_wpm, accuracy, seconds, run_aids, finished_at
+           FROM bests WHERE player_id = ? AND fingerprint = ? AND aids != 'any' AND run_id != ?
+           ORDER BY wpm DESC, accuracy DESC, finished_at LIMIT 1`,
+        )
+        .bind(player, fingerprint, runId),
+    )
+  }
+  return { player, fingerprint, rows: rows.length, writes }
+}

@@ -12,9 +12,10 @@ import { createServer } from 'vite'
 
 const dist = 'dist'
 const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom', logLevel: 'error' })
-let seo, LANGUAGES, snippetData
+let seo, LANGUAGES, snippetData, policies
 try {
   seo = await server.ssrLoadModule('/src/seo/site.ts')
+  policies = await server.ssrLoadModule('/src/seo/policies.ts')
   ;({ LANGUAGES } = await server.ssrLoadModule('/src/languages/index.ts'))
   snippetData = await server.ssrLoadModule('/src/lib/snippetfiles.ts')
 } finally {
@@ -29,6 +30,7 @@ const between = (html, name, content) => {
   return html.replace(re, `<!-- ${name}:start -->\n${content}\n    <!-- ${name}:end -->`)
 }
 
+const head_ = (page) => head(page)
 function head(page) {
   const image = `${seo.SITE_URL}${seo.OG_IMAGE.path}`
   const data = {
@@ -80,6 +82,7 @@ function about(page) {
     return `          <li><a href="/${l.id}"${here}>${esc(l.name)} typing test</a></li>`
   }).join('\n')
   const qa = faq.map(([q, a]) => `          <dt>${esc(q)}</dt>\n          <dd>${esc(a)}</dd>`).join('\n')
+  const rules = policies.policyPages().map((p) => `<a href="${p.path}">${esc(p.label)}</a>`).join(' · ')
   return `    <section class="about" id="about" aria-labelledby="about-heading">
       <h2 id="about-heading">${esc(page.heading)}</h2>
       <p>${esc(page.intro)}</p>
@@ -89,6 +92,7 @@ function about(page) {
           <dl>
 ${qa}
           </dl>
+          <p class="about-links">${rules}</p>
         </div>
         <nav aria-label="Languages">
           <h3>Typing tests by language</h3>
@@ -114,7 +118,56 @@ for (const page of pages) {
   html = between(html, 'about', about(home))
   fs.writeFileSync(path.join(dist, runs.file), html)
 }
-fs.writeFileSync(path.join(dist, 'sitemap.xml'), seo.sitemapXml(pages))
+// The privacy and fair-play pages: plain reading, no app (src/seo/policies.ts).
+const inline = (text) => esc(text).replace(/\[([^\]]+)\]\((https:[^)\s]+)\)/g, (_, words, href) => `<a href="${href}" rel="noreferrer">${words}</a>`)
+function policyHtml(page, all) {
+  // The site's head (styles, fonts, saved theme), without the app's scripts.
+  const head = between(template, 'seo', head_(page)).match(/<head>[\s\S]*<\/head>/)[0].replace(/\s*<script type="module"[^>]*><\/script>/g, '').replace(/\s*<link rel="modulepreload"[^>]*>/g, '')
+  const nav = [{ path: '/', label: 'Typing test' }, { path: '/leaderboard', label: 'Leaderboards' }, ...all.map((p) => ({ path: p.path, label: p.label }))]
+    .map((l) => `<a href="${l.path}"${l.path === page.path ? ' aria-current="page"' : ''}>${esc(l.label)}</a>`)
+    .join('\n          ')
+  const sections = page.sections
+    .map((sec) => {
+      const blocks = []
+      let list = []
+      const flush = () => {
+        if (list.length) blocks.push(`<ul>${list.map((i) => `<li>${inline(i)}</li>`).join('')}</ul>`)
+        list = []
+      }
+      for (const line of sec.body) {
+        if (line.startsWith('- ')) {
+          list.push(line.slice(2))
+        } else {
+          flush()
+          blocks.push(`<p>${inline(line)}</p>`)
+        }
+      }
+      flush()
+      return `      <section>\n        <h2>${esc(sec.heading)}</h2>\n        ${blocks.join('\n        ')}\n      </section>`
+    })
+    .join('\n')
+  return `<!doctype html>
+<html lang="en">
+  ${head}
+  <body>
+    <main class="policy">
+      <header class="policy-top">
+        <a class="brand-link" href="/"><span class="brand-word">Syn<span>type</span></span></a>
+        <nav aria-label="Site">
+          ${nav}
+        </nav>
+      </header>
+      <h1>${esc(page.heading)}</h1>
+      <p class="lede">${esc(page.intro)}</p>
+${sections}
+    </main>
+  </body>
+</html>
+`
+}
+const policyList = policies.policyPages()
+for (const page of policyList) fs.writeFileSync(path.join(dist, page.file), policyHtml(page, policyList))
+fs.writeFileSync(path.join(dist, 'sitemap.xml'), seo.sitemapXml([...pages, ...policyList]))
 // One file per snippet, and an index of the current ones.
 const files = await snippetData.snippetFiles(LANGUAGES)
 const dataDir = path.join(dist, snippetData.SNIPPET_DATA_PATH)
@@ -122,4 +175,4 @@ fs.mkdirSync(dataDir, { recursive: true })
 for (const f of files) fs.writeFileSync(path.join(dataDir, `${f.fingerprint}.json`), JSON.stringify(f))
 fs.writeFileSync(path.join(dataDir, 'index.json'), JSON.stringify(files.map(({ fingerprint, language, name, length }) => ({ fingerprint, language, name, length }))))
 fs.writeFileSync(path.join(dist, 'robots.txt'), seo.robotsTxt())
-console.log(`${dist}/: ${pages.length} pages, ${seo.RUNS_PAGE.file}, sitemap.xml, robots.txt, ${files.length} snippet data files`)
+console.log(`${dist}/: ${pages.length} pages, ${seo.RUNS_PAGE.file}, ${policyList.map((p) => p.file).join(', ')}, sitemap.xml, robots.txt, ${files.length} snippet data files`)

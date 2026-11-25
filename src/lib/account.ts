@@ -99,3 +99,62 @@ export function nameHint(raw: string): string | null {
   if (!/^[A-Za-z0-9 _-]+$/.test(name)) return 'Letters, numbers, spaces, - and _ only.'
   return null
 }
+
+// ——— The player's own data (worker/lib/account.ts) ———
+
+export interface Entry {
+  runId: string
+  fingerprint: string
+  language: string
+  snippet: string
+  length: string
+  wpm: number
+  accuracy: number
+  aids: string
+  finishedAt: string
+  hasLog: boolean
+}
+
+async function post<T>(path: string, body: unknown): Promise<{ ok: true; body: T } | { ok: false; error: string }> {
+  try {
+    const res = await fetch(path, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    const data = (await res.json().catch(() => null)) as (T & { error?: string }) | null
+    return res.ok && data ? { ok: true, body: data } : { ok: false, error: data?.error ?? 'That didn’t work. Please try again.' }
+  } catch {
+    return { ok: false, error: 'Couldn’t reach Syntype. Check your connection and try again.' }
+  }
+}
+
+/** Hides the player from every leaderboard, or shows them again. */
+export const setHidden = (hidden: boolean) => post<{ player: Player }>('/api/me/hide', { hidden })
+
+export async function fetchEntries(): Promise<Entry[] | null> {
+  try {
+    const res = await fetch('/api/me/runs', { credentials: 'same-origin' })
+    return res.ok ? ((await res.json()) as { entries: Entry[] }).entries : null
+  } catch {
+    return null
+  }
+}
+
+export const deleteEntry = (runId: string) => post<{ ok: true }>(`/api/me/runs/${encodeURIComponent(runId)}/delete`, {})
+
+/** Saves everything the server keeps about the player as a file. */
+export async function downloadData(): Promise<string | null> {
+  try {
+    const res = await fetch('/api/me/data', { credentials: 'same-origin' })
+    if (!res.ok) return 'The download didn’t work. Please try again.'
+    const url = URL.createObjectURL(await res.blob())
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `syntype-account-data-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 10_000)
+    return null
+  } catch {
+    return 'Couldn’t reach Syntype. Check your connection and try again.'
+  }
+}
+
+/** Deletes the account; `confirm` is the player's name, typed to make sure. */
+export const deleteAccount = (confirm: string) => post<{ deleted: true }>('/api/me/delete', { confirm })
