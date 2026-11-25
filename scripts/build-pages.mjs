@@ -178,7 +178,8 @@ fs.writeFileSync(path.join(dataDir, 'index.json'), JSON.stringify(files.map(({ f
 fs.writeFileSync(path.join(dist, 'robots.txt'), seo.robotsTxt())
 // The Content Security Policy (public/_headers): only our own scripts, Turnstile,
 // and the inline code the built pages actually contain, by hash.
-const CSP_ENFORCED = false // report-only until the live pages are checked for violations
+// Enforced: every page type was checked on the live site in report-only mode first (Nov 2026).
+const CSP_ENFORCED = true
 const hashOf = (text) => `'sha256-${crypto.createHash('sha256').update(text).digest('base64')}'`
 const decode = (v) => v.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
 const inlineScripts = new Set()
