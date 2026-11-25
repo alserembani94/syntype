@@ -1,66 +1,7 @@
 /** The admin page's calls to /api/admin (worker/lib/moderation.ts has the other side). */
+import type { AdminAction, AdminPlayer, Entry, PlayerAction, ReportGroup, ReportReason as Reason, RunInfo } from '../lib/apiTypes'
 
-export interface AdminPlayer {
-  id: string
-  provider: 'github' | 'google'
-  providerId: string
-  name: string | null
-  suggestedName: string
-  hidden: boolean
-  hiddenByModerator: boolean
-  nameChangedAt: string | null
-  createdAt: string
-  lastSeenAt: string
-  openReports: number
-}
-
-export type Reason = 'cheating' | 'name' | 'other'
-
-/** A reported run as it stands on the boards; null once it's gone. */
-export interface RunInfo {
-  language: string
-  snippet: string
-  wpm: number
-  accuracy: number
-  aids: string
-  finishedAt: string
-  hasLog: boolean
-}
-
-export interface ReportGroup {
-  player: AdminPlayer | null
-  run: string | null
-  runInfo: RunInfo | null
-  count: number
-  latest: string
-  reports: { id: string; reason: Reason; note: string | null; status: string; createdAt: string; reporter: string | null; automatic: boolean }[]
-}
-
-/** One of a player's leaderboard entries (their best on a snippet). */
-export interface Entry {
-  runId: string
-  language: string
-  snippet: string
-  length: string
-  wpm: number
-  accuracy: number
-  aids: string
-  finishedAt: string
-  hasLog: boolean
-}
-
-export interface AdminAction {
-  id: string
-  action: string
-  player: string | null
-  playerName: string | null
-  run: string | null
-  detail: string | null
-  admin: string | null
-  createdAt: string
-}
-
-export type PlayerAction = 'rename' | 'hide' | 'show' | 'signout'
+export type { AdminAction, AdminPlayer, Entry, PlayerAction, Reason, RunInfo, ReportGroup }
 
 export class AdminError extends Error {
   status: number

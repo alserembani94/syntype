@@ -3,21 +3,10 @@
  * site itself: the single-file artifact has no server, and there sign-in
  * simply doesn't appear.
  */
-export type Provider = 'github' | 'google'
+import type { Entry, Player, Provider } from './apiTypes'
+import { nameShapeProblem } from './nameRules'
 
-export interface Player {
-  id: string
-  provider: Provider
-  /** Null until the player confirms a leaderboard name. */
-  name: string | null
-  suggestedName: string
-  hidden: boolean
-  /** Hidden from the leaderboards by a moderator. */
-  hiddenByModerator: boolean
-  nameChangedAt: string | null
-  /** When the name may change again, if not yet. */
-  renameAfter: string | null
-}
+export type { Entry, Player, Provider }
 
 export type Account = { state: 'loading' } | { state: 'unavailable' } | { state: 'signed-out' } | { state: 'signed-in'; player: Player; turnstileSiteKey?: string }
 
@@ -91,29 +80,11 @@ export async function signOut(): Promise<void> {
   await fetch('/api/auth/signout', { method: 'POST', credentials: 'same-origin' }).catch(() => {})
 }
 
-/** The rules the server applies (worker/lib/names.ts), checked as the player types, for a quick hint. */
-export function nameHint(raw: string): string | null {
-  const name = raw.replace(/\s+/g, ' ').trim()
-  if (name.length < 3) return 'At least 3 characters.'
-  if (name.length > 24) return 'At most 24 characters.'
-  if (!/^[A-Za-z0-9 _-]+$/.test(name)) return 'Letters, numbers, spaces, - and _ only.'
-  return null
-}
+/** The name's shape, checked as the player types for a quick hint; the server also turns away reserved and offensive names. */
+export const nameHint = nameShapeProblem
 
 // ——— The player's own data (worker/lib/account.ts) ———
 
-export interface Entry {
-  runId: string
-  fingerprint: string
-  language: string
-  snippet: string
-  length: string
-  wpm: number
-  accuracy: number
-  aids: string
-  finishedAt: string
-  hasLog: boolean
-}
 
 async function post<T>(path: string, body: unknown): Promise<{ ok: true; body: T } | { ok: false; error: string }> {
   try {

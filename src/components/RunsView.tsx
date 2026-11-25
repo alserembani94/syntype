@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { AidTags } from './AidTags'
 import type { Language, SnippetLength } from '../languages'
 import { keepSafe, snippetKey, storageInfo, type History, type StoredRun } from '../lib/history'
 import { fingerprint } from '../lib/runlog'
@@ -601,11 +602,7 @@ function SnippetRuns({ lang, name, length, runs, onBack, onType, onReplay }: Sni
                   <td className="stat">{Math.round(r.accuracy)}%</td>
                   <td className="stat">{duration(r.seconds)}</td>
                   <td className="wide">
-                    <span className="aid-tags">
-                      <i className={r.aids.autoIndent ? '' : 'off'} title="auto-indent">indent</i>
-                      <i className={r.aids.autoClose ? '' : 'off'} title="auto-close">close</i>
-                      <i className={r.aids.autocomplete ? '' : 'off'} title="autocomplete">auto</i>
-                    </span>
+                    <AidTags aids={r.aids} />
                   </td>
                   {anySubmitted && <td>{boardCell(r)}</td>}
                   <td>

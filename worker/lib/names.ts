@@ -1,7 +1,7 @@
-/** Leaderboard names (docs/leaderboard.md, "Display name"). */
+/** Leaderboard names (docs/leaderboard.md, "Display name"). Their shape is in src/lib/nameRules.ts, shared with the game. */
+import { NAME_MAX, nameShapeProblem, tidyName } from '../../src/lib/nameRules'
 
-export const NAME_MIN = 3
-export const NAME_MAX = 24
+export { NAME_MAX, NAME_MIN, tidyName } from '../../src/lib/nameRules'
 /** Renaming is allowed once a week; the first confirmation doesn't count. */
 export const RENAME_EVERY_MS = 7 * 24 * 60 * 60 * 1000
 
@@ -13,9 +13,6 @@ const RESERVED = ['admin', 'administrator', 'moderator', 'mod', 'syntype', 'staf
  */
 const BLOCKED = ['fuck', 'shit', 'cunt', 'bitch', 'whore', 'slut', 'nazi', 'hitler', 'rape', 'porn', 'nigg', 'fagg', 'retard', 'kys']
 
-/** Collapses runs of spaces and trims, so "  Ada   L " becomes "Ada L". */
-export const tidyName = (raw: string) => raw.replace(/\s+/g, ' ').trim()
-
 /** The key names are unique on: case doesn't matter. */
 export const nameKey = (name: string) => tidyName(name).toLowerCase()
 
@@ -24,11 +21,9 @@ const deLeet = (s: string) =>
 
 /** Why a name can't be used, in words a player can act on; null when it's fine. */
 export function nameProblem(raw: string): string | null {
+  const shape = nameShapeProblem(raw)
+  if (shape) return shape
   const name = tidyName(raw)
-  if (name.length < NAME_MIN) return `Use at least ${NAME_MIN} characters.`
-  if (name.length > NAME_MAX) return `Use at most ${NAME_MAX} characters.`
-  if (!/^[A-Za-z0-9 _-]+$/.test(name)) return 'Use letters, numbers, spaces, - and _ only.'
-  if (!/[A-Za-z0-9]/.test(name)) return 'Include at least one letter or number.'
   if (RESERVED.includes(name.toLowerCase().replace(/[\s_-]+/g, ''))) return 'That name is reserved.'
   if (BLOCKED.some((w) => deLeet(name).includes(w))) return 'Please choose a different name.'
   return null

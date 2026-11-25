@@ -2,6 +2,7 @@
  * The admin page (/admin, behind Cloudflare Access): the report queue, player
  * search and the action log. docs/leaderboard.md, "Moderation", has the rules.
  */
+import { aidNames, aidsOf } from '../lib/aids'
 import { useCallback, useEffect, useState } from 'react'
 import {
   actionLog,
@@ -433,8 +434,7 @@ function RunTools({ runId, playerId, hasLog, onRemoved, onNotice }: { runId: str
   )
 }
 
-const AID_NAMES = ['indent', 'close', 'auto']
-const aidsText = (key: string) => AID_NAMES.filter((_, i) => key[i] === '1').join(' + ') || 'no aids'
+const aidsText = (key: string) => aidNames(aidsOf(key)).join(' + ') || 'no aids'
 // Language ids as they are (the admin bundle leaves out the language definitions).
 const langName = (id: string) => id
 

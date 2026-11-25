@@ -3,6 +3,7 @@
  * the player's own history goes to the admin's report queue. The run stays on
  * the board; the admin watches the replay and decides.
  */
+import { VISIBLE } from './sql'
 import type { Db } from './db'
 
 /** A new best this many times the player's average on their other snippets... */
@@ -34,7 +35,7 @@ export async function flagIfUnusual(db: Db, run: { playerId: string; runId: stri
   let boardSize = 0
   if (history.count < HISTORY_MIN && run.rank === 1) {
     boardSize = (await db
-      .prepare("SELECT count(*) AS n FROM bests b JOIN players p ON p.id = b.player_id WHERE b.fingerprint = ? AND b.aids = 'any' AND p.hidden = 0 AND p.moderator_hidden = 0")
+      .prepare(`SELECT count(*) AS n FROM bests b JOIN players p ON p.id = b.player_id WHERE b.fingerprint = ? AND b.aids = 'any' AND ${VISIBLE}`)
       .bind(run.fingerprint)
       .first<{ n: number }>())!.n
   }

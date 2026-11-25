@@ -7,7 +7,8 @@ import type { Language } from '../languages'
 import { computePairs } from '../lib/pairs'
 import { encodeLog, fingerprint, type LogEntry } from '../lib/runcore'
 import { init, reducer } from '../lib/typing'
-import { aidsOf, type Board, type BoardReplay, type BoardRow, type LanguageBoards } from '../lib/boards'
+import { aidsOf } from '../lib/aids'
+import type { Board, BoardReplay, BoardRow, LanguageBoards } from '../lib/boards'
 
 const NAMES = [
   'LinusFast', 'ada-lovelace', 'grace-417', 'kernel_panic', 'tabs4ever', 'Margaret H', 'segfault', 'nullish',
@@ -35,7 +36,7 @@ export async function buildSample(languages: Language[]): Promise<Sample> {
   const day = 86_400_000
   const now = Date.now()
   for (const lang of languages) {
-    const overview: LanguageBoards = { snippets: [], archived: [] }
+    const overview: LanguageBoards = { language: lang.id, snippets: [], archived: [] }
     for (const [i, s] of lang.snippets.entries()) {
       const fp = await fingerprint(s.code)
       // Popular first snippets, quieter later ones, and a few with no runs yet.

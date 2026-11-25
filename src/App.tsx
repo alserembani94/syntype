@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { aidNames } from './lib/aids'
 import { getLanguage, LANGUAGES, pickSnippet, type Snippet, type SnippetLength } from './languages'
 import { useTypingTest, type TestOptions } from './hooks/useTypingTest'
 import { isTouch, usePageFocus } from './hooks/usePageFocus'
@@ -597,9 +598,7 @@ export default function App() {
                   language: language.name,
                   length,
                   snippet: snippet.name,
-                  assists: [autoIndent && 'auto-indent', autoClose && 'auto-close', autocomplete && 'autocomplete'].filter(
-                    (a): a is string => !!a,
-                  ),
+                  assists: aidNames({ autoIndent, autoClose, autocomplete }),
                 }}
                 run={run}
                 highlight={language.highlight}

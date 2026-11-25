@@ -7,7 +7,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Language, Snippet, SnippetLength } from '../languages'
 import type { Player } from '../lib/account'
-import { aidsKey, aidsOf, fetchBoard, fetchLanguageBoards, fetchMyPlace, fetchReplay, sendReport, type Board, type BoardReplay, type BoardRow, type LanguageBoards, type ReportReason } from '../lib/boards'
+import { AIDS, aidsKey, aidsOf } from '../lib/aids'
+import { AidTags } from './AidTags'
+import { fetchBoard, fetchLanguageBoards, fetchMyPlace, fetchReplay, sendReport, type Board, type BoardReplay, type BoardRow, type LanguageBoards, type ReportReason } from '../lib/boards'
 import { fingerprint } from '../lib/runlog'
 import { whenPlayed } from '../lib/board'
 import { ReplayView } from './ReplayView'
@@ -65,8 +67,6 @@ const addressOf = (p: Place) => {
   if (p.admin) q.set('admin', '1')
   return `/leaderboard?${q}`
 }
-
-const AID_NAMES = ['auto-indent', 'auto-close', 'autocomplete']
 
 export function LeaderboardView({ languages, language, length, onLanguage, onLength, player, onType, inAddress = true }: Props) {
   const fallback: Place = { language, length, snippet: null, version: null, aids: 'any', replay: null, admin: false }
@@ -352,9 +352,9 @@ function SnippetBoard({
         </div>
         {custom && (
           <div className="seg">
-            {(['autoIndent', 'autoClose', 'autocomplete'] as const).map((k, i) => (
-              <button key={k} type="button" className="chip" aria-pressed={custom[k]} onClick={() => onAids(aidsKey({ ...custom, [k]: !custom[k] }))}>
-                {AID_NAMES[i]}
+            {AIDS.map(({ id, name }) => (
+              <button key={id} type="button" className="chip" aria-pressed={custom[id]} onClick={() => onAids(aidsKey({ ...custom, [id]: !custom[id] }))}>
+                {name}
               </button>
             ))}
           </div>
@@ -427,7 +427,6 @@ function SnippetBoard({
 }
 
 function Row({ row: r, mine, canReport, onReplay, onReport }: { row: BoardRow; mine: boolean; canReport: boolean; onReplay: (id: string) => void; onReport: (r: BoardRow) => void }) {
-  const a = aidsOf(r.aids)
   return (
     <tr className={mine ? 'mine' : undefined}>
       <td className="rank">{r.rank}</td>
@@ -438,11 +437,7 @@ function Row({ row: r, mine, canReport, onReplay, onReport }: { row: BoardRow; m
       <td className="best">{Math.round(r.wpm)}</td>
       <td className="stat">{Math.round(r.accuracy)}%</td>
       <td className="wide">
-        <span className="aid-tags">
-          <i className={a.autoIndent ? '' : 'off'} title="auto-indent">indent</i>
-          <i className={a.autoClose ? '' : 'off'} title="auto-close">close</i>
-          <i className={a.autocomplete ? '' : 'off'} title="autocomplete">auto</i>
-        </span>
+        <AidTags aids={aidsOf(r.aids)} />
       </td>
       <td className="wide">{whenPlayed(r.finishedAt)}</td>
       <td>

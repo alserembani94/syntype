@@ -18,8 +18,11 @@ import { checkRun, REJECTIONS, type Claim, type Rejection } from './runcheck'
 import type { PlayerRow } from './players'
 import { flagIfUnusual } from './flags'
 import { myPlace } from './boards'
+import { ORDER, VISIBLE } from './sql'
 import { SNIPPET_DATA_PATH, type SnippetFile } from '../../src/lib/snippetfiles'
 import type { LogEntry, TypingAids } from '../../src/lib/runcore'
+import type { SubmittedRun } from '../../src/lib/apiTypes'
+import { aidsKey } from '../../src/lib/aids'
 
 /** Reads one of the site's static files (the Worker's ASSETS binding). */
 export type Assets = (path: string) => Promise<Response>
@@ -99,26 +102,9 @@ const SUBMIT_REJECTIONS: Record<Exclude<SubmitRejection, Rejection>, string> = {
 }
 export const rejectionMessage = (r: SubmitRejection) => (r in REJECTIONS ? REJECTIONS[r as Rejection] : SUBMIT_REJECTIONS[r as Exclude<SubmitRejection, Rejection>])
 
-export interface Submitted {
-  runId: string
-  wpm: number
-  rawWpm: number
-  accuracy: number
-  seconds: number
-  /** A new best on the snippet's board. */
-  best: boolean
-  /** A new best for this combination of typing aids. */
-  bestForAids: boolean
-  /** The player's place on the board (their best, which may be an earlier run). */
-  rank: number
-}
-
-export type SubmitResult = { ok: true; run: Submitted } | { ok: false; status: number; reason: SubmitRejection | 'bad-request'; error: string }
+export type SubmitResult = { ok: true; run: SubmittedRun } | { ok: false; status: number; reason: SubmitRejection | 'bad-request'; error: string }
 
 const reject = (reason: SubmitRejection, status = 422): SubmitResult => ({ ok: false, status, reason, error: rejectionMessage(reason) })
-
-/** '110': auto-indent, auto-close, autocomplete. */
-export const aidsKey = (a: TypingAids) => `${+a.autoIndent}${+a.autoClose}${+a.autocomplete}`
 
 /**
  * Whether Turnstile says a person made this submission, on our site. Each
@@ -245,8 +231,8 @@ export async function submitRun(deps: Deps, player: PlayerRow, body: unknown, no
           .prepare(
             `DELETE FROM logs WHERE fingerprint = ? AND run_id NOT IN (
                SELECT b.run_id FROM bests b JOIN players p ON p.id = b.player_id
-               WHERE b.fingerprint = ? AND b.aids = 'any' AND p.hidden = 0 AND p.moderator_hidden = 0
-               ORDER BY b.wpm DESC, b.accuracy DESC, b.finished_at LIMIT ?)`,
+               WHERE b.fingerprint = ? AND b.aids = 'any' AND ${VISIBLE}
+               ORDER BY ${ORDER} LIMIT ?)`,
           )
           .bind(snippet.fingerprint, snippet.fingerprint, LOGS_KEPT),
       )

@@ -1,6 +1,7 @@
 /** Players: created on first sign-in, named once they confirm a name. */
 import type { Db } from './db'
 import type { Profile, Provider } from './oauth'
+import type { Player } from '../../src/lib/apiTypes'
 import { nameKey, nameProblem, RENAME_EVERY_MS, suggestName, tidyName } from './names'
 
 export interface PlayerRow {
@@ -20,7 +21,7 @@ export interface PlayerRow {
 }
 
 /** What the game is told about the signed-in player (GET /api/me). */
-export function publicPlayer(p: PlayerRow) {
+export function publicPlayer(p: PlayerRow): Player {
   return {
     id: p.id,
     provider: p.provider,

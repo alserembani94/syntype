@@ -9,15 +9,17 @@
  * bests_board index. The Worker caches both for 60 seconds (worker/index.ts).
  */
 import type { Db } from './db'
+import { AHEAD, ORDER, VISIBLE } from './sql'
 import type { Assets } from './runs'
 import { SNIPPET_DATA_PATH, type SnippetIndexEntry } from '../../src/lib/snippetfiles'
+import type { SnippetLength } from '../../src/languages/types'
+import type { Board, BoardReplay, BoardRow, LanguageBoards } from '../../src/lib/apiTypes'
+
+export type { BoardRow }
 
 export const BOARD_SIZE = 15
 /** How long boards are cached at the edge, in seconds. */
 export const BOARD_CACHE_SECONDS = 60
-
-const VISIBLE = 'p.hidden = 0 AND p.moderator_hidden = 0'
-const ORDER = 'b.wpm DESC, b.accuracy DESC, b.finished_at'
 
 export const validAids = (aids: string | null): string => (aids && /^(any|[01]{3})$/.test(aids) ? aids : 'any')
 
@@ -29,19 +31,6 @@ export async function currentSnippets(assets: Assets, now: number): Promise<Snip
   const entries = res.ok ? ((await res.json()) as SnippetIndexEntry[]) : []
   indexCache = { at: now, entries }
   return entries
-}
-
-export interface BoardRow {
-  rank: number
-  player: { id: string; name: string }
-  wpm: number
-  accuracy: number
-  /** The aids the run was typed with, as '110'. */
-  aids: string
-  finishedAt: string
-  runId: string
-  /** Its keystrokes are kept, so it can be replayed. */
-  hasLog: boolean
 }
 
 interface RowData {
@@ -67,7 +56,7 @@ const toRow = (r: RowData, rank: number): BoardRow => ({
 const ROW_COLUMNS = 'b.player_id, p.name, b.wpm, b.accuracy, b.run_aids, b.finished_at, b.run_id, (l.run_id IS NOT NULL) AS has_log'
 
 /** A language's boards: each current snippet's top score, and its older snippet versions that have scores. */
-export async function languageBoards(db: Db, assets: Assets, language: string, now: number) {
+export async function languageBoards(db: Db, assets: Assets, language: string, now: number): Promise<LanguageBoards> {
   const current = (await currentSnippets(assets, now)).filter((s) => s.language === language)
   const tops = current.length
     ? ((await db.batch(
@@ -82,7 +71,7 @@ export async function languageBoards(db: Db, assets: Assets, language: string, n
   const { results: versions } = await db
     .prepare('SELECT fingerprint, name, length, first_seen_at FROM snippet_versions WHERE language = ? ORDER BY name, first_seen_at DESC')
     .bind(language)
-    .all<{ fingerprint: string; name: string; length: string; first_seen_at: string }>()
+    .all<{ fingerprint: string; name: string; length: SnippetLength; first_seen_at: string }>()
   return {
     language,
     snippets: current.map((s, i) => ({ fingerprint: s.fingerprint, name: s.name, length: s.length, top: tops[i]?.results[0] ?? null })),
@@ -91,12 +80,12 @@ export async function languageBoards(db: Db, assets: Assets, language: string, n
 }
 
 /** One board: the snippet, and its top 15 for an aid filter. */
-export async function board(db: Db, assets: Assets, fingerprint: string, aids: string, now: number) {
+export async function board(db: Db, assets: Assets, fingerprint: string, aids: string, now: number): Promise<Board | null> {
   if (!/^[0-9a-f]{64}$/.test(fingerprint)) return null
   const live = (await currentSnippets(assets, now)).find((s) => s.fingerprint === fingerprint)
   const version = live
     ? null
-    : await db.prepare('SELECT language, name, length, code FROM snippet_versions WHERE fingerprint = ?').bind(fingerprint).first<{ language: string; name: string; length: string; code: string }>()
+    : await db.prepare('SELECT language, name, length, code FROM snippet_versions WHERE fingerprint = ?').bind(fingerprint).first<{ language: string; name: string; length: SnippetLength; code: string }>()
   if (!live && !version) return null
   const { results } = await db
     .prepare(
@@ -116,7 +105,7 @@ export async function board(db: Db, assets: Assets, fingerprint: string, aids: s
 }
 
 /** The player's own place on a board, wherever it is ("You: #57"). */
-export async function myPlace(db: Db, playerId: string, fingerprint: string, aids: string) {
+export async function myPlace(db: Db, playerId: string, fingerprint: string, aids: string): Promise<BoardRow | null> {
   const mine = await db
     .prepare(
       `SELECT ${ROW_COLUMNS} FROM bests b JOIN players p ON p.id = b.player_id LEFT JOIN logs l ON l.run_id = b.run_id
@@ -129,7 +118,7 @@ export async function myPlace(db: Db, playerId: string, fingerprint: string, aid
     .prepare(
       `SELECT count(*) AS n FROM bests b JOIN players p ON p.id = b.player_id
        WHERE b.fingerprint = ? AND b.aids = ? AND b.wpm >= ? AND b.player_id != ? AND ${VISIBLE}
-         AND (b.wpm > ? OR (b.wpm = ? AND (b.accuracy > ? OR (b.accuracy = ? AND b.finished_at < ?))))`,
+         AND ${AHEAD}`,
     )
     // wpm >= mine.wpm adds nothing to the condition, but lets the board index read only the rows ahead.
     .bind(fingerprint, aids, mine.wpm, playerId, mine.wpm, mine.wpm, mine.accuracy, mine.accuracy, mine.finished_at)
@@ -142,7 +131,8 @@ export async function myPlace(db: Db, playerId: string, fingerprint: string, aid
  * it. Public replays are of runs on the boards by visible players; the admin
  * can watch any kept run.
  */
-export async function runForReplay(db: Db, runId: string, opts: { admin: boolean }) {
+/** A kept run with its log still compressed, as stored; the route unpacks it. */
+export async function runForReplay(db: Db, runId: string, opts: { admin: boolean }): Promise<(Omit<BoardReplay, 'log'> & { log: ArrayBuffer }) | null> {
   const row = await db
     .prepare(
       `SELECT l.log, b.player_id, p.name, b.wpm, b.accuracy, b.run_aids, b.finished_at, b.fingerprint, v.language, v.name AS snippet, v.length, v.code
@@ -166,7 +156,7 @@ export async function runForReplay(db: Db, runId: string, opts: { admin: boolean
       fingerprint: string
       language: string
       snippet: string
-      length: string
+      length: SnippetLength
       code: string
     }>()
   if (!row) return null
@@ -203,8 +193,8 @@ export async function runRemoval(db: Db, runId: string, playerId: string) {
         .prepare(
           `INSERT INTO bests (player_id, fingerprint, aids, language, run_id, wpm, raw_wpm, accuracy, seconds, run_aids, finished_at)
            SELECT player_id, fingerprint, 'any', language, run_id, wpm, raw_wpm, accuracy, seconds, run_aids, finished_at
-           FROM bests WHERE player_id = ? AND fingerprint = ? AND aids != 'any' AND run_id != ?
-           ORDER BY wpm DESC, accuracy DESC, finished_at LIMIT 1`,
+           FROM bests b WHERE b.player_id = ? AND b.fingerprint = ? AND b.aids != 'any' AND b.run_id != ?
+           ORDER BY ${ORDER} LIMIT 1`,
         )
         .bind(player, fingerprint, runId),
     )

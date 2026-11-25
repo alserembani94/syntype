@@ -8,6 +8,8 @@ import type { Db } from './db'
 import { runRemoval } from './boards'
 import { gunzip } from './runs'
 import type { PlayerRow } from './players'
+import type { SnippetLength } from '../../src/languages/types'
+import type { Entry } from '../../src/lib/apiTypes'
 
 export const INACTIVE_YEARS = 2
 
@@ -32,7 +34,7 @@ export async function setHidden(db: Db, player: PlayerRow, hidden: unknown, limi
 }
 
 /** The player's leaderboard entries: their overall best on each snippet version. */
-export async function myEntries(db: Db, player: Pick<PlayerRow, 'id'>) {
+export async function myEntries(db: Db, player: Pick<PlayerRow, 'id'>): Promise<Entry[]> {
   const { results } = await db
     .prepare(
       `SELECT b.run_id, b.fingerprint, b.wpm, b.accuracy, b.run_aids, b.finished_at, v.language, v.name, v.length, (l.run_id IS NOT NULL) AS has_log
@@ -40,7 +42,7 @@ export async function myEntries(db: Db, player: Pick<PlayerRow, 'id'>) {
        WHERE b.player_id = ? AND b.aids = 'any' ORDER BY b.finished_at DESC`,
     )
     .bind(player.id)
-    .all<{ run_id: string; fingerprint: string; wpm: number; accuracy: number; run_aids: string; finished_at: string; language: string; name: string; length: string; has_log: number }>()
+    .all<{ run_id: string; fingerprint: string; wpm: number; accuracy: number; run_aids: string; finished_at: string; language: string; name: string; length: SnippetLength; has_log: number }>()
   return results.map((r) => ({
     runId: r.run_id,
     fingerprint: r.fingerprint,

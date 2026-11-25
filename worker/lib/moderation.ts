@@ -7,9 +7,10 @@ import type { Db } from './db'
 import { nameKey, nameProblem, tidyName } from './names'
 import { getPlayer, type PlayerRow } from './players'
 import { runRemoval } from './boards'
+import { PLAYER_ACTIONS, REPORT_REASONS, type AdminAction, type AdminPlayer, type PlayerAction, type ReportGroup, type ReportReason, type RunInfo } from '../../src/lib/apiTypes'
 
-export const REASONS = ['cheating', 'name', 'other'] as const
-export type Reason = (typeof REASONS)[number]
+export const REASONS = REPORT_REASONS
+export type Reason = ReportReason
 export const NOTE_MAX = 500
 export const REPORTS_PER_DAY = 10
 
@@ -61,20 +62,6 @@ export async function report(db: Db, reporter: PlayerRow, body: unknown, now: Da
 
 // ——— The admin page ———
 
-export interface AdminPlayer {
-  id: string
-  provider: string
-  providerId: string
-  name: string | null
-  suggestedName: string
-  hidden: boolean
-  hiddenByModerator: boolean
-  nameChangedAt: string | null
-  createdAt: string
-  lastSeenAt: string
-  openReports: number
-}
-
 const adminPlayer = (p: PlayerRow & { open_reports?: number }): AdminPlayer => ({
   id: p.id,
   provider: p.provider,
@@ -125,8 +112,8 @@ async function withPlayer<T>(db: Db, id: string, act: (p: PlayerRow) => Promise<
   return { ...result, player: adminPlayer(after!) }
 }
 
-export type PlayerAction = 'rename' | 'hide' | 'show' | 'signout'
-export const PLAYER_ACTIONS: PlayerAction[] = ['rename', 'hide', 'show', 'signout']
+export { PLAYER_ACTIONS }
+export type { PlayerAction }
 
 /**
  * Something the admin does to a player:
@@ -187,26 +174,6 @@ export async function removeRun(db: Db, admin: string, runId: string, body: unkn
   if (!removal) return fail(404, 'That run isn’t on the boards.')
   await db.batch([...removal.writes, logAction(db, admin, 'remove-run', removal.player, runId, JSON.stringify({ fingerprint: removal.fingerprint }), now)])
   return { ok: true, removed: removal.rows }
-}
-
-/** A reported run as it stands on the boards: null once it's gone (removed, deleted, or beaten). */
-export interface RunInfo {
-  language: string
-  snippet: string
-  wpm: number
-  accuracy: number
-  aids: string
-  finishedAt: string
-  hasLog: boolean
-}
-
-export interface ReportGroup {
-  player: AdminPlayer | null
-  run: string | null
-  runInfo: RunInfo | null
-  count: number
-  latest: string
-  reports: { id: string; reason: Reason; note: string | null; status: string; createdAt: string; reporter: string | null; automatic: boolean }[]
 }
 
 /** Runs on the boards, by run id, for the report queue. Looked up through the reported players, so only their rows are read. */
@@ -294,17 +261,6 @@ export async function closeReports(db: Db, admin: string, body: unknown, now: Da
     logAction(db, admin, b.status === 'resolved' ? 'resolve-reports' : 'dismiss-reports', b.player, run, null, now),
   ])) as { meta: { changes: number } }[]
   return { ok: true, closed: update.meta.changes }
-}
-
-export interface AdminAction {
-  id: string
-  action: string
-  player: string | null
-  playerName: string | null
-  run: string | null
-  detail: string | null
-  admin: string | null
-  createdAt: string
 }
 
 /** The action log, newest first, a page at a time. */
