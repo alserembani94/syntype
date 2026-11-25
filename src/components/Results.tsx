@@ -44,6 +44,7 @@ export function Results({ result: r, isBest, info, run, highlight, onNext, onRet
   // V toggles the review; Enter and R are handled by the app.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof Element && e.target.closest('[role="dialog"]')) return
       if (e.key.toLowerCase() === 'v' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault()
         setReviewing((v) => !v)

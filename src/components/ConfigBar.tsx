@@ -1,15 +1,12 @@
-import type { Language, LengthFilter } from '../languages'
+import type { LengthFilter } from '../languages'
 
 const LENGTHS: LengthFilter[] = ['short', 'medium', 'long', 'any']
 
 interface Props {
-  languages: Language[]
-  language: Language
   length: LengthFilter
   autoIndent: boolean
   autoClose: boolean
   intellisense: boolean
-  onLanguage: (id: string) => void
   onLength: (l: LengthFilter) => void
   onToggleIndent: () => void
   onToggleClose: () => void
@@ -17,13 +14,10 @@ interface Props {
 }
 
 export function ConfigBar({
-  languages,
-  language,
   length,
   autoIndent,
   autoClose,
   intellisense,
-  onLanguage,
   onLength,
   onToggleIndent,
   onToggleClose,
@@ -31,20 +25,6 @@ export function ConfigBar({
 }: Props) {
   return (
     <div className="config" role="toolbar" aria-label="Test settings">
-      <div className="group">
-        <span className="label">language</span>
-        {languages.map((l) => (
-          <button
-            key={l.id}
-            id={`lang-${l.id}`}
-            className="chip"
-            aria-pressed={language.id === l.id}
-            onClick={() => onLanguage(l.id)}
-          >
-            {l.name}
-          </button>
-        ))}
-      </div>
       <div className="group">
         <span className="label">length</span>
         {LENGTHS.map((l) => (

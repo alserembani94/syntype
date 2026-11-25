@@ -9,6 +9,7 @@ import { computePairs } from './lib/pairs'
 import { load, save } from './lib/storage'
 import { CodeView } from './components/CodeView'
 import { ConfigBar } from './components/ConfigBar'
+import { LanguagePicker } from './components/LanguagePicker'
 import { Results } from './components/Results'
 
 interface Settings {
@@ -105,6 +106,8 @@ export default function App() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const s = latest.current
+      // The language picker handles its own keys.
+      if (e.target instanceof Element && e.target.closest('[role="dialog"]')) return
       const onButton = e.target instanceof Element && e.target.closest('button')
       if (onButton && (e.key === 'Enter' || e.key === ' ')) return
 
@@ -171,10 +174,12 @@ export default function App() {
 
   // The clock only counts while keys can reach the game; time away isn't typing time.
   const focused = usePageFocus()
+  const [pickerOpen, setPickerOpen] = useState(false)
   useEffect(() => {
-    if (focused) resume()
+    // The clock also stops while the language picker is open.
+    if (focused && !pickerOpen) resume()
     else pause()
-  }, [focused, pause, resume])
+  }, [focused, pickerOpen, pause, resume])
   const overlay = phase === 'done' || focused ? null : phase === 'running' ? 'paused' : 'start'
 
   // Language service status, shown in the status bar like VS Code's.
@@ -197,6 +202,14 @@ export default function App() {
     for (const ch of text) type(ch)
   }
 
+  const closePicker = () => {
+    setPickerOpen(false)
+    inputRef.current?.focus({ preventScroll: true })
+  }
+  const pickLanguage = (id: string) => {
+    closePicker()
+    if (id !== languageId) changeLanguage(id)
+  }
   const changeLanguage = (id: string) => {
     const lang = getLanguage(id)
     setLanguageId(lang.id)
@@ -232,6 +245,9 @@ export default function App() {
 
   return (
     <div className="wrap">
+      {pickerOpen && (
+        <LanguagePicker languages={LANGUAGES} currentId={languageId} onSelect={pickLanguage} onClose={closePicker} />
+      )}
       <header>
         <div className="brand">
           <h1>
@@ -240,12 +256,9 @@ export default function App() {
           <small>typing speed, measured in code</small>
         </div>
         <ConfigBar
-          languages={LANGUAGES}
-          language={language}
           length={length}
           autoIndent={autoIndent}
           autoClose={autoClose}
-          onLanguage={changeLanguage}
           onLength={changeLength}
           onToggleIndent={toggleIndent}
           onToggleClose={toggleClose}
@@ -255,8 +268,24 @@ export default function App() {
       </header>
 
       {/* No clock or score while typing: results appear only when the snippet is done. */}
-      <div className="live" style={{ visibility: phase === 'done' ? 'hidden' : undefined }}>
-        <span className={`hint${atPending(run) || suggestOpen ? ' attention' : ''}`}>
+      <div className="live">
+        <button
+          type="button"
+          id="language-button"
+          className="lang-button"
+          onClick={() => setPickerOpen(true)}
+          aria-haspopup="dialog"
+          title="Change language"
+        >
+          <span className="lang-icon" aria-hidden="true">
+            {'</>'}
+          </span>
+          {language.name}
+        </button>
+        <span
+          className={`hint${atPending(run) || suggestOpen ? ' attention' : ''}`}
+          style={{ visibility: phase === 'done' ? 'hidden' : undefined }}
+        >
           {suggestOpen ? (
             <>
               <kbd>tab</kbd> <kbd>enter</kbd> accept · <kbd>↑</kbd> <kbd>↓</kbd> choose · <kbd>esc</kbd> close
