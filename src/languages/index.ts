@@ -1,12 +1,13 @@
 import { javascript } from './javascript'
 import { typescript } from './typescript'
+import { python } from './python'
 import type { Language } from './types'
 
 /**
  * Every language the game offers. To add one, create a folder next to
  * `javascript/` with a snippets.txt and an index.ts, then list it here.
  */
-export const LANGUAGES: Language[] = [javascript, typescript]
+export const LANGUAGES: Language[] = [javascript, typescript, python]
 
 export function getLanguage(id: string): Language {
   return LANGUAGES.find((l) => l.id === id) ?? LANGUAGES[0]

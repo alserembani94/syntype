@@ -1,0 +1,183 @@
+=== clamp.py
+def clamp(value, low, high):
+    return max(low, min(value, high))
+=== squares.py
+squares = [n * n for n in range(10) if n % 2 == 0]
+=== greet.py
+def greet(name: str) -> str:
+    return f"Hello, {name}!"
+=== word_count.py
+from collections import Counter
+
+
+def word_count(text):
+    return Counter(text.lower().split())
+=== chunks.py
+def chunks(items, size):
+    return [items[i : i + size] for i in range(0, len(items), size)]
+=== fibonacci.py
+def fibonacci(limit):
+    a, b = 0, 1
+    while a < limit:
+        yield a
+        a, b = b, a + b
+=== read_config.py
+import json
+
+
+def read_config(path):
+    with open(path, encoding="utf-8") as file:
+        config = json.load(file)
+    return config.get("settings", {})
+=== distance.py
+from dataclasses import dataclass
+
+
+@dataclass
+class Point:
+    x: float
+    y: float
+
+    def distance_to(self, other):
+        return ((self.x - other.x) ** 2 + (self.y - other.y) ** 2) ** 0.5
+=== climb.py
+from functools import lru_cache
+
+
+@lru_cache(maxsize=None)
+def ways_to_climb(steps):
+    if steps <= 1:
+        return 1
+    return ways_to_climb(steps - 1) + ways_to_climb(steps - 2)
+=== group_by.py
+from collections import defaultdict
+
+
+def group_by(items, key):
+    groups = defaultdict(list)
+    for item in items:
+        groups[key(item)].append(item)
+    return dict(groups)
+=== retry.py
+import time
+
+
+def retry(task, attempts=3, delay=0.5):
+    for attempt in range(attempts):
+        try:
+            return task()
+        except Exception:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(delay * 2**attempt)
+=== slugify.py
+import re
+
+
+def slugify(title):
+    slug = re.sub(r"[^a-z0-9]+", "-", title.lower())
+    return slug.strip("-")
+=== timer.py
+import time
+from contextlib import contextmanager
+
+
+@contextmanager
+def timer(label):
+    start = time.perf_counter()
+    try:
+        yield
+    finally:
+        elapsed = time.perf_counter() - start
+        print(f"{label}: {elapsed:.3f}s")
+=== Stack.py
+class Stack:
+    """A last-in, first-out collection."""
+
+    def __init__(self):
+        self._items = []
+
+    def push(self, item):
+        self._items.append(item)
+
+    def pop(self):
+        if not self._items:
+            raise IndexError("pop from empty stack")
+        return self._items.pop()
+
+    def peek(self):
+        return self._items[-1] if self._items else None
+
+    def __len__(self):
+        return len(self._items)
+=== inventory.py
+from dataclasses import dataclass, field
+
+
+@dataclass
+class Item:
+    name: str
+    price: float
+    quantity: int = 0
+
+
+@dataclass
+class Inventory:
+    items: list[Item] = field(default_factory=list)
+
+    def add(self, item: Item) -> None:
+        self.items.append(item)
+
+    def total_value(self) -> float:
+        return sum(item.price * item.quantity for item in self.items)
+
+    def low_stock(self, threshold: int = 5) -> list[Item]:
+        return [item for item in self.items if item.quantity < threshold]
+=== fetch_all.py
+import asyncio
+
+
+async def fetch_user(user_id):
+    await asyncio.sleep(0.1)
+    return {"id": user_id, "name": f"user-{user_id}"}
+
+
+async def fetch_all(ids):
+    tasks = [fetch_user(user_id) for user_id in ids]
+    users = await asyncio.gather(*tasks)
+    return {user["id"]: user for user in users}
+
+
+if __name__ == "__main__":
+    print(asyncio.run(fetch_all([1, 2, 3])))
+=== top_words.py
+import re
+from collections import Counter
+from pathlib import Path
+
+
+def top_words(path, count=10):
+    text = Path(path).read_text(encoding="utf-8").lower()
+    words = re.findall(r"[a-z']+", text)
+    stop = {"the", "a", "an", "and", "of", "to", "in"}
+    counts = Counter(word for word in words if word not in stop)
+    return counts.most_common(count)
+=== bank_account.py
+class InsufficientFunds(Exception):
+    pass
+
+
+class BankAccount:
+    def __init__(self, owner, balance=0):
+        self.owner = owner
+        self.balance = balance
+
+    def deposit(self, amount):
+        if amount <= 0:
+            raise ValueError("Deposit must be positive")
+        self.balance += amount
+
+    def withdraw(self, amount):
+        if amount > self.balance:
+            raise InsufficientFunds(f"{self.owner} has {self.balance}")
+        self.balance -= amount

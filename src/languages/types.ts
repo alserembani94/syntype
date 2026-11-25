@@ -100,6 +100,8 @@ export interface Language {
   /** File extension without the dot, e.g. "js". */
   extension: string
   highlight: HighlightRules
+  /** Spaces per indentation level: what Tab inserts and what snippets use. Defaults to 2. */
+  indentSize?: number
   /** What auto-closes, as in VS Code. Defaults to (), [] and {}. */
   autoClosingPairs?: AutoClosingPair[]
   /** Characters after the caret that allow auto-closing. Defaults to VS Code's. */

@@ -68,24 +68,31 @@ export function computePairs(code: string, lang: PairSource): Pairs {
     }
   }
 
-  // Quotes: a string token's first and last character.
+  // Quotes: a string token's first and last character. Triple-quoted strings
+  // (""""doc"""") have no auto-closing pair in VS Code, so they're left alone.
+  const quoteChars = new Set(pairs.filter((p) => p.close.length === 1 && p.open.endsWith(p.close)).map((p) => p.close))
   for (const t of toks) {
     if (t.cls !== 'str' || t.end - t.start < 2) continue
     const q = code[t.start]
-    if (code[t.end - 1] === q && quotes.some((p) => p.open === q)) closeOf[t.start] = t.end - 1
+    if (code.startsWith(q.repeat(3), t.start)) continue
+    if (code[t.end - 1] === q && (quotes.some((p) => p.open === q) || quoteChars.has(q))) closeOf[t.start] = t.end - 1
   }
 
-  // VS Code's static rules.
-  const rule = new Map(pairs.map((p) => [p.open, p]))
+  // VS Code's static rules. Like VS Code, use the longest pair whose opener ends
+  // at this character, so a Python prefix such as f" wins over a bare ".
   for (let i = 0; i < n; i++) {
     if (closeOf[i] < 0) continue
-    const p = rule.get(code[i])!
+    const p = pairs
+      .filter((c) => c.open.endsWith(code[i]) && code.slice(i - c.open.length + 1, i + 1) === c.open)
+      .sort((a, b) => b.open.length - a.open.length)[0]
+    if (!p) continue
     const scope = scopeOf[i]
     const tok = scope >= 0 ? toks[scope] : null
     const inString = tok?.cls === 'str' && i !== tok.start
     const inComment = tok?.cls === 'com'
     let ok = !(p.notIn?.includes('string') && inString) && !(p.notIn?.includes('comment') && inComment)
-    // VS Code never auto-closes a quote typed right after a word character.
+    // VS Code never auto-closes a bare quote typed right after a word character;
+    // a prefixed pair (f", r') exists precisely to allow it.
     if (p.open === p.close && i > 0 && /\w/.test(code[i - 1])) ok = false
     allowed[i] = ok
   }

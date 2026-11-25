@@ -44,11 +44,12 @@ describe.each(LANGUAGES.map((l) => [l.name, l] as const))('%s', (_, lang) => {
 
   it.each(snippets)('R4 · %s is formatted for typing', (name, s) => {
     const lines = s.code.split('\n')
+    const indent = lang.indentSize ?? 2
     expect(s.code, `${name}: printable ASCII only`).toMatch(/^[\x20-\x7e\n]+$/)
     for (const line of lines) {
       expect(line, `${name}: trailing space`).not.toMatch(/ $/)
       expect(line.length, `${name}: line too long: ${line}`).toBeLessThanOrEqual(MAX_LINE_LENGTH)
-      expect(line.match(/^ */)![0].length % 2, `${name}: indent in 2-space steps: ${line}`).toBe(0)
+      expect(line.match(/^ */)![0].length % indent, `${name}: indent in ${indent}-space steps: ${line}`).toBe(0)
     }
     expect(lines[0].trim(), `${name}: starts with a blank line`).not.toBe('')
   })

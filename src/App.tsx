@@ -98,7 +98,7 @@ export default function App() {
 
   // Keyboard: the whole page listens, so typing works without clicking first.
   const suggestOpen = !!state.suggest
-  const keyState = { phase, autoIndent, suggestOpen, next, retry, type, back, move, suggestNav, accept, dismiss }
+  const keyState = { phase, autoIndent, indentSize: language.indentSize ?? 2, suggestOpen, next, retry, type, back, move, suggestNav, accept, dismiss }
   const latest = useRef(keyState)
   useLayoutEffect(() => {
     latest.current = keyState
@@ -156,10 +156,7 @@ export default function App() {
         s.type('\n')
       } else if (e.key === 'Tab') {
         e.preventDefault()
-        if (!s.autoIndent) {
-          s.type(' ')
-          s.type(' ')
-        }
+        if (!s.autoIndent) for (let i = 0; i < s.indentSize; i++) s.type(' ')
       } else if (e.key.length === 1) {
         e.preventDefault()
         s.type(e.key)
@@ -378,7 +375,7 @@ export default function App() {
               {serviceLabel}
             </span>
           )}
-          <span>Spaces: 2</span>
+          <span>Spaces: {language.indentSize ?? 2}</span>
           <span>UTF-8</span>
         </div>
       </section>

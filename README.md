@@ -1,6 +1,6 @@
 # Syntype
 
-A typing speed test for code, in the spirit of monkeytype. It uses real code snippets, colours them like an editor, and reports how fast and how accurately you type them. Languages: JavaScript and TypeScript. The game is built so more can be added.
+A typing speed test for code, in the spirit of monkeytype. It uses real code snippets, colours them like an editor, and reports how fast and how accurately you type them. Languages: JavaScript, TypeScript and Python. The game is built so more can be added.
 
 ## Run it
 
@@ -32,7 +32,8 @@ Other scripts: `npm test` (unit and playthrough tests, Vitest), `npm run build`,
   - `Tab` or `Enter` accepts, `↑`/`↓` choose and `Esc` closes. Clicking or tapping a row also accepts. As in VS Code (`acceptSuggestionOnEnter: "on"`), Enter accepts even when the word is already complete. Press `Esc` first if you want a new line.
   - Ranking follows VS Code: match quality, then the language's own priority (names from the file before globals and keywords), then alphabetical. Recommended items are pre-selected.
   - Accepting a wrong suggestion inserts it anyway, and its letters are checked like typed ones.
-- **IntelliSense is type-aware.** JavaScript and TypeScript snippets both get suggestions from TypeScript's real language service, the engine VS Code uses for both, running in a Web Worker. JavaScript is analysed for inference only (no type errors), as VS Code does without `// @ts-check`. Names it can't resolve are offered as plain words, as in VS Code. It knows the types declared in the snippet: after `interface User { name: string }`, `u.` offers `name`, `users.filter((x) => x.` knows `x` is a `User`, and `Pick<>`, generics, union narrowing, enums and string-literal unions (`"up"`) all work. It only sees what you've typed so far, as a real editor would, so a typo breaks suggestions there too. The status bar shows "… IntelliSense starting…" while it loads (about a second). Until then, and if it can't start, basic suggestions (keywords and words you've typed) are used. If it can't start, hovering over the status-bar label shows why.
+- **Python suggestions** come from keywords, words you've typed, and vocabulary for Python's built-ins plus the standard-library modules a snippet imports (`json`, `re`, `collections`, `pathlib`, `asyncio` and more). There's no type engine for Python yet, so after a dot on an unknown value it offers common `str`/`list`/`dict`/`set` methods. Auto-close follows VS Code's Python configuration, including string prefixes (`f"`, `r'`), and indentation is 4 spaces.
+- **IntelliSense is type-aware** for JavaScript and TypeScript: their snippets both get suggestions from TypeScript's real language service, the engine VS Code uses for both, running in a Web Worker. JavaScript is analysed for inference only (no type errors), as VS Code does without `// @ts-check`. Names it can't resolve are offered as plain words, as in VS Code. It knows the types declared in the snippet: after `interface User { name: string }`, `u.` offers `name`, `users.filter((x) => x.` knows `x` is a `User`, and `Pick<>`, generics, union narrowing, enums and string-literal unions (`"up"`) all work. It only sees what you've typed so far, as a real editor would, so a typo breaks suggestions there too. The status bar shows "… IntelliSense starting…" while it loads (about a second). Until then, and if it can't start, basic suggestions (keywords and words you've typed) are used. If it can't start, hovering over the status-bar label shows why.
 - **Commit characters** (VS Code's): with the list open, typing `.` `,` `;` or `(` accepts the selected item and then types the character. They apply everywhere except where you're declaring a new name, because the service knows those spots. Basic suggestions have none, since they can't tell when a new name is being declared. An exact, fully typed word always outranks longer words it starts (VS Code's full-match boost), so typing `fetch(` commits `fetch`, not `fetchUser`.
 - **Scoring with assists:** WPM counts only characters you typed. **Code speed** counts every right character on screen, including suggested and auto-inserted text, and **keys saved** shows what suggestions saved you.
 - WPM is correct typed characters ÷ 5 per minute. Accuracy counts every keystroke, so fixed mistakes still cost you. Symbol accuracy covers brackets, `=>`, `;` and the like.
@@ -51,6 +52,7 @@ src/
       index.ts          name, extension, highlighting, auto-close and completion settings
       snippets.txt      the snippets: "=== name.js" header, then the code
     typescript/         the same for TypeScript (its service lives in lib/ts/)
+    python/             the same for Python, plus completions.ts (built-in and stdlib vocabulary)
   lib/engine.ts         pure typing engine (type, backspace, auto-indent, auto-close, →/End/↓)
   lib/suggest.ts        IntelliSense: context (word or member), local candidates, fuzzy matching, ranking
   lib/service.ts        the interface a language's completion service implements

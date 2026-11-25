@@ -214,3 +214,33 @@ describe('ranking', () => {
     expect(fuzzyMatch('fetch', 'fetch')!.score).toBeGreaterThan(fuzzyMatch('fetch', 'fetchUser')!.score)
   })
 })
+
+describe('Python vocabulary packs', () => {
+  const py = getLanguage('python')
+  const pySetup = (code: string) => ({
+    run: createRun(code, { autoIndent: true, autoClose: false }),
+    cfg: buildSuggestConfig(code, py, false),
+  })
+
+  it('offers built-ins everywhere', () => {
+    const { run, cfg } = pySetup('total = len(items)')
+    expect(labels(typeAll(run, 'total = le'), cfg)).toContain('len')
+  })
+
+  it('offers a module\'s members after "import json" and "json."', () => {
+    const { run, cfg } = pySetup('import json\ndata = json.loads(text)')
+    expect(labels(typeAll(run, 'import json\ndata = json.'), cfg)).toEqual(expect.arrayContaining(['loads', 'dumps']))
+  })
+
+  it('makes names from "from collections import ..." available, but only when imported', () => {
+    const withImport = pySetup('from collections import Counter\ncounts = Counter(words)')
+    const r = typeAll(withImport.run, 'from collections import Counter\ncounts = Cou')
+    expect(labels(r, withImport.cfg)).toContain('Counter')
+    expect(pySetup('counts = Counter(words)').cfg.globals.some((g) => g.label === 'Counter')).toBe(false)
+  })
+
+  it('offers os.path members after "os.path."', () => {
+    const { run, cfg } = pySetup('import os\np = os.path.join(a, b)')
+    expect(labels(typeAll(run, 'import os\np = os.path.'), cfg)).toContain('join')
+  })
+})

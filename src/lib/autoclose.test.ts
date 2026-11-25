@@ -139,3 +139,28 @@ describe('auto-close like VS Code', () => {
     expect(counts(run).incorrect).toBe(0)
   })
 })
+
+describe('Python auto-close, from VS Code\'s Python configuration', () => {
+  const py = getLanguage('python')
+  const startPy = (code: string) =>
+    createRun(code, { autoIndent: true, autoClose: true, pairs: computePairs(code, py) })
+
+  it('closes a quote right after a string prefix (f", r\'), which the prefixed pairs allow', () => {
+    let run = typeAll(startPy('x = f"{n}"'), 'x = f"')
+    expect(pendingText(run)).toBe('"')
+    run = typeAll(startPy("p = r'\\d+'"), "p = r'")
+    expect(pendingText(run)).toBe("'")
+  })
+
+  it('does not treat a triple-quoted docstring as an ordinary quote pair', () => {
+    const { closeOf } = computePairs('"""Doc."""', py)
+    expect(closeOf.every((c) => c === -1)).toBe(true)
+  })
+
+  it("keeps VS Code's notIn rules: no ' auto-close inside a comment", () => {
+    const code = "# it's fine\nx = 1"
+    const { closeOf, allowed } = computePairs(code, py)
+    const q = code.indexOf("'")
+    expect(closeOf[q] === -1 || allowed[q] === false).toBe(true)
+  })
+})
