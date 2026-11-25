@@ -18,6 +18,7 @@ import { LanguagePicker } from './components/LanguagePicker'
 import { ThemePicker } from './components/ThemePicker'
 import { AboutDialog } from './components/AboutDialog'
 import { RunsView } from './components/RunsView'
+import { Account } from './components/Account'
 import { applyTheme, getTheme, loadTheme, saveTheme } from './themes'
 import { isRunsPath, isSitePath, languageFromPath, languagePage, RUNS_PAGE } from './seo/site'
 import { Results } from './components/Results'
@@ -264,11 +265,12 @@ export default function App() {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [themeOpen, setThemeOpen] = useState(false)
   const [aboutOpen, setAboutOpen] = useState(false)
+  const [accountOpen, setAccountOpen] = useState(false)
   useEffect(() => {
     // The clock also stops while a picker, the about dialog or My runs is open.
-    if (focused && !pickerOpen && !themeOpen && !aboutOpen && view === 'type') resume()
+    if (focused && !pickerOpen && !themeOpen && !aboutOpen && !accountOpen && view === 'type') resume()
     else pause()
-  }, [focused, pickerOpen, themeOpen, aboutOpen, view, pause, resume])
+  }, [focused, pickerOpen, themeOpen, aboutOpen, accountOpen, view, pause, resume])
 
   // Switching between typing and My runs; on the site it's a real address, so Back works.
   const showView = (v: View) => {
@@ -453,6 +455,7 @@ export default function App() {
           </button>
         </nav>
         <div className="top-actions">
+          <Account available={onSite} onOpenChange={setAccountOpen} onMyRuns={() => showView('runs')} />
           {aboutSection && (
             <button type="button" className="icon-button" onClick={() => setAboutOpen(true)} aria-haspopup="dialog" aria-label="About Syntype" title="About Syntype">
               <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">

@@ -9,7 +9,9 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
-    "build:page": "npm run build && node scripts/build-page.mjs"
+    "build:page": "npm run build && node scripts/build-page.mjs",
+    "deploy": "wrangler d1 migrations apply syntype --remote && wrangler deploy",
+    "dev:api": "npm run build && wrangler d1 migrations apply syntype --local && wrangler dev"
   },
   "dependencies": {
     "react": "^19.3.1",

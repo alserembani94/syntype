@@ -16,5 +16,6 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
-  "include": ["worker"]
+  "include": ["worker"],
+  "exclude": ["worker/**/*.test.ts"]
 }

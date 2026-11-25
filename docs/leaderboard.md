@@ -86,6 +86,8 @@ Works for everyone, costs nothing on the server, and never leaves the device unl
   No email, no avatar, no IP address.
 - **Google and GitHub separately:** signing in with Google and with GitHub makes two players. Linking would need email; leave it out unless players ask.
 
+Built in task 6: the tables (`migrations/0001_init.sql`), sign-in and sessions (`worker/lib/oauth.ts`, `api.ts`), names (`worker/lib/names.ts`, `players.ts`), and the header's **Sign in**, name step and account menu (`src/components/Account.tsx`). Sessions are signed cookies; `/api/me` reads the player row, so a session also ends when `session_version` is bumped (account deletion signs out everywhere).
+
 ### Display name
 
 - **First sign-in:** a single step, "Your leaderboard name", prefilled and editable, then **Continue**.
