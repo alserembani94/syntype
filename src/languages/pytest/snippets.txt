@@ -1,0 +1,142 @@
+=== test_add.py
+def test_add():
+    assert add(2, 3) == 5
+=== test_divide.py
+def test_divide_by_zero():
+    with pytest.raises(ZeroDivisionError):
+        divide(1, 0)
+=== test_average.py
+def test_average():
+    assert average([1, 2, 3, 4]) == pytest.approx(2.5)
+=== test_write.py
+def test_writes_file(tmp_path):
+    path = tmp_path / "out.txt"
+    path.write_text("hi")
+    assert path.read_text() == "hi"
+=== test_upper.py
+import pytest
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [("hello", "HELLO"), ("Ada", "ADA"), ("", "")],
+)
+def test_upper(text, expected):
+    assert text.upper() == expected
+=== test_cart.py
+import pytest
+
+
+@pytest.fixture
+def cart():
+    return {"apple": 2, "pear": 1}
+
+
+def test_cart_total(cart):
+    assert sum(cart.values()) == 3
+=== test_config.py
+def test_reads_api_url(monkeypatch):
+    monkeypatch.setenv("API_URL", "https://api.example.com")
+    config = load_config()
+    assert config.api_url == "https://api.example.com"
+=== test_greet.py
+def test_greets(capsys):
+    greet("Ada")
+    captured = capsys.readouterr()
+    assert captured.out == "Hello, Ada!\n"
+=== test_shell.py
+import sys
+
+import pytest
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="needs a POSIX shell")
+def test_runs_shell_script(tmp_path):
+    script = tmp_path / "hi.sh"
+    script.write_text("echo hi")
+    assert script.exists()
+=== test_bank_account.py
+import pytest
+
+from bank import BankAccount, InsufficientFunds
+
+
+@pytest.fixture
+def account():
+    return BankAccount(owner="Ada", balance=100)
+
+
+class TestBankAccount:
+    def test_deposit_adds_to_balance(self, account):
+        account.deposit(50)
+        assert account.balance == 150
+
+    def test_withdraw_more_than_balance_fails(self, account):
+        with pytest.raises(InsufficientFunds):
+            account.withdraw(500)
+
+    @pytest.mark.parametrize("amount", [0, -5])
+    def test_deposit_must_be_positive(self, account, amount):
+        with pytest.raises(ValueError):
+            account.deposit(amount)
+=== conftest.py
+import pytest
+
+
+@pytest.fixture(scope="session")
+def base_url():
+    return "http://localhost:8000"
+
+
+@pytest.fixture
+def client(base_url):
+    from myapp import create_app
+
+    app = create_app({"TESTING": True, "BASE_URL": base_url})
+    with app.test_client() as client:
+        yield client
+
+
+@pytest.fixture(autouse=True)
+def no_network(monkeypatch):
+    monkeypatch.setattr("socket.socket", None)
+=== test_weather.py
+import pytest
+
+import weather
+
+
+class FakeResponse:
+    def __init__(self, payload):
+        self.payload = payload
+
+    def json(self):
+        return self.payload
+
+
+@pytest.fixture
+def fake_get(monkeypatch):
+    def fake(url, timeout):
+        return FakeResponse({"city": "Kuala Lumpur", "temp_c": 31})
+
+    monkeypatch.setattr(weather.requests, "get", fake)
+
+
+def test_reports_temperature(fake_get):
+    assert weather.describe("Kuala Lumpur") == "Kuala Lumpur: 31C"
+=== test_slugify.py
+import pytest
+
+from text import slugify
+
+CASES = [
+    ("Hello World", "hello-world"),
+    ("  trim me  ", "trim-me"),
+    ("Already-slugged", "already-slugged"),
+    ("Symbols & stuff!", "symbols-stuff"),
+]
+
+
+@pytest.mark.parametrize("title, slug", CASES, ids=[c[1] for c in CASES])
+def test_slugify(title, slug):
+    assert slugify(title) == slug

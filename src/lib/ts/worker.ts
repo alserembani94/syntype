@@ -5,7 +5,7 @@
  */
 import { createCompleter } from './completer'
 import { LIB_FILES } from './libs'
-import { EXPRESS_D_TS, HOST_D_TS, REACT_D_TS } from './stubs'
+import { EXPRESS_D_TS, HOST_D_TS, PLAYWRIGHT_D_TS, REACT_D_TS } from './stubs'
 import type { ServiceRequest } from '../service'
 
 const completer = createCompleter({
@@ -13,6 +13,7 @@ const completer = createCompleter({
   'host.d.ts': HOST_D_TS,
   'react.d.ts': REACT_D_TS,
   'express.d.ts': EXPRESS_D_TS,
+  'playwright.d.ts': PLAYWRIGHT_D_TS,
 })
 
 // Warm up: the first request builds the program and is by far the slowest.

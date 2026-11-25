@@ -114,7 +114,7 @@ export interface CompletionConfig {
 }
 
 /** Sections of the language picker, in the order they're shown. */
-export const CATEGORIES = ['Web', 'Systems', 'Scripting', 'Data & config', 'Mainframe', 'Esoteric'] as const
+export const CATEGORIES = ['Web', 'Systems', 'Scripting', 'Data & config', 'Testing & QA', 'Mainframe', 'Esoteric'] as const
 export type LanguageCategory = (typeof CATEGORIES)[number]
 
 export interface Language {
@@ -126,6 +126,12 @@ export interface Language {
   category: LanguageCategory
   /** Other names people search for, e.g. "golang" or "sql". */
   aliases?: string[]
+  /**
+   * For a framework track (Playwright, pytest): the language it's written in.
+   * The track reuses that language's settings and adds its own snippets and
+   * vocabulary.
+   */
+  basedOn?: string
   /**
    * Built from symbols, not words (Brainfuck). Such a language has no keywords
    * and word suggestions can't help, so rules R1, R5 and R9 adapt (see CLAUDE.md).

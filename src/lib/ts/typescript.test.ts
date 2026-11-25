@@ -82,3 +82,23 @@ describe('JavaScript through the TypeScript service', () => {
     expect(completeJs('function f(a').entries.every((e) => !e.commit)).toBe(true)
   })
 })
+
+describe('Playwright through the TypeScript service', () => {
+  const head = "import { test, expect } from '@playwright/test';\n\ntest('t', async ({ page }) => {\n  "
+
+  it('knows the page fixture and its locators', () => {
+    expect(names(complete(head + 'page.', '.'))).toEqual(expect.arrayContaining(['goto', 'getByRole', 'getByLabel', 'route']))
+    expect(names(complete(head + "page.getByRole('button').", '.'))).toEqual(
+      expect.arrayContaining(['click', 'fill', 'first', 'filter']),
+    )
+  })
+
+  it("offers web-first assertions after expect(...)", () => {
+    const r = complete(head + "await expect(page.getByText('Hi')).", '.')
+    expect(names(r)).toEqual(expect.arrayContaining(['toBeVisible', 'toHaveText', 'not']))
+  })
+
+  it('knows test.describe and its configure', () => {
+    expect(names(complete(head.split('\n\n')[0] + '\n\ntest.describe.', '.'))).toContain('configure')
+  })
+})

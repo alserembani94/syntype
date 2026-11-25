@@ -5,7 +5,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { createCompleter } from '../lib/ts/completer'
-import { EXPRESS_D_TS, HOST_D_TS, REACT_D_TS } from '../lib/ts/stubs'
+import { EXPRESS_D_TS, HOST_D_TS, PLAYWRIGHT_D_TS, REACT_D_TS } from '../lib/ts/stubs'
 
 const libDir = path.join(process.cwd(), 'node_modules/ts-lang/lib')
 const libs: Record<string, string> = {}
@@ -22,4 +22,5 @@ export const tsCompleter = createCompleter({
   'host.d.ts': HOST_D_TS,
   'react.d.ts': REACT_D_TS,
   'express.d.ts': EXPRESS_D_TS,
+  'playwright.d.ts': PLAYWRIGHT_D_TS,
 })

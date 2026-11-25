@@ -1,0 +1,141 @@
+=== mobile_viewport.ts
+import { test } from '@playwright/test';
+
+test.use({ viewport: { width: 375, height: 812 } });
+=== serial_mode.ts
+import { test } from '@playwright/test';
+
+test.describe.configure({ mode: 'serial' });
+=== iphone.ts
+import { devices } from '@playwright/test';
+
+const iPhone = devices['iPhone 13'];
+=== config.ts
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({ testDir: './tests', retries: 2 });
+=== title.spec.ts
+import { test, expect } from '@playwright/test';
+
+test('home page has a title', async ({ page }) => {
+  await page.goto('/');
+  await expect(page).toHaveTitle(/Syntype/);
+});
+=== todo.spec.ts
+import { test, expect } from '@playwright/test';
+
+test('adds a todo', async ({ page }) => {
+  await page.goto('/todos');
+  await page.getByPlaceholder('What needs doing?').fill('Write tests');
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('listitem')).toHaveText(['Write tests']);
+});
+=== users_api.spec.ts
+import { test, expect } from '@playwright/test';
+
+test('lists users', async ({ request }) => {
+  const res = await request.get('/api/users');
+  expect(res.ok()).toBeTruthy();
+  const users = await res.json();
+  expect(users).toHaveLength(3);
+});
+=== login.spec.ts
+import { test, expect } from '@playwright/test';
+
+test('signs in', async ({ page }) => {
+  await page.goto('/login');
+  await page.getByLabel('Email').fill('ada@example.com');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page).toHaveURL(/dashboard/);
+});
+=== LoginPage.ts
+import { type Page, type Locator, expect } from '@playwright/test';
+
+export class LoginPage {
+  readonly email: Locator;
+  readonly password: Locator;
+  readonly submit: Locator;
+
+  constructor(readonly page: Page) {
+    this.email = page.getByLabel('Email');
+    this.password = page.getByLabel('Password');
+    this.submit = page.getByRole('button', { name: 'Sign in' });
+  }
+
+  async goto() {
+    await this.page.goto('/login');
+  }
+
+  async signIn(email: string, password: string) {
+    await this.email.fill(email);
+    await this.password.fill(password);
+    await this.submit.click();
+    await expect(this.page).toHaveURL(/dashboard/);
+  }
+}
+=== empty_orders.spec.ts
+import { test, expect } from '@playwright/test';
+
+test('shows an empty state when there are no orders', async ({ page }) => {
+  await page.route('**/api/orders', async (route) => {
+    await route.fulfill({ status: 200, json: [] });
+  });
+
+  await page.goto('/orders');
+  await expect(page.getByText('No orders yet')).toBeVisible();
+  await expect(page.getByRole('row')).toHaveCount(0);
+});
+=== checkout.spec.ts
+import { test, expect } from '@playwright/test';
+
+test.describe('checkout', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/shop');
+    await page.getByRole('button', { name: 'Add to cart' }).first().click();
+  });
+
+  test('applies a discount code', async ({ page }) => {
+    await page.getByRole('link', { name: 'Cart' }).click();
+    await page.getByLabel('Discount code').fill('SAVE10');
+    await page.getByRole('button', { name: 'Apply' }).click();
+    await expect(page.getByTestId('total')).toContainText('$18.00');
+  });
+});
+=== fixtures.ts
+import { test as base, expect } from '@playwright/test';
+import { LoginPage } from './LoginPage';
+
+export const test = base.extend<{ loginPage: LoginPage }>({
+  loginPage: async ({ page }, use) => {
+    const loginPage = new LoginPage(page);
+    await loginPage.goto();
+    await use(loginPage);
+  },
+});
+
+export { expect };
+=== signup_errors.spec.ts
+import { test, expect } from '@playwright/test';
+
+const cases = [
+  { email: '', message: 'Email is required' },
+  { email: 'not-an-email', message: 'Enter a valid email' },
+];
+
+for (const { email, message } of cases) {
+  test(`rejects "${email}"`, async ({ page }) => {
+    await page.goto('/signup');
+    await page.getByLabel('Email').fill(email);
+    await page.getByRole('button', { name: 'Create account' }).click();
+    await expect(page.getByRole('alert')).toHaveText(message);
+  });
+}
+=== export_report.spec.ts
+import { test, expect } from '@playwright/test';
+
+test('exports a report', async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.goto('/reports');
+  await page.getByRole('button', { name: 'Export' }).click();
+  await expect(page.getByText('Report ready')).toBeVisible();
+});

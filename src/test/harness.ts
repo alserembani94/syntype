@@ -15,6 +15,7 @@ import { tsCompleter } from './tsCompleter'
 export const TEST_COMPLETERS: Record<string, Completer> = {
   javascript: tsCompleter,
   typescript: tsCompleter,
+  playwright: tsCompleter,
 }
 
 const syncService: CompletionService = {

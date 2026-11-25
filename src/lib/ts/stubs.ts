@@ -1,7 +1,8 @@
 /**
  * Small declaration files that stand in for big real ones. lib.dom.d.ts is
- * 2.3 MB; snippets only touch a few host globals. @types/react and
- * @types/express are large too; snippets use a handful of their APIs.
+ * 2.3 MB; snippets only touch a few host globals. @types/react,
+ * @types/express and @playwright/test are large too; snippets use a
+ * handful of their APIs.
  */
 
 export const HOST_D_TS = `
@@ -133,5 +134,147 @@ declare module "express" {
   const express: Express;
   export default express;
   export type { Request, Response, NextFunction, Router, Application };
+}
+`
+
+export const PLAYWRIGHT_D_TS = `
+declare module "@playwright/test" {
+  type Role =
+    | "alert" | "button" | "cell" | "checkbox" | "combobox" | "dialog" | "heading" | "img"
+    | "link" | "listitem" | "main" | "navigation" | "option" | "row" | "tab" | "textbox";
+  interface ByRoleOptions { name?: string | RegExp; exact?: boolean; checked?: boolean }
+  interface Locator {
+    click(): Promise<void>;
+    dblclick(): Promise<void>;
+    fill(value: string): Promise<void>;
+    press(key: string): Promise<void>;
+    check(): Promise<void>;
+    uncheck(): Promise<void>;
+    hover(): Promise<void>;
+    selectOption(value: string | string[]): Promise<string[]>;
+    setInputFiles(files: string | string[]): Promise<void>;
+    textContent(): Promise<string | null>;
+    innerText(): Promise<string>;
+    inputValue(): Promise<string>;
+    allTextContents(): Promise<string[]>;
+    count(): Promise<number>;
+    isVisible(): Promise<boolean>;
+    waitFor(options?: { state?: "attached" | "detached" | "visible" | "hidden" }): Promise<void>;
+    first(): Locator;
+    last(): Locator;
+    nth(index: number): Locator;
+    filter(options: { hasText?: string | RegExp; has?: Locator }): Locator;
+    locator(selector: string): Locator;
+    getByRole(role: Role, options?: ByRoleOptions): Locator;
+    getByText(text: string | RegExp, options?: { exact?: boolean }): Locator;
+    getByLabel(text: string | RegExp, options?: { exact?: boolean }): Locator;
+    getByPlaceholder(text: string | RegExp): Locator;
+    getByTestId(testId: string): Locator;
+  }
+  interface Request { url(): string; method(): string; postDataJSON(): any }
+  interface Route {
+    fulfill(options: { status?: number; json?: unknown; body?: string; contentType?: string }): Promise<void>;
+    continue(): Promise<void>;
+    abort(): Promise<void>;
+    request(): Request;
+  }
+  interface APIResponse { ok(): boolean; status(): number; json(): Promise<any>; text(): Promise<string> }
+  interface APIRequestContext {
+    get(url: string, options?: { params?: Record<string, string> }): Promise<APIResponse>;
+    post(url: string, options?: { data?: unknown }): Promise<APIResponse>;
+    put(url: string, options?: { data?: unknown }): Promise<APIResponse>;
+    delete(url: string): Promise<APIResponse>;
+  }
+  interface Keyboard { press(key: string): Promise<void>; type(text: string): Promise<void> }
+  interface Page {
+    goto(url: string): Promise<APIResponse | null>;
+    reload(): Promise<APIResponse | null>;
+    url(): string;
+    title(): Promise<string>;
+    keyboard: Keyboard;
+    locator(selector: string): Locator;
+    getByRole(role: Role, options?: ByRoleOptions): Locator;
+    getByText(text: string | RegExp, options?: { exact?: boolean }): Locator;
+    getByLabel(text: string | RegExp, options?: { exact?: boolean }): Locator;
+    getByPlaceholder(text: string | RegExp): Locator;
+    getByTestId(testId: string): Locator;
+    route(url: string | RegExp, handler: (route: Route) => Promise<void> | void): Promise<void>;
+    waitForURL(url: string | RegExp): Promise<void>;
+    waitForResponse(url: string | RegExp): Promise<APIResponse>;
+    screenshot(options?: { path?: string; fullPage?: boolean }): Promise<unknown>;
+    evaluate<R>(fn: () => R): Promise<R>;
+    close(): Promise<void>;
+  }
+  interface BrowserContext { newPage(): Promise<Page>; clearCookies(): Promise<void> }
+  interface Fixtures {
+    page: Page;
+    context: BrowserContext;
+    request: APIRequestContext;
+    browserName: "chromium" | "firefox" | "webkit";
+    baseURL: string | undefined;
+  }
+  type Body<T> = (args: Fixtures & T) => Promise<void>;
+  interface Describe {
+    (title: string, body: () => void): void;
+    configure(options: { mode?: "default" | "parallel" | "serial"; retries?: number; timeout?: number }): void;
+    skip(title: string, body: () => void): void;
+    only(title: string, body: () => void): void;
+  }
+  interface TestType<T = {}> {
+    (title: string, body: Body<T>): void;
+    describe: Describe;
+    setTimeout(timeout: number): void;
+    slow(): void;
+    beforeEach(body: Body<T>): void;
+    afterEach(body: Body<T>): void;
+    beforeAll(body: Body<T>): void;
+    afterAll(body: Body<T>): void;
+    skip(title: string, body: Body<T>): void;
+    only(title: string, body: Body<T>): void;
+    step<R>(title: string, body: () => Promise<R>): Promise<R>;
+    use(options: Record<string, unknown>): void;
+    extend<U>(fixtures: {
+      [K in keyof U]: (args: Fixtures & T, use: (value: U[K]) => Promise<void>) => Promise<void>;
+    }): TestType<T & U>;
+  }
+  interface Matchers {
+    not: Matchers;
+    toBeVisible(): Promise<void>;
+    toBeHidden(): Promise<void>;
+    toBeEnabled(): Promise<void>;
+    toBeDisabled(): Promise<void>;
+    toBeChecked(): Promise<void>;
+    toHaveText(text: string | RegExp | (string | RegExp)[]): Promise<void>;
+    toContainText(text: string | RegExp): Promise<void>;
+    toHaveValue(value: string | RegExp): Promise<void>;
+    toHaveAttribute(name: string, value?: string | RegExp): Promise<void>;
+    toHaveCount(count: number): Promise<void>;
+    toHaveURL(url: string | RegExp): Promise<void>;
+    toHaveTitle(title: string | RegExp): Promise<void>;
+    toBeOK(): Promise<void>;
+    toBe(value: unknown): void;
+    toEqual(value: unknown): void;
+    toBeTruthy(): void;
+    toContain(value: unknown): void;
+    toHaveLength(length: number): void;
+  }
+  interface Expect {
+    <T>(actual: T): Matchers;
+    soft<T>(actual: T): Matchers;
+    poll<T>(fn: () => T | Promise<T>): Matchers;
+  }
+  interface Config {
+    testDir?: string;
+    retries?: number;
+    workers?: number;
+    timeout?: number;
+    use?: Record<string, unknown>;
+    projects?: { name: string; use?: Record<string, unknown> }[];
+  }
+  export const test: TestType;
+  export const expect: Expect;
+  export function defineConfig(config: Config): Config;
+  export const devices: Record<string, Record<string, unknown>>;
+  export type { Page, Locator, Route, Request, APIRequestContext, APIResponse, BrowserContext, TestType };
 }
 `

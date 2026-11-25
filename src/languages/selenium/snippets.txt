@@ -1,0 +1,106 @@
+=== open_page.py
+driver = webdriver.Chrome()
+driver.get("https://example.com")
+print(driver.title)
+driver.quit()
+=== click_submit.py
+driver.find_element(By.ID, "submit").click()
+=== search_box.py
+box = driver.find_element(By.NAME, "q")
+box.send_keys("syntype" + Keys.RETURN)
+=== wait_title.py
+WebDriverWait(driver, 10).until(EC.title_contains("Dashboard"))
+=== wait_for_button.py
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
+button = WebDriverWait(driver, 10).until(
+    EC.element_to_be_clickable((By.ID, "checkout"))
+)
+button.click()
+=== select_country.py
+from selenium.webdriver.support.ui import Select
+
+country = Select(driver.find_element(By.NAME, "country"))
+country.select_by_visible_text("Malaysia")
+assert country.first_selected_option.text == "Malaysia"
+=== headless.py
+from selenium import webdriver
+
+options = webdriver.ChromeOptions()
+options.add_argument("--headless=new")
+driver = webdriver.Chrome(options=options)
+driver.get("https://example.com")
+driver.save_screenshot("home.png")
+driver.quit()
+=== sorted_names.py
+rows = driver.find_elements(By.CSS_SELECTOR, "table tbody tr")
+names = [row.find_element(By.TAG_NAME, "td").text for row in rows]
+assert names == sorted(names)
+=== login.py
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+
+driver = webdriver.Chrome()
+driver.get("https://example.com/login")
+driver.find_element(By.ID, "email").send_keys("ada@example.com")
+driver.find_element(By.ID, "password").send_keys("secret")
+driver.find_element(By.CSS_SELECTOR, "button[type=submit]").click()
+driver.quit()
+=== login_page.py
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
+
+class LoginPage:
+    EMAIL = (By.ID, "email")
+    PASSWORD = (By.ID, "password")
+    SUBMIT = (By.CSS_SELECTOR, "button[type=submit]")
+
+    def __init__(self, driver):
+        self.driver = driver
+        self.wait = WebDriverWait(driver, 10)
+
+    def open(self, base_url):
+        self.driver.get(f"{base_url}/login")
+
+    def sign_in(self, email, password):
+        self.driver.find_element(*self.EMAIL).send_keys(email)
+        self.driver.find_element(*self.PASSWORD).send_keys(password)
+        self.driver.find_element(*self.SUBMIT).click()
+        self.wait.until(EC.url_contains("/dashboard"))
+=== test_search.py
+import pytest
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+
+
+@pytest.fixture
+def driver():
+    driver = webdriver.Firefox()
+    yield driver
+    driver.quit()
+
+
+def test_search_shows_results(driver):
+    driver.get("https://example.com")
+    box = driver.find_element(By.NAME, "q")
+    box.send_keys("playwright" + Keys.RETURN)
+    results = driver.find_elements(By.CSS_SELECTOR, ".result")
+    assert len(results) > 0
+=== add_to_cart.py
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
+
+def add_to_cart(driver, product):
+    driver.get(f"https://shop.example.com/products/{product}")
+    wait = WebDriverWait(driver, 10)
+    wait.until(EC.element_to_be_clickable((By.ID, "add-to-cart"))).click()
+    badge = wait.until(EC.visibility_of_element_located((By.ID, "cart-count")))
+    assert badge.text == "1"
+    driver.find_element(By.LINK_TEXT, "Cart").click()
+    wait.until(EC.title_contains("Cart"))

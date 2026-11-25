@@ -22,6 +22,7 @@ function matches(lang: Language, query: string): boolean {
     lang.extension.includes(q.replace(/^\./, '')) ||
     (lang.aliases ?? []).some((a) => a.includes(q)) ||
     lang.category.toLowerCase().includes(q) ||
+    (lang.basedOn ?? '').toLowerCase().includes(q) ||
     fuzzyMatch(q, lang.name) !== null
   )
 }
@@ -127,6 +128,7 @@ export function LanguagePicker({ languages, currentId, onSelect, onClose }: Prop
                       </span>
                       <span className="name">{lang.name}</span>
                       <span className="ext">.{lang.extension}</span>
+                      {lang.basedOn && <span className="based">on {lang.basedOn}</span>}
                       <span className="count">{lang.snippets.length} snippets</span>
                     </li>
                   )

@@ -104,6 +104,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .picker-list .check { width: 14px; color: var(--accent); font-weight: 700; }
 .picker-list .name { color: var(--fg); }
 .picker-list .ext { color: var(--muted); }
+.picker-list .based { color: var(--muted); font: 12px var(--f-ui); }
 .picker-list .count { margin-left: auto; color: var(--muted); font-size: 12px; }
 .picker-list li.empty { cursor: default; color: var(--muted); justify-content: center; }
 .live .hint.attention { color: var(--accent); }

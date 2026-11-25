@@ -472,3 +472,30 @@ describe('Esoteric: Brainfuck and LOLCODE', () => {
     expect(labels(typeAll(run, 'HAI 1.2\nI HAS A burgers ITZ 0\nVISIBLE bur'), cfg)).toContain('burgers')
   })
 })
+
+describe('Testing tracks: Selenium and pytest', () => {
+  const sel = getLanguage('selenium')
+  const pyt = getLanguage('pytest')
+  const setupFor = (lang: Language, code: string) => ({
+    run: createRun(code, { autoIndent: true, autoClose: false }),
+    cfg: buildSuggestConfig(code, lang, false),
+  })
+
+  it("offers Selenium's locator strategies and expected conditions", () => {
+    const { run, cfg } = setupFor(sel, 'x = (By.ID, "a")\nEC.title_contains("b")')
+    expect(labels(typeAll(run, 'x = (By.'), cfg)).toEqual(expect.arrayContaining(['ID', 'CSS_SELECTOR', 'XPATH']))
+    expect(labels(typeAll(run, 'x = (By.ID, "a")\nEC.title'), cfg)).toContain('title_contains')
+  })
+
+  it("offers pytest.mark's markers and the built-in fixtures", () => {
+    const code = '@pytest.mark.parametrize("a", [1])\ndef test_a(tmp_path):'
+    const { run, cfg } = setupFor(pyt, code)
+    expect(labels(typeAll(run, '@pytest.mark.'), cfg)).toEqual(expect.arrayContaining(['parametrize', 'skipif', 'xfail']))
+    expect(labels(typeAll(run, '@pytest.mark.parametrize("a", [1])\ndef test_a(tmp'), cfg)).toContain('tmp_path')
+  })
+
+  it('tracks keep their base language\'s settings', () => {
+    expect(sel.indentSize).toBe(4)
+    expect(getLanguage('playwright').completion?.serviceMode).toBe('typescript')
+  })
+})
