@@ -15,7 +15,7 @@ Other scripts: `npm test` (unit and playthrough tests, Vitest), `npm run build`,
 
 ## Deploy
 
-The site deploys to Cloudflare as a Worker with static assets (`wrangler.jsonc`): `npm run build` produces `dist/`, and Cloudflare serves those files as they are. There is no server code. `public/_headers` caches the hashed files in `/assets/` for a year and keeps `index.html` fresh, so a new deploy shows up at once.
+The site deploys to Cloudflare as a Worker with static assets (`wrangler.jsonc`): `npm run build` produces `dist/`, and Cloudflare serves those files as they are. A small Worker (`worker/index.ts`, its own `tsconfig.worker.json`) answers `/api/*` only, for the leaderboard to come (`docs/leaderboard.md`); every other request is a file and never runs code. Public settings (OAuth client IDs, the Turnstile sitekey) are `vars` in `wrangler.jsonc`; secrets are added in the dashboard (Workers & Pages → syntype → Settings → Variables and Secrets), never in the repo. After changing `wrangler.jsonc`, run `npx wrangler types worker/worker-configuration.d.ts`. `public/_headers` caches the hashed files in `/assets/` for a year and keeps `index.html` fresh, so a new deploy shows up at once.
 
 - **From GitHub (recommended):** in the Cloudflare dashboard, Workers & Pages → Create → import this repository. Build command `npm run build`, deploy command `npx wrangler deploy`. Every push to `main` then deploys.
 - **From your computer:** `npx wrangler login` once, then `npm run build && npx wrangler deploy`.

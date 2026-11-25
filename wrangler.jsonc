@@ -1,13 +1,28 @@
-// Cloudflare deployment: the built site (npm run build -> dist/) served as a
-// Worker's static assets. There is no Worker code; every file is served as is.
+// Cloudflare deployment: the built site (npm run build -> dist/) served as
+// static assets, with a Worker (worker/index.ts) answering /api/*. Static
+// files never reach the Worker, so they stay free and unlimited.
 // Deploy with `npx wrangler deploy` after `npm run build`, or connect the
 // GitHub repository in the Cloudflare dashboard (Workers Builds) to deploy on
 // every push to main.
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "syntype",
+  "main": "worker/index.ts",
   "compatibility_date": "2026-11-24",
   "assets": {
-    "directory": "./dist"
-  }
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // Only the API runs code; every other request is a file.
+    "run_worker_first": ["/api/*"]
+  },
+  // Public values only. Secrets (OAuth client secrets, the Turnstile secret
+  // key, the session secret) are set in the dashboard: Workers & Pages >
+  // syntype > Settings > Variables and Secrets, never here.
+  "vars": {
+    "SITE_URL": "https://syntype.vercel.my",
+    "GITHUB_CLIENT_ID": "Ov23lii8XQvuUn3Op6hYS",
+    "GOOGLE_CLIENT_ID": "118095071688-iq0990p2p9nttq8hdj3b505j8sc8sc21.apps.googleusercontent.com",
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAGSwangBAPdG6nQF"
+  },
+  "observability": { "enabled": true }
 }
