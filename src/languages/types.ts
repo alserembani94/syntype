@@ -93,6 +93,8 @@ export interface CompletionConfig {
   service?: () => CompletionService
   /** Characters that ask the service for suggestions, e.g. "." or a quote. */
   triggerCharacters?: string[]
+  /** Passed to the service with each request, for services that handle several languages. */
+  serviceMode?: string
 }
 
 export interface Language {

@@ -15,6 +15,8 @@ export interface ServiceRequest {
   offset: number
   /** The character that opened the list, if it was a trigger character such as ".". */
   trigger?: string
+  /** For services that handle several languages, which one this buffer is in. */
+  mode?: string
 }
 
 export interface ServiceEntry {

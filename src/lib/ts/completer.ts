@@ -7,7 +7,8 @@ import * as ts from 'ts-lang'
 import type { ServiceEntry, ServiceRequest, ServiceResponse } from '../service'
 import type { SuggestionKind } from '../../languages/types'
 
-const FILE = '/main.ts'
+/** One file per language; only the one being typed is in the program. */
+const FILES: Record<string, string> = { typescript: '/main.ts', javascript: '/main.js' }
 
 /** ScriptElementKind → our icon kinds. */
 function kindOf(k: string): SuggestionKind {
@@ -60,11 +61,12 @@ export interface Completer {
 export function createCompleter(files: Record<string, string>): Completer {
   let text = ''
   let version = 0
-  const names = [FILE, ...Object.keys(files).map((f) => '/' + f)]
-  const read = (f: string) => (f === FILE ? text : files[f.replace(/^\//, '')])
+  let file = FILES.typescript
+  const libNames = Object.keys(files).map((f) => '/' + f)
+  const read = (f: string) => (f === file ? text : files[f.replace(/^\//, '')])
   const host: ts.LanguageServiceHost = {
-    getScriptFileNames: () => names,
-    getScriptVersion: (f) => (f === FILE ? String(version) : '1'),
+    getScriptFileNames: () => [file, ...libNames],
+    getScriptVersion: (f) => (f === file ? String(version) : '1'),
     getScriptSnapshot: (f) => {
       const t = read(f)
       return t === undefined ? undefined : ts.ScriptSnapshot.fromString(t)
@@ -76,7 +78,9 @@ export function createCompleter(files: Record<string, string>): Completer {
       moduleResolution: ts.ModuleResolutionKind.Bundler,
       noLib: true,
       strict: true,
+      // JavaScript is analysed for inference only, as VS Code does without // @ts-check.
       allowJs: true,
+      checkJs: false,
       types: [],
     }),
     getDefaultLibFileName: () => '/lib.es5.d.ts',
@@ -86,10 +90,11 @@ export function createCompleter(files: Record<string, string>): Completer {
   const service = ts.createLanguageService(host, ts.createDocumentRegistry())
 
   return {
-    complete({ text: t, offset, trigger }) {
+    complete({ text: t, offset, trigger, mode }) {
+      file = FILES[mode ?? 'typescript'] ?? FILES.typescript
       text = t
       version++
-      const r = service.getCompletionsAtPosition(FILE, offset, {
+      const r = service.getCompletionsAtPosition(file, offset, {
         triggerCharacter: trigger as ts.CompletionsTriggerCharacter | undefined,
         includeCompletionsWithInsertText: true,
         includeCompletionsForModuleExports: false,
@@ -100,9 +105,12 @@ export function createCompleter(files: Record<string, string>): Completer {
       const defaults = r.defaultCommitCharacters ?? ['.', ',', ';']
       const entries: ServiceEntry[] = []
       for (const e of r.entries) {
-        if (e.name.startsWith('__') || e.kind === 'warning') continue
-        const kind = kindOf(e.kind)
-        const commit = kind === 'string' ? undefined : [...(e.commitCharacters ?? defaults), '(']
+        if (e.name.startsWith('__')) continue
+        // In JavaScript, names TypeScript can't resolve come back as plain words
+        // ("warning" entries). VS Code shows them, without commit characters.
+        const plain = e.kind === 'warning'
+        const kind = plain ? 'word' : kindOf(e.kind)
+        const commit = kind === 'string' || plain ? undefined : [...(e.commitCharacters ?? defaults), '(']
         entries.push({
           name: e.name,
           kind,

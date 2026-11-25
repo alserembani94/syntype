@@ -117,7 +117,7 @@ function requestAt(s: TestState, start: number, trigger?: string): TestState {
   return {
     ...s,
     suggest: null,
-    request: { id: s.nextRequestId, start, text, offset, trigger },
+    request: { id: s.nextRequestId, start, text, offset, trigger, mode: s.suggestConfig?.serviceMode },
     nextRequestId: s.nextRequestId + 1,
   }
 }
@@ -332,8 +332,8 @@ export function useTypingTest(first: Snippet, options: TestOptions) {
   const request = state.request
   useEffect(() => {
     if (!request || !service) return
-    const { id, text, offset, trigger } = request
-    service.complete({ text, offset, trigger }).then(
+    const { id, text, offset, trigger, mode } = request
+    service.complete({ text, offset, trigger, mode }).then(
       (response) => dispatch({ type: 'serviceResult', id, response }),
       () => dispatch({ type: 'serviceFailed', id }),
     )

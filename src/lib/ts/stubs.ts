@@ -1,7 +1,7 @@
 /**
  * Small declaration files that stand in for big real ones. lib.dom.d.ts is
- * 2.3 MB; snippets only touch a few host globals. @types/react is large too;
- * snippets only use hooks.
+ * 2.3 MB; snippets only touch a few host globals. @types/react and
+ * @types/express are large too; snippets use a handful of their APIs.
  */
 
 export const HOST_D_TS = `
@@ -81,5 +81,57 @@ declare module "react" {
   export function useRef<T>(initial: T): { current: T };
   export function useReducer<S, A>(reducer: (state: S, action: A) => S, initial: S): [S, Dispatch<A>];
   export function useId(): string;
+}
+`
+
+export const EXPRESS_D_TS = `
+declare module "express" {
+  interface Request {
+    params: Record<string, string>;
+    query: Record<string, string | undefined>;
+    body: any;
+    headers: Record<string, string | undefined>;
+    method: string;
+    path: string;
+    ip?: string;
+    get(name: string): string | undefined;
+  }
+  interface Response {
+    status(code: number): Response;
+    json(body?: unknown): Response;
+    send(body?: unknown): Response;
+    sendStatus(code: number): Response;
+    set(field: string, value: string): Response;
+    type(type: string): Response;
+    cookie(name: string, value: string): Response;
+    redirect(url: string): void;
+    end(): void;
+  }
+  type NextFunction = (err?: unknown) => void;
+  type Handler = (req: Request, res: Response, next: NextFunction) => unknown;
+  interface Router {
+    get(path: string, ...handlers: Handler[]): this;
+    post(path: string, ...handlers: Handler[]): this;
+    put(path: string, ...handlers: Handler[]): this;
+    patch(path: string, ...handlers: Handler[]): this;
+    delete(path: string, ...handlers: Handler[]): this;
+    all(path: string, ...handlers: Handler[]): this;
+    use(...handlers: (string | Handler | Router)[]): this;
+    route(path: string): Router;
+  }
+  interface Application extends Router {
+    listen(port: number, callback?: () => void): unknown;
+    set(name: string, value: unknown): this;
+  }
+  interface Express {
+    (): Application;
+    json(): Handler;
+    urlencoded(options?: { extended?: boolean }): Handler;
+    static(root: string): Handler;
+    Router(): Router;
+  }
+  const express: Express;
+  export default express;
+  export type { Request, Response, NextFunction, Router, Application };
 }
 `

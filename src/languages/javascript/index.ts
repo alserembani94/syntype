@@ -2,6 +2,7 @@ import type { Language } from '../types'
 import { parseSnippets } from '../snippets'
 import raw from './snippets.txt?raw'
 import { builtins, express, react } from './completions'
+import { getTypeScriptService } from '../../lib/ts/client'
 
 export const javascript: Language = {
   id: 'javascript',
@@ -29,8 +30,13 @@ export const javascript: Language = {
   completion: {
     wordChar: /[\w$]/,
     memberTriggers: ['.'],
+    // VS Code runs JavaScript through TypeScript's service too. These packs
+    // are used until it's ready, and if it can't start.
     packs: [builtins, react, express],
     memberCommitCharacters: ['.', ',', ';', '('],
+    service: getTypeScriptService,
+    serviceMode: 'javascript',
+    triggerCharacters: ['.', '"', "'", '`', '#'],
   },
   snippets: parseSnippets(raw),
 }

@@ -47,6 +47,7 @@ export interface SuggestConfig {
   /** The language's completion service, if it has one. */
   service: CompletionService | null
   triggerCharacters: string[]
+  serviceMode?: string
 }
 
 /** Builds the suggestion setup for one snippet in one language. */
@@ -72,6 +73,7 @@ export function buildSuggestConfig(code: string, lang: Language, withService = t
     memberCommitCharacters: lang.completion?.memberCommitCharacters ?? [],
     service: withService ? (lang.completion?.service?.() ?? null) : null,
     triggerCharacters: lang.completion?.triggerCharacters ?? [],
+    serviceMode: lang.completion?.serviceMode,
   }
 }
 

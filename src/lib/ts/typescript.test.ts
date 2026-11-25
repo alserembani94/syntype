@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 import { createCompleter } from './completer'
-import { HOST_D_TS, REACT_D_TS } from './stubs'
+import { EXPRESS_D_TS, HOST_D_TS, REACT_D_TS } from './stubs'
 import { init, reducer, type Action, type TestState } from '../../hooks/useTypingTest'
 import { buildSuggestConfig } from '../suggest'
 import { computePairs } from '../pairs'
@@ -21,9 +21,16 @@ const loadLib = (name: string) => {
   for (const m of libs[file].matchAll(/<reference lib="([^"]+)"/g)) loadLib(m[1])
 }
 loadLib('es2022')
-const completer = createCompleter({ ...libs, 'host.d.ts': HOST_D_TS, 'react.d.ts': REACT_D_TS })
+const completer = createCompleter({
+  ...libs,
+  'host.d.ts': HOST_D_TS,
+  'react.d.ts': REACT_D_TS,
+  'express.d.ts': EXPRESS_D_TS,
+})
 
-const complete = (code: string, trigger?: string, offset = code.length) => completer.complete({ text: code, offset, trigger })
+const complete = (code: string, trigger?: string, offset = code.length, mode = 'typescript') =>
+  completer.complete({ text: code, offset, trigger, mode })
+const completeJs = (code: string, trigger?: string) => complete(code, trigger, code.length, 'javascript')
 const names = (r: ServiceResponse) => r.entries.map((e) => e.name)
 
 describe('TypeScript completer', () => {
@@ -65,6 +72,38 @@ describe('TypeScript completer', () => {
   })
 })
 
+describe('JavaScript through the TypeScript service', () => {
+  it('infers types from plain JavaScript', () => {
+    const r = completeJs('const names = [1, 2].map((n) => String(n));\nnames.', '.')
+    expect(names(r)).toContain('filter')
+    expect(names(r)).not.toContain('toFixed')
+  })
+
+  it('knows object shapes and class members', () => {
+    // JavaScript also lists unresolved words (here "point" itself), as VS Code shows them.
+    expect(names(completeJs('const point = { x: 1, y: 2 };\npoint.', '.'))).toEqual(expect.arrayContaining(['x', 'y']))
+    const cls = 'class Stack {\n  #items = [];\n  push(item) {\n    this.'
+    expect(names(completeJs(cls, '.'))).toContain('push')
+  })
+
+  it('types Express handlers through the stub', () => {
+    const code = 'import express from "express";\nconst app = express();\napp.get("/", (req, res) => res.'
+    expect(names(completeJs(code, '.'))).toEqual(expect.arrayContaining(['status', 'json', 'send']))
+    expect(names(completeJs('import express from "express";\nconst app = express();\napp.', '.'))).toContain('listen')
+  })
+
+  it('offers unresolved names as plain words without commit characters, like VS Code', () => {
+    const r = completeJs('const total = items.reduce((sum, item) => sum + item.', '.')
+    const word = r.entries.find((e) => e.kind === 'word')
+    expect(word).toBeDefined()
+    expect(word?.commit).toBeUndefined()
+  })
+
+  it('shows no list where a new parameter is declared, so "(a," never commits a word', () => {
+    expect(completeJs('function f(a').entries.every((e) => !e.commit)).toBe(true)
+  })
+})
+
 // --- Driving the real reducer with a synchronous service ---
 
 const syncService: CompletionService = {
@@ -87,8 +126,8 @@ function start(lang: Language, snippet: Snippet, service: boolean): TestState {
 function step(s: TestState, a: Action): TestState {
   let next = reducer(s, a)
   if (next.request) {
-    const { id, text, offset, trigger } = next.request
-    next = reducer(next, { type: 'serviceResult', id, response: completer.complete({ text, offset, trigger }) })
+    const { id, text, offset, trigger, mode } = next.request
+    next = reducer(next, { type: 'serviceResult', id, response: completer.complete({ text, offset, trigger, mode }) })
   }
   return next
 }
@@ -141,7 +180,18 @@ describe('playing every snippet with suggestions on', () => {
   )
 
   it.each(js.snippets.map((s) => [s.name, s] as const))(
-    'JavaScript %s: same, with commit characters in member lists',
+    'JavaScript %s: typing every character literally, with the TypeScript service',
+    (_, snippet) => {
+      const { state } = play(js, snippet, false)
+      const bad = state.run.states.map((st, i) => (st === 'bad' ? i : -1)).filter((i) => i >= 0)
+      if (bad.length) console.info(snippet.name, 'wrong at', JSON.stringify(state.run.chars.slice(bad[0] - 12, bad[0] + 8).join('')), 'typed', JSON.stringify(bad.map((i) => state.run.typed[i]).join('')))
+      expect(state.phase).toBe('done')
+      expect(counts(state.run).incorrect).toBe(0)
+    },
+  )
+
+  it.each(js.snippets.map((s) => [s.name, s] as const))(
+    'JavaScript %s: the same with basic suggestions (before the service is ready)',
     (_, snippet) => {
       const { state } = play(js, snippet, false, false)
       expect(state.phase).toBe('done')
@@ -149,17 +199,21 @@ describe('playing every snippet with suggestions on', () => {
     },
   )
 
-  it('accepting suggestions finishes every TypeScript snippet without mistakes, and reports what it saved', () => {
+  it.each([
+    ['TypeScript', ts, true],
+    ['JavaScript', js, true],
+    ['JavaScript (basic suggestions, before the service is ready)', js, false],
+  ] as const)('accepting suggestions finishes every %s snippet without mistakes, and reports what it saved', (label, lang, service = true) => {
     let saved = 0
     let typed = 0
-    for (const snippet of ts.snippets) {
-      const { state } = play(ts, snippet, true)
+    for (const snippet of lang.snippets) {
+      const { state } = play(lang, snippet, true, service)
       expect(state.phase, snippet.name).toBe('done')
       expect(counts(state.run).incorrect, snippet.name).toBe(0)
       saved += Math.max(0, counts(state.run).suggested - state.run.completions)
       typed += state.run.keystrokes
     }
-    console.info(`TypeScript snippets with suggestions: ${typed} keystrokes, ${saved} saved`)
+    console.info(`${label} snippets with suggestions: ${typed} keystrokes, ${saved} saved`)
     expect(saved).toBeGreaterThan(0)
   })
 })

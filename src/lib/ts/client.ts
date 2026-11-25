@@ -9,6 +9,11 @@ type Message =
   | { type: 'result'; id: number; response: ServiceResponse }
   | { type: 'error'; id: number; message: string }
 
+let shared: CompletionService | null = null
+
+/** One worker for the whole page, shared by TypeScript and JavaScript, started the first time it's needed. */
+export const getTypeScriptService = () => (shared ??= createTypeScriptService())
+
 export function createTypeScriptService(): CompletionService {
   let status: ServiceStatus = 'starting'
   const listeners = new Set<(s: ServiceStatus) => void>()
