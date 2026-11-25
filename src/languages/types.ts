@@ -92,7 +92,7 @@ export interface VocabularyPack {
 }
 
 /**
- * Constrained IntelliSense for a language. Keywords come from `highlight`;
+ * Autocomplete for a language. Keywords come from `highlight`;
  * words the user has typed are added automatically.
  */
 export interface CompletionConfig {

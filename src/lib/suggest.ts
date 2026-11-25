@@ -1,5 +1,5 @@
 /**
- * Constrained IntelliSense: suggestions built only from what we know about the
+ * Autocomplete: suggestions built only from what we know about the
  * snippet's language and from what the user has typed so far. Pure functions,
  * no React. Behaviour follows VS Code's defaults:
  * - quickSuggestions: on in code, off in strings and comments

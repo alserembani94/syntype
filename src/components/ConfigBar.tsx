@@ -6,22 +6,22 @@ interface Props {
   length: LengthFilter
   autoIndent: boolean
   autoClose: boolean
-  intellisense: boolean
+  autocomplete: boolean
   onLength: (l: LengthFilter) => void
   onToggleIndent: () => void
   onToggleClose: () => void
-  onToggleIntellisense: () => void
+  onToggleAutocomplete: () => void
 }
 
 export function ConfigBar({
   length,
   autoIndent,
   autoClose,
-  intellisense,
+  autocomplete,
   onLength,
   onToggleIndent,
   onToggleClose,
-  onToggleIntellisense,
+  onToggleAutocomplete,
 }: Props) {
   return (
     <div className="config" role="toolbar" aria-label="Test settings">
@@ -53,13 +53,13 @@ export function ConfigBar({
           auto-close
         </button>
         <button
-          id="opt-intellisense"
+          id="opt-autocomplete"
           className="chip"
-          aria-pressed={intellisense}
+          aria-pressed={autocomplete}
           title="Suggest keywords and words you've already typed, like VS Code"
-          onClick={onToggleIntellisense}
+          onClick={onToggleAutocomplete}
         >
-          intellisense
+          autocomplete
         </button>
       </div>
     </div>

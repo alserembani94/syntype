@@ -51,7 +51,7 @@ export function createTypeScriptService(): CompletionService {
   const fail = (reason: string) => {
     if (status === 'failed') return
     failure = reason
-    console.warn(`TypeScript IntelliSense unavailable: ${reason}`)
+    console.warn(`TypeScript autocomplete unavailable: ${reason}`)
     pending.forEach((p) => p.reject(new Error(reason)))
     pending.clear()
     setStatus('failed')

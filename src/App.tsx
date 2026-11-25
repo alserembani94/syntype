@@ -17,13 +17,17 @@ interface Settings {
   length: LengthFilter
   autoIndent: boolean
   autoClose: boolean
-  intellisense: boolean
+  autocomplete: boolean
 }
 
 /** Personal bests keyed by "languageId:length", plus a suffix for each assist that was on. */
 type Bests = Record<string, number>
+
+/** Bests saved before the rename used ":intellisense" in their keys. */
+const migrateBests = (bests: Bests): Bests =>
+  Object.fromEntries(Object.entries(bests).map(([k, v]) => [k.replace(/:intellisense$/, ':autocomplete'), v]))
 const bestKey = (s: Settings) =>
-  `${s.languageId}:${s.length}${s.autoClose ? ':autoclose' : ''}${s.intellisense ? ':intellisense' : ''}`
+  `${s.languageId}:${s.length}${s.autoClose ? ':autoclose' : ''}${s.autocomplete ? ':autocomplete' : ''}`
 
 const runOptions = (snippet: Snippet, s: Settings): TestOptions => {
   const lang = getLanguage(s.languageId)
@@ -31,7 +35,7 @@ const runOptions = (snippet: Snippet, s: Settings): TestOptions => {
     autoIndent: s.autoIndent,
     autoClose: s.autoClose,
     pairs: s.autoClose ? computePairs(snippet.code, lang) : undefined,
-    suggest: s.intellisense ? buildSuggestConfig(snippet.code, lang) : null,
+    suggest: s.autocomplete ? buildSuggestConfig(snippet.code, lang) : null,
   }
 }
 
@@ -43,9 +47,10 @@ export default function App() {
   const [length, setLength] = useState<LengthFilter>(() => load('length', 'medium'))
   const [autoIndent, setAutoIndent] = useState(() => load('autoIndent', true))
   const [autoClose, setAutoClose] = useState(() => load('autoClose', true))
-  const [intellisense, setIntellisense] = useState(() => load('intellisense', true))
-  const settings: Settings = { languageId, length, autoIndent, autoClose, intellisense }
-  const [bests, setBests] = useState<Bests>(() => load('bests', {}))
+  // Saved as "intellisense" before the feature was renamed; carried over once.
+  const [autocomplete, setAutocomplete] = useState(() => load('autocomplete', load('intellisense', true)))
+  const settings: Settings = { languageId, length, autoIndent, autoClose, autocomplete }
+  const [bests, setBests] = useState<Bests>(() => migrateBests(load('bests', {})))
   const [firstSnippet] = useState(() => pickSnippet(language.snippets, length))
   const {
     state,
@@ -82,13 +87,13 @@ export default function App() {
 
   const start = useCallback(
     (s: Snippet, changes: Partial<Settings> = {}) => {
-      const upcoming: Settings = { languageId, length, autoIndent, autoClose, intellisense, ...changes }
+      const upcoming: Settings = { languageId, length, autoIndent, autoClose, autocomplete, ...changes }
       setBests(currentBests)
       setBestAtStart(currentBests[bestKey(upcoming)] ?? 0)
       loadSnippet(s, runOptions(s, upcoming))
       inputRef.current?.focus({ preventScroll: true })
     },
-    [languageId, length, autoIndent, autoClose, intellisense, currentBests, loadSnippet, setBests],
+    [languageId, length, autoIndent, autoClose, autocomplete, currentBests, loadSnippet, setBests],
   )
   const next = useCallback(
     () => start(pickSnippet(language.snippets, length, snippet.name)),
@@ -190,11 +195,11 @@ export default function App() {
   )
   const serviceLabel =
     serviceStatus === 'starting'
-      ? `${language.name} IntelliSense starting…`
+      ? `${language.name} autocomplete starting…`
       : serviceStatus === 'failed'
-        ? `${language.name} IntelliSense unavailable, using basic suggestions`
+        ? `${language.name} autocomplete unavailable, using basic suggestions`
         : serviceStatus === 'ready'
-          ? `${language.name} IntelliSense`
+          ? `${language.name} autocomplete`
           : null
 
   const onMobileInput = (text: string, deleted: boolean) => {
@@ -233,11 +238,11 @@ export default function App() {
     save('autoClose', v)
     start(snippet, { autoClose: v })
   }
-  const toggleIntellisense = () => {
-    const v = !intellisense
-    setIntellisense(v)
-    save('intellisense', v)
-    start(snippet, { intellisense: v })
+  const toggleAutocomplete = () => {
+    const v = !autocomplete
+    setAutocomplete(v)
+    save('autocomplete', v)
+    start(snippet, { autocomplete: v })
   }
 
   const { line, col } = caretPosition(run)
@@ -262,8 +267,8 @@ export default function App() {
           onLength={changeLength}
           onToggleIndent={toggleIndent}
           onToggleClose={toggleClose}
-          intellisense={intellisense}
-          onToggleIntellisense={toggleIntellisense}
+          autocomplete={autocomplete}
+          onToggleAutocomplete={toggleAutocomplete}
         />
       </header>
 
@@ -330,7 +335,7 @@ export default function App() {
               language: language.name,
               length,
               snippet: snippet.name,
-              assists: [autoIndent && 'auto-indent', autoClose && 'auto-close', intellisense && 'intellisense'].filter(
+              assists: [autoIndent && 'auto-indent', autoClose && 'auto-close', autocomplete && 'autocomplete'].filter(
                 (a): a is string => !!a,
               ),
             }}
@@ -364,7 +369,7 @@ export default function App() {
           {/* Personal best is a score too, so it waits for the results screen. */}
           <span className="push">
             {phase === 'done' &&
-              `best (${[language.name, length, autoClose && 'auto-close', intellisense && 'intellisense'].filter(Boolean).join(', ')}): ${best ? `${Math.round(best)} wpm` : '—'}`}
+              `best (${[language.name, length, autoClose && 'auto-close', autocomplete && 'autocomplete'].filter(Boolean).join(', ')}): ${best ? `${Math.round(best)} wpm` : '—'}`}
           </span>
           {serviceLabel && (
             <span
