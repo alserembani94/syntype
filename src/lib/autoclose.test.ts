@@ -111,10 +111,28 @@ describe('auto-close like VS Code', () => {
     expect(run.chars[run.pos]).toBe(';')
   })
 
-  it('Enter at an auto-inserted line break is a mistake, as VS Code would add a blank line', () => {
+  it('Enter at an auto-inserted line break steps over it, as players expect (VS Code would add a blank line)', () => {
     let run = typeAll(start('if (a) {\n  go();\n}'), 'if (a) {\ngo();')
+    expect(run.states[run.pos]).toBe('pending')
     run = typeChar(run, '\n')
-    expect(counts(run).incorrect).toBe(1)
+    // Counted as typed, as typing over an auto-inserted closer is, and the caret lands on the closer.
+    expect(counts(run).incorrect).toBe(0)
+    expect(run.chars[run.pos]).toBe('}')
+    run = typeChar(run, '}')
+    expect(isFinished(run)).toBe(true)
+    expect(counts(run).incorrect).toBe(0)
+  })
+
+  it('Enter at an auto-inserted line break skips its indentation too, even several levels in', () => {
+    const code = 'f(() => {\n  if (a) {\n    go();\n  }\n});'
+    let run = typeAll(start(code), 'f(() => {\nif (a) {\ngo();\n')
+    expect(run.chars.slice(run.pos, run.pos + 1).join('')).toBe('}')
+    expect(counts(run).incorrect).toBe(0)
+    run = typeAll(run, '}\n')
+    expect(run.chars[run.pos]).toBe('}')
+    run = typeAll(run, '});')
+    expect(isFinished(run)).toBe(true)
+    expect(counts(run).incorrect).toBe(0)
   })
 
   it('Backspace on an opener removes its auto-inserted closer', () => {

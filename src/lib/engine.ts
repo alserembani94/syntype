@@ -138,9 +138,11 @@ export function typeChar(prev: Run, ch: string): Run {
   const run = copy(prev)
   const at = run.pos
   const expected = run.chars[at]
-  // Typing at an auto-inserted line break inserts a new line in VS Code
-  // instead of moving past it, so it can never be right.
-  const good = ch === expected && !(run.states[at] === 'pending' && expected === '\n')
+  // Enter at an auto-inserted line break (the closer moved down by an earlier
+  // Enter) steps over it, as typing an auto-inserted closer does: it's what
+  // players press there. VS Code would add a blank line, a deliberate
+  // difference; ↓ and End still move past it too.
+  const good = ch === expected
   run.keystrokes++
   if (good) run.correctKeystrokes++
   else run.missed[expected] = (run.missed[expected] ?? 0) + 1

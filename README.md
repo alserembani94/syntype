@@ -41,7 +41,7 @@ The API's database is D1 (`DB`); its tables are migrations in `migrations/`. The
 - **Auto-indent** (on by default) skips the leading spaces after Enter, the way an editor would. Skipped spaces don't count toward your score. With it off, you type the indentation, and Tab inserts 2 spaces.
 - **Auto-close** (on by default) behaves like VS Code:
   - Typing `(`, `[`, `{` or a quote inserts the closer after the caret (highlighted). Type the closer to step over it, or press `→` / `End` to move past it.
-  - Enter between `{` and its closer moves the closer down onto its own line. At the end of the block press `↓` to move past it. Pressing Enter there counts as a mistake, because VS Code would add a blank line.
+  - Enter between `{` and its closer moves the closer down onto its own line. At the end of the block, Enter steps over that line break (and its indentation), counted as typed, like typing over an auto-inserted closer; `↓` moves past it too. (VS Code would add a blank line there; Syntype follows what players press.)
   - VS Code's rules apply: quotes don't auto-close inside strings, `'` and `` ` `` don't inside comments, and no quote closes right after a letter or digit. Nothing auto-closes unless the next character is whitespace, end of line or one of `;:.,=}])>`.
   - Backspace on an opener also removes the closer it inserted.
   - The one difference from VS Code: a mistyped opener doesn't auto-close anything.

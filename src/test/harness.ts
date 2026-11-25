@@ -82,6 +82,7 @@ export function play(
   let seed = opts.typist?.seed ?? 0
   const rand = () => (seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31
   let nextTick = 1000
+  let pendingBreaks = 0
   let paused = false
   /** The once-a-second samples due by `t`, in time order, as the browser's timer delivers them. */
   const ticksUntil = (t: number) => {
@@ -126,9 +127,10 @@ export function play(
       }
     }
     if (run.states[run.pos] === 'pending' && ch === '\n') {
-      // An open list would take ↓, so close it first, as a VS Code user would.
+      // At a line break the editor already inserted, players press Enter or ↓; take turns, so every
+      // snippet exercises both. An open list would take either key, so close it first.
       if (s.suggest) s = step(lang, s, { type: 'dismiss' })
-      s = step(lang, s, { type: 'move', dir: 'down', now })
+      s = step(lang, s, (pendingBreaks++ % 2 === 0 ? { type: 'key', ch: '\n', now } : { type: 'move', dir: 'down', now }) as Action)
     } else if (ch === '\n' && s.suggest) {
       // Enter would accept; someone who wants a new line presses Esc first.
       s = step(lang, s, { type: 'dismiss' })
