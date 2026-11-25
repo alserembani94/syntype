@@ -324,8 +324,19 @@ export function reducer(s: TestState, a: Action): TestState {
     case 'resume':
       return s.pausedAt ? resumed(logged(s, { type: 'resume', now: a.now }), a.now) : s
 
-    case 'serviceStatus':
-      return s.serviceReady === a.ready ? s : { ...s, serviceReady: a.ready, suggest: null, request: null }
+    case 'serviceStatus': {
+      if (s.serviceReady === a.ready) return s
+      const next: TestState = { ...s, serviceReady: a.ready, suggest: null, request: null }
+      // Ready while the player is partway through a word with the basic list open (TypeScript's
+      // service loads on the first key): ask it about that word at once, keeping the basic list
+      // until it answers. Its answer is filtered by the letters typed so far, as if it had been
+      // asked at the word's first letter. A list the player dismissed stays dismissed.
+      if (a.ready && s.suggest && !s.suggest.entries && s.phase === 'running' && next.suggestConfig) {
+        const ws = wordStart(s.run, next.suggestConfig)
+        if (ws >= 0 && ws < s.run.pos) return { ...requestAt(next, ws), suggest: s.suggest }
+      }
+      return next
+    }
 
     case 'serviceResult': {
       if (!s.request || s.request.id !== a.id || s.phase !== 'running') return s
