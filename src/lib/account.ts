@@ -12,6 +12,8 @@ export interface Player {
   name: string | null
   suggestedName: string
   hidden: boolean
+  /** Hidden from the leaderboards by a moderator. */
+  hiddenByModerator: boolean
   nameChangedAt: string | null
   /** When the name may change again, if not yet. */
   renameAfter: string | null

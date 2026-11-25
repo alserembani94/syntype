@@ -32,7 +32,7 @@ Not goals for now: weekly or monthly boards, boards that rank across snippets, l
 
 The site is already a Worker serving static files (`wrangler.jsonc`). The backend joins the same Worker:
 
-- **Worker code** handles `/api/*` and `/admin*` only (`assets.run_worker_first` for those paths). Every other request is a static file, free and unlimited, so the game never depends on the backend.
+- **Worker code** handles `/api/*` only (`assets.run_worker_first`). Every other request is a static file, free and unlimited, so the game never depends on the backend. The admin page (`/admin`) is a static file too, behind Access; its data comes from `/api/admin/*`, which checks Access's token itself.
 - **D1** (SQLite) stores players, best scores, top-20 logs, reports and snippet versions.
 - **Turnstile** (Cloudflare's CAPTCHA, usually invisible) is checked when a run is submitted.
 - **Cloudflare Access** guards the admin page.
@@ -170,7 +170,15 @@ Indexes:
   - rename the player
   - dismiss the report
 - **Player search**, to rename or hide anyone without a report.
-- **Every action** is recorded in `admin_actions`.
+- **Every action** is recorded in `admin_actions`, with the admin's Access email.
+
+**As built** (step 6, before submission, so the run tools come with steps 3–4):
+- Reports are gathered by what they're about (a player, or one of their runs) and closed together: **resolve** (you acted) or **dismiss** (nothing wrong). Closed reports stay, under "Closed".
+- **Hide** sets a flag of its own (`moderator_hidden`), apart from the player's own "hide me", so a player can't undo it. The player is told (`hiddenByModerator` in `/api/me`).
+- **Rename** follows the usual name rules, at any time, and counts as a change of name: the player waits a week before changing it again.
+- **Sign out everywhere** ends every session the player has.
+- **Reports from players** (`POST /api/reports`) need a confirmed name; you can't report yourself; one per target, whatever its status; 10 in 24 hours. A run can only be reported while it's on a board.
+- Locally, `npm run dev:api` treats requests to localhost as an admin (`ADMIN_DEV_EMAIL`), since Access doesn't run there. Any other host needs a real Access token.
 
 **What this won't catch:** a careful cheater feeding in human-like keystrokes at a believable speed. Review and reports keep that rare.
 

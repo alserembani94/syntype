@@ -8,14 +8,27 @@
  *   POST /api/auth/signout                sign out
  *   GET  /api/me                          the signed-in player, or { signedIn: false }
  *   POST /api/me/name                     set or change the leaderboard name
+ *   POST /api/reports                     report a player or one of their runs
+ *
+ * The admin page's API, behind Cloudflare Access (access.ts checks its token
+ * on every request):
+ *
+ *   GET  /api/admin/me                    the admin's email
+ *   GET  /api/admin/players?q=            find players
+ *   POST /api/admin/players/:id/:action   rename, hide, show, signout
+ *   GET  /api/admin/reports?status=       the report queue: open or closed
+ *   POST /api/admin/reports/close         resolve or dismiss reports about a player or run
+ *   GET  /api/admin/actions?before=       the action log
  */
 import type { Db } from './db'
 import { cookie, readCookies } from './cookies'
 import { randomToken, sha256, sign, verify } from './crypto'
 import { authorizeUrl, exchange, PROVIDERS, SignInError, type OAuthConfig, type Provider } from './oauth'
+import { accessEmail, type AccessConfig } from './access'
+import { actionLog, actOnPlayer, closeReports, findPlayers, PLAYER_ACTIONS, report, reportQueue, type PlayerAction } from './moderation'
 import { getPlayer, playerFor, publicPlayer, setName, touch, type PlayerRow } from './players'
 
-export interface ApiConfig extends OAuthConfig {
+export interface ApiConfig extends OAuthConfig, AccessConfig {
   SITE_URL: string
   SESSION_SECRET: string
 }
@@ -161,5 +174,40 @@ export async function handle(request: Request, deps: Deps): Promise<Response> {
     return result.ok ? json({ signedIn: true, player: publicPlayer(result.player) }) : json({ error: result.error }, result.status)
   }
 
+  if (url.pathname === '/api/reports' && method === 'POST') {
+    if (!fromOurPages(request, config)) return json({ error: 'Not allowed from here.' }, 403)
+    const player = await signedIn(request, deps)
+    if (!player) return json({ error: 'Sign in to report.' }, 401)
+    const result = await report(db, player, await request.json().catch(() => null), now)
+    return result.ok ? json({ ok: true }, 201) : json({ error: result.error }, result.status)
+  }
+
+  if (url.pathname.startsWith('/api/admin/')) return admin(request, url, deps, now)
+
+  return json({ error: 'Not found' }, 404)
+}
+
+async function admin(request: Request, url: URL, deps: Deps, now: Date): Promise<Response> {
+  const { config, db } = deps
+  const email = await accessEmail(request, config, deps.fetch, now.getTime())
+  if (!email) return json({ error: 'Admins only. Sign in through Cloudflare Access.' }, 403)
+  const path = url.pathname.slice('/api/admin'.length)
+  const method = request.method
+  if (method === 'POST' && !fromOurPages(request, config)) return json({ error: 'Not allowed from here.' }, 403)
+  const body = () => request.json().catch(() => null)
+  const reply = (result: { ok: true } | { ok: false; status: number; error: string }) =>
+    result.ok ? json(result) : json({ error: result.error }, result.status)
+
+  if (path === '/me' && method === 'GET') return json({ email })
+  if (path === '/players' && method === 'GET') return json({ players: await findPlayers(db, url.searchParams.get('q')) })
+  const act = path.match(/^\/players\/([^/]+)\/([a-z]+)$/)
+  if (act && method === 'POST' && PLAYER_ACTIONS.includes(act[2] as PlayerAction)) {
+    return reply(await actOnPlayer(db, email, decodeURIComponent(act[1]), act[2] as PlayerAction, await body(), now))
+  }
+  if (path === '/reports' && method === 'GET') {
+    return json({ groups: await reportQueue(db, url.searchParams.get('status') === 'closed' ? 'closed' : 'open') })
+  }
+  if (path === '/reports/close' && method === 'POST') return reply(await closeReports(db, email, await body(), now))
+  if (path === '/actions' && method === 'GET') return json({ actions: await actionLog(db, url.searchParams.get('before')) })
   return json({ error: 'Not found' }, 404)
 }

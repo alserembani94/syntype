@@ -10,7 +10,10 @@ export interface PlayerRow {
   name: string | null
   suggested_name: string
   name_changed_at: string | null
+  /** Hidden by the player themselves. */
   hidden: number
+  /** Hidden by the admin; only the admin can show them again. */
+  moderator_hidden: number
   session_version: number
   created_at: string
   last_seen_at: string
@@ -24,6 +27,7 @@ export function publicPlayer(p: PlayerRow) {
     name: p.name,
     suggestedName: p.suggested_name,
     hidden: p.hidden === 1,
+    hiddenByModerator: p.moderator_hidden === 1,
     nameChangedAt: p.name_changed_at,
     /** When they may rename next, if they can't now. */
     renameAfter: p.name && p.name_changed_at ? new Date(Date.parse(p.name_changed_at) + RENAME_EVERY_MS).toISOString() : null,

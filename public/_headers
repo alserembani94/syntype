@@ -4,6 +4,14 @@
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 
+/admin-assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# The admin page (behind Cloudflare Access): never framed, never cached.
+/admin
+  X-Frame-Options: DENY
+  Cache-Control: no-store
+
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin

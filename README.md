@@ -15,9 +15,11 @@ Other scripts: `npm test` (unit and playthrough tests, Vitest), `npm run build`,
 
 ## Deploy
 
-The site deploys to Cloudflare as a Worker with static assets (`wrangler.jsonc`): `npm run build` produces `dist/`, and Cloudflare serves those files as they are. A small Worker (`worker/index.ts`, its own `tsconfig.worker.json`) answers `/api/*` only, for the leaderboard to come (`docs/leaderboard.md`); every other request is a file and never runs code. Public settings (OAuth client IDs, the Turnstile sitekey) are `vars` in `wrangler.jsonc`; secrets are added in the dashboard (Workers & Pages → syntype → Settings → Variables and Secrets), never in the repo. After changing `wrangler.jsonc`, run `npx wrangler types worker/worker-configuration.d.ts`.
+The site deploys to Cloudflare as a Worker with static assets (`wrangler.jsonc`): `npm run build` produces `dist/`, and Cloudflare serves those files as they are. A small Worker (`worker/index.ts`, its own `tsconfig.worker.json`) answers `/api/*` only, for the leaderboard (`docs/leaderboard.md`); every other request is a file and never runs code. Public settings (OAuth client IDs, the Turnstile sitekey) are `vars` in `wrangler.jsonc`; secrets are added in the dashboard (Workers & Pages → syntype → Settings → Variables and Secrets), never in the repo. After changing `wrangler.jsonc`, run `npx wrangler types worker/worker-configuration.d.ts`.
 
 The API's database is D1 (`DB`); its tables are migrations in `migrations/`. The build's deploy command is `npm run deploy`, which applies new migrations and then deploys. To run the site with its API locally: put local secrets in `.dev.vars` (not committed; Cloudflare's always-pass Turnstile test key works locally) and run `npm run dev:api`, which serves it at http://localhost:8787. The API's code is in `worker/lib/`, tested against a local D1 database with GitHub and Google simulated (`worker/lib/api.test.ts`). `public/_headers` caches the hashed files in `/assets/` for a year and keeps `index.html` fresh, so a new deploy shows up at once.
+
+**The admin page** (`/admin`, built from `admin.html` and `src/admin/` by `vite.admin.config.ts` into its own `admin-assets/`, so the game's bundle never includes it) is the report queue, player search (rename, hide, sign out everywhere) and the action log. Cloudflare Access guards `/admin` and `/api/admin`, and the API also checks Access's signed token on every admin request (`worker/lib/access.ts`, against `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` in `wrangler.jsonc`), so the API refuses anything that didn't come through Access. With `npm run dev:api`, http://localhost:8787/admin works without Access, as `admin@localhost`.
 
 - **From GitHub (recommended):** in the Cloudflare dashboard, Workers & Pages → Create → import this repository. Build command `npm run build`, deploy command `npx wrangler deploy`. Every push to `main` then deploys.
 - **From your computer:** `npx wrangler login` once, then `npm run build && npx wrangler deploy`.
@@ -130,6 +132,7 @@ src/
                         Results, Review, SpeedChart, SuggestBox, ThemePicker
   seo/                  site.ts: the site's address, every page's title, description and intro, the sitemap
   themes/               themes.css (every theme's colours), index.ts (the list), themes.test.ts (rules T1–T4)
+  admin/                the admin page (/admin): report queue, player search, action log
   App.tsx               layout, keyboard handling, settings, personal bests
 ```
 

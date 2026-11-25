@@ -53,6 +53,8 @@ The site is https://syntype.vercel.my (`SITE_URL` in `src/seo/site.ts`). `npm ru
 
 `docs/leaderboard.md` is the agreed design for the personal board and the global leaderboard: what is stored on the device and the server, the rules, moderation, privacy and the cost limits. Follow it when building them, and update it when a decision changes.
 
+The admin page (`/admin`, `src/admin/`) sits behind Cloudflare Access. Every `/api/admin/*` route must go through `accessEmail` (`worker/lib/access.ts`), which checks Access's signed token, and every admin change must be written to `admin_actions`.
+
 ## Working in this repo
 
 - Commits are authored as Atif <alserembani94@gmail.com> (set in the repo's git config).

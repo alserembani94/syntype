@@ -22,7 +22,12 @@
     "SITE_URL": "https://syntype.vercel.my",
     "GITHUB_CLIENT_ID": "Ov23lii8XQvuUn3Op6hY",
     "GOOGLE_CLIENT_ID": "118095071688-iq0990p2p9nttq8hdj3b505j8sc8sc21.apps.googleusercontent.com",
-    "TURNSTILE_SITE_KEY": "0x4AAAAAAGSwangBAPdG6nQF"
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAGSwangBAPdG6nQF",
+    // Cloudflare Access, in front of /admin and /api/admin: the team domain that
+    // signs its tokens and the admin application's audience tag
+    // (worker/lib/access.ts checks both on every admin request).
+    "ACCESS_TEAM_DOMAIN": "https://alserembani.cloudflareaccess.com",
+    "ACCESS_AUD": "be73674a1750393346d186b58e576ee81b45e742b748e4e62ba5fa154a05882e"
   },
   // The leaderboard's database (docs/leaderboard.md). Schema changes are
   // migrations in migrations/, applied with `wrangler d1 migrations apply`.
