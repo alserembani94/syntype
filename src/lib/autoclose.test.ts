@@ -204,3 +204,19 @@ describe('Go: tab indentation and VS Code\'s Go auto-close', () => {
     expect(pendingText(run)).toBe('`\n}')
   })
 })
+
+describe("PHP auto-close, from VS Code's PHP configuration", () => {
+  const php = getLanguage('php')
+  const startPhp = (code: string) =>
+    createRun(code, { autoIndent: true, autoClose: true, pairs: computePairs(code, php) })
+
+  it('does not auto-close brackets inside strings, unlike other languages', () => {
+    const run = typeAll(startPhp('return "Hello, {$name}!";'), 'return "Hello, {')
+    expect(pendingText(run)).toBe('"')
+  })
+
+  it('still auto-closes brackets in code', () => {
+    const run = typeAll(startPhp('$xs = [1, 2];'), '$xs = [')
+    expect(pendingText(run)).toBe(']')
+  })
+})

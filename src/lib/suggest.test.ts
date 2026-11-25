@@ -301,3 +301,29 @@ describe('Go vocabulary packs', () => {
     expect(labels(typeAll(run, 'xs := ma'), cfg)).toContain('make')
   })
 })
+
+describe('PHP suggestions', () => {
+  const php = getLanguage('php')
+  const phpSetup = (code: string) => ({
+    run: createRun(code, { autoIndent: true, autoClose: false }),
+    cfg: buildSuggestConfig(code, php, false),
+  })
+
+  it('treats $ as part of a word, as VS Code\'s PHP word pattern does', () => {
+    const code = '$user = load();\necho $user;'
+    const { run, cfg } = phpSetup(code)
+    expect(labels(typeAll(run, '$user = load();\necho $us'), cfg)).toContain('$user')
+  })
+
+  it('opens member lists after -> with words typed earlier, and after ::', () => {
+    const code = '$this->items = [];\n$this->items[] = 1;\n$s = PDO::FETCH_ASSOC;'
+    const { run, cfg } = phpSetup(code)
+    expect(labels(typeAll(run, '$this->items = [];\n$this->'), cfg)).toContain('items')
+    expect(labels(typeAll(run, '$this->items = [];\n$this->items[] = 1;\n$s = PDO::'), cfg)).toContain('FETCH_ASSOC')
+  })
+
+  it('offers built-in functions without any import', () => {
+    const { run, cfg } = phpSetup('$n = count($xs);')
+    expect(labels(typeAll(run, '$n = cou'), cfg)).toContain('count')
+  })
+})

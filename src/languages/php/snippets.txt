@@ -1,0 +1,188 @@
+=== add.php
+function add(int $a, int $b): int
+{
+    return $a + $b;
+}
+=== is_even.php
+function isEven(int $n): bool
+{
+    return $n % 2 === 0;
+}
+=== greet.php
+function greet(string $name): string
+{
+    return "Hello, {$name}!";
+}
+=== squares.php
+$squares = array_map(fn (int $n): int => $n * $n, range(1, 10));
+=== clamp.php
+function clamp(float $value, float $low, float $high): float
+{
+    return max($low, min($value, $high));
+}
+=== Point.php
+final class Point
+{
+    public function __construct(
+        public readonly float $x,
+        public readonly float $y,
+    ) {
+    }
+
+    public function distanceTo(Point $other): float
+    {
+        return sqrt(($this->x - $other->x) ** 2 + ($this->y - $other->y) ** 2);
+    }
+}
+=== word_count.php
+function wordCount(string $text): array
+{
+    $counts = [];
+    foreach (preg_split('/\s+/', strtolower($text)) as $word) {
+        $counts[$word] = ($counts[$word] ?? 0) + 1;
+    }
+    return $counts;
+}
+=== Status.php
+enum Status: string
+{
+    case Draft = 'draft';
+    case Published = 'published';
+
+    public function label(): string
+    {
+        return match ($this) {
+            Status::Draft => 'Draft',
+            Status::Published => 'Published',
+        };
+    }
+}
+=== read_config.php
+function readConfig(string $path): array
+{
+    $json = file_get_contents($path);
+    if ($json === false) {
+        throw new RuntimeException("Cannot read {$path}");
+    }
+    return json_decode($json, true, flags: JSON_THROW_ON_ERROR);
+}
+=== json_response.php
+function jsonResponse(array $data, int $status = 200): never
+{
+    http_response_code($status);
+    header('Content-Type: application/json');
+    echo json_encode($data, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR);
+    exit;
+}
+=== Stack.php
+final class Stack
+{
+    private array $items = [];
+
+    public function push(mixed $item): void
+    {
+        $this->items[] = $item;
+    }
+
+    public function pop(): mixed
+    {
+        if ($this->items === []) {
+            throw new UnderflowException('Stack is empty');
+        }
+        return array_pop($this->items);
+    }
+
+    public function peek(): mixed
+    {
+        return $this->items[array_key_last($this->items)] ?? null;
+    }
+
+    public function count(): int
+    {
+        return count($this->items);
+    }
+}
+=== UserRepository.php
+final class UserRepository
+{
+    public function __construct(private PDO $db)
+    {
+    }
+
+    public function find(int $id): ?array
+    {
+        $stmt = $this->db->prepare('SELECT id, name, email FROM users WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $user === false ? null : $user;
+    }
+}
+=== Shape.php
+interface Shape
+{
+    public function area(): float;
+}
+
+final class Circle implements Shape
+{
+    public function __construct(private float $radius)
+    {
+    }
+
+    public function area(): float
+    {
+        return M_PI * $this->radius ** 2;
+    }
+}
+
+final class Rectangle implements Shape
+{
+    public function __construct(private float $width, private float $height)
+    {
+    }
+
+    public function area(): float
+    {
+        return $this->width * $this->height;
+    }
+}
+=== BankAccount.php
+final class InsufficientFunds extends RuntimeException
+{
+}
+
+final class BankAccount
+{
+    private int $balance = 0;
+
+    public function deposit(int $amount): void
+    {
+        if ($amount <= 0) {
+            throw new InvalidArgumentException('Deposit must be positive');
+        }
+        $this->balance += $amount;
+    }
+
+    public function withdraw(int $amount): void
+    {
+        if ($amount > $this->balance) {
+            throw new InsufficientFunds("Cannot withdraw {$amount}");
+        }
+        $this->balance -= $amount;
+    }
+}
+=== order_totals.php
+$orders = [
+    ['id' => 1, 'customer' => 'Ada', 'total' => 25.0],
+    ['id' => 2, 'customer' => 'Linus', 'total' => 40.5],
+    ['id' => 3, 'customer' => 'Ada', 'total' => 12.25],
+];
+
+$byCustomer = [];
+foreach ($orders as $order) {
+    $name = $order['customer'];
+    $byCustomer[$name] = ($byCustomer[$name] ?? 0) + $order['total'];
+}
+
+arsort($byCustomer);
+echo json_encode($byCustomer, JSON_PRETTY_PRINT);
