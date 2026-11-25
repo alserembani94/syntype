@@ -26,5 +26,5 @@ export function getLanguage(id: string): Language {
 }
 
 export { CATEGORIES } from './types'
-export type { Language, LanguageCategory, LengthFilter, Snippet, SnippetLength, HighlightRules, AutoClosingPair, CompletionConfig, CompletionItem, SuggestionKind, VocabularyPack } from './types'
+export type { Language, LanguageCategory, Snippet, SnippetLength, HighlightRules, AutoClosingPair, CompletionConfig, CompletionItem, SuggestionKind, VocabularyPack } from './types'
 export { pickSnippet } from './snippets'

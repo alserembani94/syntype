@@ -1,4 +1,4 @@
-import type { LengthFilter, Snippet } from './types'
+import type { Snippet, SnippetLength } from './types'
 
 /**
  * Parses a snippets file: each snippet starts with a `=== file-name` line,
@@ -21,8 +21,8 @@ export function parseSnippets(text: string): Snippet[] {
 }
 
 /** Random snippet of the given length, avoiding a repeat where possible. */
-export function pickSnippet(snippets: Snippet[], filter: LengthFilter, avoid?: string): Snippet {
-  let pool = snippets.filter((s) => filter === 'any' || s.length === filter)
+export function pickSnippet(snippets: Snippet[], length: SnippetLength, avoid?: string): Snippet {
+  let pool = snippets.filter((s) => s.length === length)
   if (!pool.length) pool = snippets
   if (pool.length > 1 && avoid) pool = pool.filter((s) => s.name !== avoid)
   return pool[Math.floor(Math.random() * pool.length)]

@@ -1,5 +1,4 @@
 export type SnippetLength = 'short' | 'medium' | 'long'
-export type LengthFilter = SnippetLength | 'any'
 
 export interface Snippet {
   /** Shown as the editor tab, e.g. "debounce.js". */

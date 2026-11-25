@@ -1,13 +1,14 @@
-import type { LengthFilter } from '../languages'
+import type { SnippetLength } from '../languages'
 
-const LENGTHS: LengthFilter[] = ['short', 'medium', 'long', 'any']
+// No "any": every run belongs to one length, so speeds are only compared like for like.
+const LENGTHS: SnippetLength[] = ['short', 'medium', 'long']
 
 interface Props {
-  length: LengthFilter
+  length: SnippetLength
   autoIndent: boolean
   autoClose: boolean
   autocomplete: boolean
-  onLength: (l: LengthFilter) => void
+  onLength: (l: SnippetLength) => void
   onToggleIndent: () => void
   onToggleClose: () => void
   onToggleAutocomplete: () => void

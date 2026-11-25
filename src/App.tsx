@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { getLanguage, LANGUAGES, pickSnippet, type LengthFilter, type Snippet } from './languages'
+import { getLanguage, LANGUAGES, pickSnippet, type Snippet, type SnippetLength } from './languages'
 import { useTypingTest, type TestOptions } from './hooks/useTypingTest'
 import { isTouch, usePageFocus } from './hooks/usePageFocus'
 import { MIN_ACCURACY_FOR_BEST, summarize } from './lib/stats'
@@ -7,6 +7,7 @@ import { atPending, caretPosition } from './lib/engine'
 import { buildSuggestConfig } from './lib/suggest'
 import { computePairs } from './lib/pairs'
 import { load, save } from './lib/storage'
+import { migrateBests, savedLength, type Bests } from './lib/settings'
 import { CHORD_TIMEOUT_MS, keyLabels, shortcut, shortcutText } from './lib/shortcuts'
 import { CodeView } from './components/CodeView'
 import { ConfigBar } from './components/ConfigBar'
@@ -20,18 +21,12 @@ import { Results } from './components/Results'
 
 interface Settings {
   languageId: string
-  length: LengthFilter
+  length: SnippetLength
   autoIndent: boolean
   autoClose: boolean
   autocomplete: boolean
 }
 
-/** Personal bests keyed by "languageId:length", plus a suffix for each assist that was on. */
-type Bests = Record<string, number>
-
-/** Bests saved before the rename used ":intellisense" in their keys. */
-const migrateBests = (bests: Bests): Bests =>
-  Object.fromEntries(Object.entries(bests).map(([k, v]) => [k.replace(/:intellisense$/, ':autocomplete'), v]))
 const bestKey = (s: Settings) =>
   `${s.languageId}:${s.length}${s.autoClose ? ':autoclose' : ''}${s.autocomplete ? ':autocomplete' : ''}`
 
@@ -71,7 +66,7 @@ export default function App() {
   // A language page (/python) wins over the language saved from last time.
   const [languageId, setLanguageId] = useState(() => getLanguage(languageInAddress ?? load('language', '')).id)
   const language = getLanguage(languageId)
-  const [length, setLength] = useState<LengthFilter>(() => load('length', 'medium'))
+  const [length, setLength] = useState<SnippetLength>(() => savedLength(load('length', 'medium')))
   const [autoIndent, setAutoIndent] = useState(() => load('autoIndent', true))
   const [autoClose, setAutoClose] = useState(() => load('autoClose', true))
   // Saved as "intellisense" before the feature was renamed; carried over once.
@@ -316,7 +311,7 @@ export default function App() {
     showLanguageInAddress(lang.id)
     start(pickSnippet(lang.snippets, length), { languageId: lang.id })
   }
-  const changeLength = (l: LengthFilter) => {
+  const changeLength = (l: SnippetLength) => {
     setLength(l)
     save('length', l)
     start(pickSnippet(language.snippets, l), { length: l })
