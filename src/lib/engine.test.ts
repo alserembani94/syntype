@@ -73,6 +73,10 @@ describe('languages', () => {
   })
 
   describe.each(LANGUAGES)('$name', (lang) => {
+    it.each(['short', 'medium', 'long'] as const)('has at least 4 %s snippets to rotate through', (length) => {
+      expect(lang.snippets.filter((s) => s.length === length).length).toBeGreaterThanOrEqual(4)
+    })
+
     it('has snippets named with its extension, without tabs or trailing spaces', () => {
       expect(lang.snippets.length).toBeGreaterThan(0)
       for (const s of lang.snippets) {

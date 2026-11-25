@@ -193,3 +193,71 @@ type PublicCredentials = Omit<Credentials, "password">;
 function redact({ password, ...rest }: Credentials): PublicCredentials {
   return rest;
 }
+=== sum.ts
+const sum = (values: number[]): number =>
+  values.reduce((total, n) => total + n, 0);
+=== LRUCache.ts
+class LRUCache<K, V> {
+  private entries = new Map<K, V>();
+
+  constructor(private readonly capacity: number) {}
+
+  get(key: K): V | undefined {
+    const value = this.entries.get(key);
+    if (value === undefined) return undefined;
+    this.entries.delete(key);
+    this.entries.set(key, value);
+    return value;
+  }
+
+  set(key: K, value: V): void {
+    this.entries.delete(key);
+    this.entries.set(key, value);
+    if (this.entries.size > this.capacity) {
+      const oldest = this.entries.keys().next().value as K;
+      this.entries.delete(oldest);
+    }
+  }
+}
+=== paidTotals.ts
+interface OrderItem {
+  sku: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+interface Order {
+  id: string;
+  status: "pending" | "paid" | "shipped";
+  items: OrderItem[];
+}
+
+const orderTotal = (order: Order) =>
+  order.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+
+function paidTotals(orders: Order[]): Record<string, number> {
+  const totals: Record<string, number> = {};
+  for (const order of orders) {
+    if (order.status === "paid") totals[order.id] = orderTotal(order);
+  }
+  return totals;
+}
+=== ApiClient.ts
+interface ApiError {
+  status: number;
+  message: string;
+}
+
+type ApiResult<T> = { ok: true; data: T } | { ok: false; error: ApiError };
+
+class ApiClient {
+  constructor(private readonly baseUrl: string) {}
+
+  async get<T>(path: string): Promise<ApiResult<T>> {
+    const res = await fetch(`${this.baseUrl}${path}`);
+    if (!res.ok) {
+      return { ok: false, error: { status: res.status, message: res.statusText } };
+    }
+    return { ok: true, data: (await res.json()) as T };
+  }
+}
