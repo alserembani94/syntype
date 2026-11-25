@@ -70,17 +70,17 @@ src/
 2. Create `src/languages/<id>/index.ts`, using `javascript/index.ts` as a model: set `id`, `name`, `extension`, `highlight` (keywords, comment and string syntax), `autoClosingPairs` and `completion`. Copy `autoClosingPairs` from the language's VS Code `language-configuration.json` so auto-close matches the editor. **Don't copy JavaScript's `completion.service`, `serviceMode` or `triggerCharacters`**: those wire in TypeScript's service. A language without its own service sets `wordChar` and, if useful, vocabulary `packs` (see below).
 3. Add it to `LANGUAGES` in `src/languages/index.ts`.
 
-It then appears in the language picker. `npm test` checks every registered language's snippet names and formatting. The literal-typing playthroughs and keystroke-savings report in `src/lib/ts/typescript.test.ts` cover JavaScript and TypeScript; add the new language there if it has a service.
+It then appears in the language picker, and `npm test` holds it to every language rule (R1–R9 in `CLAUDE.md`, checked by `src/languages/conformance.test.ts`): identity, at least 4 snippets per length, formatting, highlighting, playthroughs with and without its service, and suggestions that save keystrokes. A language with a service also needs a stand-in for it in `TEST_COMPLETERS` (`src/test/harness.ts`).
 
 ### Suggestions for a language
 
 A language can have a **completion service** (`completion.service`, see `src/lib/service.ts`) that understands the code, like TypeScript's in `src/lib/ts/`. Services run asynchronously, usually in a worker, and are asked for suggestions at the start of a word or after a trigger character (`completion.triggerCharacters`). The list is then filtered locally as you type, as VS Code does. Languages without a service get keywords and words already typed, plus optional vocabulary packs: `completion.packs`, with `wordChar` for what makes a word and `memberTriggers` (e.g. `["."]` or `["::", "->"]`) for what opens member lists. A pack without `detect` is always on (built-ins); one with `detect` switches on when the snippet matches it, usually an import. Each pack has `globals`, and `members` keyed by receiver, with `"*"` for receivers whose type is unknown. The test language in `src/lib/suggest.test.ts` shows the shape. JavaScript and TypeScript don't use packs, because the service covers them.
 
-`npm test` reports how many keystrokes suggestions save across the JavaScript and TypeScript snippets, and fails if typing any of them literally lets a commit character insert a wrong word.
+`npm test` reports how many keystrokes suggestions save for each language, and fails if typing any snippet literally lets a commit character insert a wrong word.
 
 ## Adding snippets
 
-A snippet can use names from code around it that isn't shown, such as `items`, `todos` or `user`. The suggestion service treats them as unknown, as a real editor would with that code missing. One case needs care: an undeclared name that fuzzy-matches something else can be swapped by a commit character. In `server.js`, an undeclared `db` made `db.` commit the `debugger` keyword, exactly as VS Code would. `npm test` types every JavaScript and TypeScript snippet literally with suggestions on and fails if that happens. If it does, declare or import the name in the snippet, as `server.js` now imports `db`.
+A snippet can use names from code around it that isn't shown, such as `items`, `todos` or `user`. The suggestion service treats them as unknown, as a real editor would with that code missing. One case needs care: an undeclared name that fuzzy-matches something else can be swapped by a commit character. In `server.js`, an undeclared `db` made `db.` commit the `debugger` keyword, exactly as VS Code would. `npm test` types every snippet literally with suggestions on and fails if that happens. If it does, declare or import the name in the snippet, as `server.js` now imports `db`.
 
 Append a block to the language's `snippets.txt`:
 
@@ -89,7 +89,7 @@ Append a block to the language's `snippets.txt`:
 const myThing = () => 42;
 ```
 
-Use 2-space indentation and no tabs or trailing spaces (the tests check this). Length is picked from the character count: under 120 is short, up to 300 is medium, longer is long.
+Use printable ASCII, 2-space indentation, lines of 88 characters or fewer, and no trailing spaces (rule R4; the tests check this). Each language needs at least 4 snippets per length (R2). Length is picked from the character count: under 120 is short, up to 300 is medium, longer is long.
 
 ## TypeScript dependency note
 

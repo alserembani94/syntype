@@ -138,17 +138,4 @@ describe('auto-close like VS Code', () => {
     expect(isFinished(run)).toBe(true)
     expect(counts(run).incorrect).toBe(0)
   })
-
-  it('every JavaScript snippet can be finished with auto-close on, using ↓ where needed', () => {
-    for (const s of js.snippets) {
-      let run = start(s.code)
-      let guard = 0
-      while (!isFinished(run) && guard++ < 5000) {
-        const pending = run.states[run.pos] === 'pending'
-        run = pending && run.chars[run.pos] === '\n' ? move(run, 'down') : typeChar(run, run.chars[run.pos])
-      }
-      expect(isFinished(run), s.name).toBe(true)
-      expect(counts(run).incorrect, s.name).toBe(0)
-    }
-  })
 })
