@@ -28,7 +28,13 @@ function buildRegex(rules: HighlightRules): RegExp {
     })
   const group = (parts: string[]) => `(${parts.length ? parts.join('|') : '(?!)'})`
   return new RegExp(
-    [group(comments), group(strings), '(\\b\\d+(?:\\.\\d+)?\\b)', '([A-Za-z_$][\\w$]*)', '([^\\sA-Za-z0-9_$])'].join('|'),
+    [
+      group(comments),
+      group(strings),
+      '(\\b\\d+(?:\\.\\d+)?\\b)',
+      `(${rules.identifier ?? '[A-Za-z_$][\\w$]*'})`,
+      '([^\\sA-Za-z0-9_$])',
+    ].join('|'),
     'g',
   )
 }
@@ -57,7 +63,7 @@ export function tokens(code: string, rules: HighlightRules): Token[] {
       if (keywords.has(word)) cls = 'kw'
       else if (types.has(word)) cls = 'ty'
       else if (code[re.lastIndex] === '(') cls = 'fn'
-      else if (/^[A-Z]/.test(m[4])) cls = 'ty'
+      else if (rules.capitalizedTypes !== false && /^[A-Z]/.test(m[4])) cls = 'ty'
     } else if (m[5]) cls = 'pun'
     out.push({ start: m.index, end: re.lastIndex, cls })
   }

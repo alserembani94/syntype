@@ -392,3 +392,43 @@ describe('PostgreSQL', () => {
     expect(items).not.toContain('SELECT')
   })
 })
+
+describe('COBOL', () => {
+  const cob = getLanguage('cobol')
+  const cobSetup = (code: string) => ({
+    run: createRun(code, { autoIndent: true, autoClose: false }),
+    cfg: buildSuggestConfig(code, cob, false),
+  })
+
+  it('colours hyphenated keywords as one word, but not keywords inside data names', () => {
+    const code = '           IF WS-END-FLAG = "Y" END-IF. *> done'
+    const cls = tokenize(code, cob.highlight)
+    expect(cls[code.indexOf('END-IF')]).toBe('kw')
+    expect(cls[code.indexOf('END-IF') + 5]).toBe('kw')
+    expect(cls[code.indexOf('WS-END-FLAG') + 3]).not.toBe('kw')
+    // Data names are plain identifiers, not types, even though they're uppercase.
+    expect(cls[code.indexOf('WS-END-FLAG')]).toBe('')
+    const header = '       PROGRAM-ID. PAYROLL.'
+    const h = tokenize(header, cob.highlight)
+    expect(h[header.indexOf('PROGRAM-ID')]).toBe('kw')
+    expect(h[header.indexOf('PAYROLL')]).toBe('')
+    expect(cls[code.indexOf('done')]).toBe('com')
+  })
+
+  it('starts typing past the fixed-format margin', () => {
+    const { run } = cobSetup('           DISPLAY "Hi".')
+    expect(run.pos).toBe(11)
+  })
+
+  it('suggests hyphenated data names typed earlier, and intrinsic functions', () => {
+    const code = '           MOVE 1 TO WS-CUSTOMER-ID\n           DISPLAY WS-CUSTOMER-ID FUNCTION UPPER-CASE(X).'
+    const { run, cfg } = cobSetup(code)
+    expect(labels(typeAll(run, 'MOVE 1 TO WS-CUSTOMER-ID\nDISPLAY WS-CU'), cfg)).toContain('WS-CUSTOMER-ID')
+    expect(labels(typeAll(run, 'MOVE 1 TO WS-CUSTOMER-ID\nDISPLAY WS-CUSTOMER-ID FUNCTION UPP'), cfg)).toContain('UPPER-CASE')
+  })
+
+  it('never opens a member list: in COBOL "." ends a sentence', () => {
+    const { run, cfg } = cobSetup('           STOP RUN.')
+    expect(suggestContext(typeAll(run, 'STOP RUN.'), cfg)).toBeNull()
+  })
+})

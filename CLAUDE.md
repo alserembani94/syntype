@@ -16,7 +16,7 @@ Every language must meet these. `src/languages/conformance.test.ts` checks them 
 - **R1 · Identity.** A unique `id`, a display `name`, a lowercase `extension` without a dot, and highlighting keywords.
 - **R2 · Variety.** At least 4 snippets for each length: short (under 120 characters), medium (up to 300) and long. More is welcome.
 - **R3 · Snippet names.** Unique within the language, each ending in the language's extension (`debounce.js`).
-- **R4 · Formatting.** Printable ASCII only; no trailing whitespace; indentation in steps of the language's `indentSize` (2 by default, 4 for Python and Rust), or tabs only for a language with `indentWithTabs` (Go, as gofmt does), and no tabs anywhere else; lines of 88 columns or fewer, counting a tab as `indentSize`; no leading blank line.
+- **R4 · Formatting.** Printable ASCII only; no trailing whitespace; indentation in steps of the language's `indentSize` (2 by default, 4 for Python and Rust) after its `indentOffset` (0 by default, 7 for fixed-format COBOL), or tabs only for a language with `indentWithTabs` (Go, as gofmt does), and no tabs anywhere else; lines of 88 columns or fewer (or the language's `maxLineLength`, 72 for COBOL), counting a tab as `indentSize`; no leading blank line.
 - **R5 · Highlighting.** The language's highlight rules tokenize every snippet, and its keywords are highlighted in them.
 - **R6 · Playable without a service.** Every snippet can be typed literally to the end with auto-indent, auto-close and basic suggestions on, without a single wrong character. This is the experience before a language service is ready.
 - **R7 · Service stand-in.** A language with a completion service has a synchronous stand-in for it in `TEST_COMPLETERS` (`src/test/harness.ts`).
@@ -25,7 +25,7 @@ Every language must meet these. `src/languages/conformance.test.ts` checks them 
 
 Beyond the automated rules, a new language also needs:
 
-- **VS Code parity.** Auto-close pairs copied from the language's VS Code `language-configuration.json`. If it has a language service, completion behaviour (triggers, commit characters, ranking) taken from VS Code's extension for that language, checked against its source rather than memory.
+- **VS Code parity.** Auto-close pairs copied from the language's VS Code `language-configuration.json`. If VS Code has no built-in support for the language (COBOL), use the configuration of its most widely used VS Code extension and say which in a comment. If it has a language service, completion behaviour (triggers, commit characters, ranking) taken from VS Code's extension for that language, checked against its source rather than memory.
 - **Snippets that are real code.** Idiomatic, the kind people actually write. Prefer declaring the types and names a snippet uses, so suggestions have something to work with. Names from code outside the snippet (`items`, `todos`) are fine as long as R8 passes.
 - **Don't copy JavaScript's service settings** (`completion.service`, `serviceMode`, `triggerCharacters`) into a language that doesn't use TypeScript's service.
 

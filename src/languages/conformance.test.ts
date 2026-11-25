@@ -46,15 +46,20 @@ describe.each(LANGUAGES.map((l) => [l.name, l] as const))('%s', (_, lang) => {
     const lines = s.code.split('\n')
     const indent = lang.indentSize ?? 2
     const tabs = !!lang.indentWithTabs
+    const offset = lang.indentOffset ?? 0
+    const maxLength = Math.min(MAX_LINE_LENGTH, lang.maxLineLength ?? MAX_LINE_LENGTH)
     expect(s.code, `${name}: printable ASCII only`).toMatch(tabs ? /^[\x20-\x7e\n\t]+$/ : /^[\x20-\x7e\n]+$/)
     for (const line of lines) {
       const lead = line.match(/^[ \t]*/)![0]
       expect(line, `${name}: trailing space`).not.toMatch(/[ \t]$/)
       expect(line.slice(lead.length), `${name}: tab outside indentation: ${line}`).not.toContain('\t')
       if (tabs) expect(lead, `${name}: indent with tabs only: ${JSON.stringify(line)}`).toMatch(/^\t*$/)
-      else expect(lead.length % indent, `${name}: indent in ${indent}-space steps: ${line}`).toBe(0)
+      else if (lead.length > 0) {
+        const steps = lead.length - offset
+        expect(steps >= 0 && steps % indent === 0, `${name}: indent ${offset} + ${indent}-space steps: ${line}`).toBe(true)
+      }
       const columns = lead.length * (tabs ? indent : 1) + line.length - lead.length
-      expect(columns, `${name}: line too long: ${line}`).toBeLessThanOrEqual(MAX_LINE_LENGTH)
+      expect(columns, `${name}: line too long: ${line}`).toBeLessThanOrEqual(maxLength)
     }
     expect(lines[0].trim(), `${name}: starts with a blank line`).not.toBe('')
   })

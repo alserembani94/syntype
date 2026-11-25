@@ -15,6 +15,13 @@ export interface HighlightRules {
   caseInsensitive?: boolean
   /** Built-in type names, coloured as types (e.g. SQL's integer, text, jsonb). */
   types?: string[]
+  /**
+   * Colour capitalised names as types (Promise, Vec). On by default; off for
+   * languages written in uppercase throughout, like COBOL.
+   */
+  capitalizedTypes?: boolean
+  /** What an identifier looks like, as a RegExp source. Defaults to [A-Za-z_$][\w$]*; COBOL's include hyphens. */
+  identifier?: string
   /** Line comment starters, e.g. ["//"] or ["#"]. */
   lineComments?: string[]
   /** Block comment pairs, e.g. [["/*", "*\/"]]. */
@@ -113,6 +120,10 @@ export interface Language {
   indentSize?: number
   /** Indent with tab characters (gofmt) instead of spaces. */
   indentWithTabs?: boolean
+  /** Columns before the first indentation level: 7 for fixed-format COBOL, whose code starts at column 8. */
+  indentOffset?: number
+  /** Longest line the language allows, when shorter than the general limit (COBOL: 72). */
+  maxLineLength?: number
   /** What auto-closes, as in VS Code. Defaults to (), [] and {}. */
   autoClosingPairs?: AutoClosingPair[]
   /** Characters after the caret that allow auto-closing. Defaults to VS Code's. */

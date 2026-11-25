@@ -1,0 +1,146 @@
+=== overdrawn.cbl
+           IF WS-BALANCE < 0
+               DISPLAY "Account overdrawn"
+           END-IF.
+=== add_totals.cbl
+           ADD WS-AMOUNT TO WS-TOTAL
+           ADD 1 TO WS-COUNT.
+=== greeting.cbl
+           DISPLAY "Hello, " WS-NAME "!".
+=== interest.cbl
+           COMPUTE WS-INTEREST ROUNDED =
+               WS-PRINCIPAL * WS-RATE / 100.
+=== upper_name.cbl
+           MOVE FUNCTION UPPER-CASE(WS-NAME) TO WS-NAME.
+=== hello.cbl
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. HELLO.
+       PROCEDURE DIVISION.
+           DISPLAY "Hello, world!".
+           STOP RUN.
+=== count_loop.cbl
+           PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 10
+               DISPLAY "Line " WS-I
+           END-PERFORM.
+=== grade.cbl
+           EVALUATE TRUE
+               WHEN WS-SCORE >= 90
+                   MOVE "A" TO WS-GRADE
+               WHEN WS-SCORE >= 80
+                   MOVE "B" TO WS-GRADE
+               WHEN OTHER
+                   MOVE "C" TO WS-GRADE
+           END-EVALUATE.
+=== customer_record.cbl
+       WORKING-STORAGE SECTION.
+       01  WS-CUSTOMER.
+           05  WS-CUST-ID        PIC 9(6).
+           05  WS-CUST-NAME      PIC X(30).
+           05  WS-CUST-BALANCE   PIC S9(7)V99 VALUE ZERO.
+       01  WS-EOF                PIC X VALUE "N".
+=== read_loop.cbl
+           PERFORM UNTIL WS-EOF = "Y"
+               READ CUSTOMER-FILE
+                   AT END
+                       MOVE "Y" TO WS-EOF
+                   NOT AT END
+                       ADD 1 TO WS-RECORD-COUNT
+               END-READ
+           END-PERFORM.
+=== full_name.cbl
+           STRING WS-FIRST-NAME DELIMITED BY SPACE
+               " " DELIMITED BY SIZE
+               WS-LAST-NAME DELIMITED BY SPACE
+               INTO WS-FULL-NAME
+           END-STRING.
+=== payroll.cbl
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. PAYROLL.
+
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01  WS-HOURS          PIC 9(3)V9    VALUE 42.5.
+       01  WS-RATE           PIC 9(3)V99   VALUE 18.75.
+       01  WS-OVERTIME       PIC 9(3)V9.
+       01  WS-GROSS          PIC 9(5)V99.
+       01  WS-GROSS-OUT      PIC $$,$$9.99.
+
+       PROCEDURE DIVISION.
+       MAIN-PARA.
+           IF WS-HOURS > 40
+               COMPUTE WS-OVERTIME = WS-HOURS - 40
+               COMPUTE WS-GROSS = 40 * WS-RATE
+                   + WS-OVERTIME * WS-RATE * 1.5
+           ELSE
+               COMPUTE WS-GROSS = WS-HOURS * WS-RATE
+           END-IF
+           MOVE WS-GROSS TO WS-GROSS-OUT
+           DISPLAY "Gross pay: " WS-GROSS-OUT
+           STOP RUN.
+=== customer_report.cbl
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. CUSTRPT.
+
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT CUSTOMER-FILE ASSIGN TO "customers.dat"
+               ORGANIZATION IS LINE SEQUENTIAL.
+
+       DATA DIVISION.
+       FILE SECTION.
+       FD  CUSTOMER-FILE.
+       01  CUSTOMER-RECORD.
+           05  CUST-ID           PIC 9(6).
+           05  CUST-NAME         PIC X(30).
+
+       WORKING-STORAGE SECTION.
+       01  WS-EOF                PIC X VALUE "N".
+
+       PROCEDURE DIVISION.
+           OPEN INPUT CUSTOMER-FILE
+           PERFORM UNTIL WS-EOF = "Y"
+               READ CUSTOMER-FILE
+                   AT END MOVE "Y" TO WS-EOF
+                   NOT AT END DISPLAY CUST-ID " " CUST-NAME
+               END-READ
+           END-PERFORM
+           CLOSE CUSTOMER-FILE
+           STOP RUN.
+=== bubble_sort.cbl
+       WORKING-STORAGE SECTION.
+       01  WS-TABLE.
+           05  WS-NUM            PIC 9(3) OCCURS 10 TIMES.
+       01  WS-I                  PIC 99.
+       01  WS-J                  PIC 99.
+       01  WS-TEMP               PIC 9(3).
+
+       PROCEDURE DIVISION.
+           PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 9
+               PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 10 - WS-I
+                   IF WS-NUM(WS-J) > WS-NUM(WS-J + 1)
+                       MOVE WS-NUM(WS-J) TO WS-TEMP
+                       MOVE WS-NUM(WS-J + 1) TO WS-NUM(WS-J)
+                       MOVE WS-TEMP TO WS-NUM(WS-J + 1)
+                   END-IF
+               END-PERFORM
+           END-PERFORM.
+=== savings.cbl
+       PROCEDURE DIVISION.
+       MAIN-LOGIC.
+           PERFORM INIT-PARA
+           PERFORM CALC-PARA 12 TIMES
+           PERFORM REPORT-PARA
+           STOP RUN.
+
+       INIT-PARA.
+           MOVE 1000.00 TO WS-BALANCE
+           MOVE 0.05 TO WS-RATE.
+
+       CALC-PARA.
+           COMPUTE WS-BALANCE ROUNDED =
+               WS-BALANCE * (1 + WS-RATE / 12).
+
+       REPORT-PARA.
+           MOVE WS-BALANCE TO WS-BALANCE-OUT
+           DISPLAY "Balance after a year: " WS-BALANCE-OUT.
