@@ -85,7 +85,7 @@ export function ReplayView({ lang, snippet, run, history, crumbs, onClose }: Pro
           <p className="runs-note">This run’s keystrokes weren’t kept, so it can’t be replayed.</p>
         ) : frame && replay ? (
           <>
-            <CodeView code={snippet.code} highlight={lang.highlight} run={frame.run} typing />
+            <CodeView code={snippet.code} highlight={lang.highlight} run={frame.run} typing smoothCaret markSuggested />
             <div className="statusbar replay-controls">
               <button
                 type="button"

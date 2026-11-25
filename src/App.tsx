@@ -75,6 +75,12 @@ export default function App() {
   const language = getLanguage(languageId)
   const [length, setLength] = useState<SnippetLength>(() => savedLength(load('length', 'medium')))
   const [view, setView] = useState<View>(viewInAddress)
+  // A caret that glides between letters (on by default; switched in the theme dialog).
+  const [smoothCaret, setSmoothCaret] = useState(() => load('smoothCaret', true))
+  const changeSmoothCaret = (on: boolean) => {
+    setSmoothCaret(on)
+    save('smoothCaret', on)
+  }
   const [autoIndent, setAutoIndent] = useState(() => load('autoIndent', true))
   const [autoClose, setAutoClose] = useState(() => load('autoClose', true))
   // Saved as "intellisense" before the feature was renamed; carried over once.
@@ -416,7 +422,16 @@ export default function App() {
         <LanguagePicker languages={LANGUAGES} currentId={languageId} onSelect={pickLanguage} onClose={closePicker} />
       )}
       {aboutOpen && aboutSection && <AboutDialog section={aboutSection} onLanguage={aboutLanguage} onClose={closeAbout} />}
-      {themeOpen && <ThemePicker currentId={themeId} onPreview={applyTheme} onSelect={pickTheme} onClose={closeTheme} />}
+      {themeOpen && (
+        <ThemePicker
+          currentId={themeId}
+          onPreview={applyTheme}
+          onSelect={pickTheme}
+          onClose={closeTheme}
+          smoothCaret={smoothCaret}
+          onSmoothCaret={changeSmoothCaret}
+        />
+      )}
       <header className="top">
         <div className="brand">
           <h1>
@@ -544,6 +559,7 @@ export default function App() {
                 onMobileInput={onMobileInput}
                 suggest={state.suggest}
                 onAccept={accept}
+                smoothCaret={smoothCaret}
                 overlay={overlay}
                 touch={isTouch()}
               />

@@ -9,6 +9,8 @@ interface Props {
   onPreview: (id: string) => void
   onSelect: (id: string) => void
   onClose: () => void
+  smoothCaret: boolean
+  onSmoothCaret: (on: boolean) => void
 }
 
 function matches(theme: Theme, query: string): boolean {
@@ -45,7 +47,7 @@ function Swatch({ themeId }: { themeId: string }) {
 }
 
 /** The theme list, opened from the theme button in the footer. */
-export function ThemePicker({ currentId, onPreview, onSelect, onClose }: Props) {
+export function ThemePicker({ currentId, onPreview, onSelect, onClose, smoothCaret, onSmoothCaret }: Props) {
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
   // A preview still waiting when the picker closes must not land afterwards.
   useEffect(() => () => clearTimeout(timer.current), [])
@@ -68,6 +70,17 @@ export function ThemePicker({ currentId, onPreview, onSelect, onClose }: Props) 
       onSelect={onSelect}
       onClose={onClose}
       empty={(q) => <>No theme matches “{q}”</>}
+      footer={
+        <>
+          <span className="footer-label">
+            Smooth caret
+            <small>glides between letters, with a trail when a suggestion fills in a word</small>
+          </span>
+          <button type="button" role="switch" aria-checked={smoothCaret} className="switch" onClick={() => onSmoothCaret(!smoothCaret)}>
+            {smoothCaret ? 'on' : 'off'}
+          </button>
+        </>
+      }
       renderItem={(theme) => (
         <>
           <span className="name">{theme.name}</span>

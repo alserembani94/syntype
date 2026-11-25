@@ -18,6 +18,14 @@ interface Props {
   /** Shown over the code when keys can't reach the game. */
   overlay?: 'start' | 'paused' | null
   touch?: boolean
+  /**
+   * A caret that glides between letters instead of jumping. When it moves
+   * several letters at once (an accepted suggestion), a comet tail and a flash
+   * show the stretch it crossed.
+   */
+  smoothCaret?: boolean
+  /** Keep text that came from suggestions marked, as Review does (replays). */
+  markSuggested?: boolean
 }
 
 /** Kept in the hidden textarea so a mobile Backspace still fires an input event. */
@@ -34,6 +42,8 @@ export function CodeView({
   onAccept = () => {},
   overlay = null,
   touch = false,
+  smoothCaret = false,
+  markSuggested = false,
 }: Props) {
   const readOnly = !inputRef
   const classes = useMemo(() => tokenize(code, highlight), [code, highlight])
@@ -57,6 +67,55 @@ export function CodeView({
     if (scrollerRef.current) scrollerRef.current.scrollTop = 0
   }, [code])
 
+  // The smooth caret, its comet tail and the flash: moved here directly, not
+  // re-rendered, so they never slow typing down.
+  const barRef = useRef<HTMLSpanElement>(null)
+  const trailRef = useRef<HTMLSpanElement>(null)
+  const flashRef = useRef<HTMLSpanElement>(null)
+  const last = useRef<{ code: string; pos: number; x: number; y: number } | null>(null)
+  const settle = useRef<ReturnType<typeof setTimeout>>(undefined)
+  useLayoutEffect(() => {
+    const bar = barRef.current
+    if (!smoothCaret || !bar) return
+    const el = caretRef.current
+    if (!el) {
+      bar.style.opacity = '0'
+      last.current = null
+      return
+    }
+    const x = el.offsetLeft
+    const y = el.offsetTop
+    const h = el.offsetHeight
+    const prev = last.current?.code === code ? last.current : null
+    // Glide along a line; jump to a new line rather than slide diagonally across the text.
+    const sameLine = !!prev && Math.abs(prev.y - y) < 1
+    bar.style.transition = sameLine ? '' : 'none'
+    bar.style.opacity = '1'
+    bar.style.height = `${h}px`
+    bar.style.transform = `translate(${x}px, ${y}px)`
+    // No blinking while it moves, as in an editor.
+    bar.classList.add('moving')
+    clearTimeout(settle.current)
+    settle.current = setTimeout(() => bar.classList.remove('moving'), 500)
+
+    if (prev && sameLine && run.pos - prev.pos >= 2 && x > prev.x) {
+      const replay = (node: HTMLSpanElement | null) => {
+        if (!node) return
+        node.style.transform = `translate(${prev.x}px, ${y}px)`
+        node.style.width = `${x - prev.x}px`
+        node.style.height = `${h}px`
+        node.classList.remove('show')
+        void node.offsetWidth // restart the animation
+        node.classList.add('show')
+      }
+      replay(trailRef.current)
+      // The flash only for text a suggestion put there.
+      if (run.completed.slice(prev.pos, run.pos).some(Boolean)) replay(flashRef.current)
+    }
+    last.current = { code, pos: run.pos, x, y }
+  }, [run.pos, run.completed, code, smoothCaret])
+  useLayoutEffect(() => () => clearTimeout(settle.current), [])
+
   const handleInput = (e: React.FormEvent<HTMLTextAreaElement>) => {
     const ta = e.currentTarget
     const v = ta.value
@@ -68,7 +127,7 @@ export function CodeView({
   return (
     <div
       ref={editorRef}
-      className={`editor${typing ? ' typing' : ''}${overlay ? ' unfocused' : ''}`}
+      className={`editor${typing ? ' typing' : ''}${overlay ? ' unfocused' : ''}${smoothCaret ? ' smooth' : ''}`}
       onClick={() => inputRef?.current?.focus({ preventScroll: true })}>
       {!readOnly && (
         <textarea
@@ -89,10 +148,19 @@ export function CodeView({
           {Array.from({ length: lineCount }, (_, i) => i + 1).join('\n')}
         </pre>
         <pre className="code" key={code} ref={codeRef}>
+          {/* Inside the code, so they share its coordinates (each letter's offsetLeft/Top). */}
+          {smoothCaret && (
+            <>
+              <span ref={flashRef} className="caret-flash" aria-hidden="true" />
+              <span ref={trailRef} className="caret-trail" aria-hidden="true" />
+              <span ref={barRef} className="caret-bar" aria-hidden="true" />
+            </>
+          )}
           {run.chars.map((ch, i) => {
             const state = run.states[i]
             const cur = i === run.pos
-            const cls = ['c', classes[i], state, ch === '\n' && 'nl', cur && 'cur'].filter(Boolean).join(' ')
+            const sug = markSuggested && run.completed[i] && state === 'ok'
+            const cls = ['c', classes[i], state, ch === '\n' && 'nl', cur && 'cur', sug && 'sug'].filter(Boolean).join(' ')
             return ch === '\n' ? (
               <span key={i}>
                 <span className={cls} ref={cur ? caretRef : undefined}>

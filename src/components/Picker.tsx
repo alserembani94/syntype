@@ -18,11 +18,13 @@ interface Props<T> {
   onSelect: (id: string) => void
   onClose: () => void
   empty: (query: string) => ReactNode
+  /** Extra controls under the list (the theme picker's caret switch); Tab moves between them and the search box. */
+  footer?: ReactNode
 }
 
 /** A searchable, sectioned list in a modal: the language and theme pickers. */
 export function Picker<T>(props: Props<T>) {
-  const { label, placeholder, items, sections, sectionOf, idOf, matches, currentId, renderItem, onActive, onSelect, onClose, empty } = props
+  const { label, placeholder, items, sections, sectionOf, idOf, matches, currentId, renderItem, onActive, onSelect, onClose, empty, footer } = props
   const [query, setQuery] = useState('')
   // Start on the current item, counted in the grouped order the list shows.
   const [active, setActive] = useState(() =>
@@ -30,6 +32,7 @@ export function Picker<T>(props: Props<T>) {
   )
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLUListElement>(null)
+  const footerRef = useRef<HTMLDivElement>(null)
   const listId = useId()
 
   // Grouped by section; sections with no match are left out.
@@ -58,6 +61,8 @@ export function Picker<T>(props: Props<T>) {
   }, [activeItem])
 
   const onKeyDown = (e: React.KeyboardEvent) => {
+    // The footer's own controls handle Enter and Space themselves.
+    if (footerRef.current?.contains(e.target as Node) && (e.key === 'Enter' || e.key === ' ')) return
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault()
       if (!shown.length) return
@@ -70,8 +75,11 @@ export function Picker<T>(props: Props<T>) {
       e.preventDefault()
       onClose()
     } else if (e.key === 'Tab') {
-      // Keep focus in the dialog: the search box is its only stop.
+      // Keep focus in the dialog: the search box, then any footer controls.
       e.preventDefault()
+      const stops = [inputRef.current, ...(footerRef.current?.querySelectorAll<HTMLElement>('button, input') ?? [])].filter(Boolean) as HTMLElement[]
+      const at = stops.indexOf(document.activeElement as HTMLElement)
+      stops[(at + (e.shiftKey ? -1 : 1) + stops.length) % stops.length]?.focus()
     }
   }
 
@@ -136,6 +144,11 @@ export function Picker<T>(props: Props<T>) {
           ))}
           {!shown.length && <li className="empty">{empty(query)}</li>}
         </ul>
+        {footer && (
+          <div className="picker-footer" ref={footerRef}>
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   )

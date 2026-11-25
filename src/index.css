@@ -104,7 +104,7 @@ kbd { font: 600 11px var(--f-code); border: 1px solid var(--line); border-bottom
 .tabbar .lang { margin-left: auto; padding: 9px 14px; color: var(--muted); font-size: 12px; align-self: center; }
 
 .editor { position: relative; cursor: text; }
-.scroller { display: grid; grid-template-columns: auto 1fr; overflow: auto; max-height: 52vh; min-height: 180px; padding: 18px 0; }
+.scroller { position: relative; display: grid; grid-template-columns: auto 1fr; overflow: auto; max-height: 52vh; min-height: 180px; padding: 18px 0; }
 .gutter, .code { font-variant-ligatures: none; font-feature-settings: "liga" 0, "calt" 0; font-family: var(--f-code); font-size: 16px; line-height: 1.75; margin: 0; white-space: pre; }
 .gutter { text-align: right; color: var(--muted); opacity: .55; padding: 0 14px 0 18px; user-select: none; font-variant-numeric: tabular-nums; }
 .gutter .now { color: var(--accent); opacity: 1; }
@@ -223,7 +223,42 @@ svg.chart .er path { stroke: var(--err); stroke-width: 2; stroke-linecap: round;
   .modal-backdrop { padding-top: max(16px, env(safe-area-inset-top, 0px)); }
   .results { padding: 20px 16px; }
 }
-@media (prefers-reduced-motion: reduce) { .c.cur { animation: none; } .c { transition: none; } }
+/*
+ * The smooth caret (CodeView smoothCaret): a bar that glides between letters.
+ * When it crosses several letters at once (an accepted suggestion), a comet
+ * tail streaks behind it and the inserted text flashes.
+ */
+.editor { --caret-glide: 150ms; }
+.editor.smooth .c.cur { box-shadow: none; animation: none; }
+.code { position: relative; z-index: 1; }
+.caret-bar {
+  position: absolute; left: 0; top: 0; width: 2px; z-index: 2; pointer-events: none; opacity: 0;
+  background: var(--accent); border-radius: 1px;
+  transition: transform var(--caret-glide) cubic-bezier(.2, .7, .3, 1);
+  animation: caret-blink 1.05s steps(1) infinite;
+}
+.caret-bar.moving { animation: none; }
+@keyframes caret-blink { 50% { opacity: 0; } }
+.caret-trail, .caret-flash { position: absolute; left: 0; top: 0; pointer-events: none; opacity: 0; border-radius: 3px; }
+.caret-trail { z-index: 2; background: linear-gradient(to right, transparent, color-mix(in srgb, var(--accent) 38%, transparent)); }
+.caret-trail.show { animation: caret-trail 420ms ease-out forwards; }
+.caret-flash { z-index: -1; background: var(--accent-soft); }
+.caret-flash.show { animation: caret-flash 700ms ease-out forwards; }
+@keyframes caret-trail {
+  0% { opacity: .9; clip-path: inset(0 100% 0 0); }
+  35% { opacity: .9; clip-path: inset(0 0 0 0); }
+  100% { opacity: 0; clip-path: inset(0 0 0 60%); }
+}
+@keyframes caret-flash { 0% { opacity: 0; } 20% { opacity: 1; } 100% { opacity: 0; } }
+/* Text that came from suggestions, kept marked in replays: a soft tint, one block per word (square corners, so it never looks like a mistake's wavy underline). */
+.c.sug { background: var(--accent-soft); border-radius: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .c.cur { animation: none; }
+  .c { transition: none; }
+  .caret-bar { transition: none; animation: none; }
+  .caret-trail.show, .caret-flash.show { animation: none; }
+}
 
 /* suggestion list, styled after VS Code's suggest widget */
 .suggest {
@@ -396,3 +431,14 @@ svg.chart .runs-dot.best { fill: var(--accent); }
   .settings .config { order: 2; width: 100%; gap: 6px; }
   .config .group .chip { padding: 4px 8px; font-size: 12px; }
 }
+
+/* The theme picker's footer: the smooth caret switch. */
+.picker-footer { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--line); }
+.picker-footer .footer-label { display: grid; gap: 2px; font: 500 14px var(--f-ui); color: var(--fg); margin-right: auto; }
+.picker-footer small { font: 12px var(--f-ui); color: var(--muted); }
+.switch {
+  min-width: 52px; padding: 5px 12px; border-radius: 999px; cursor: pointer; font: 600 12px var(--f-ui);
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--muted);
+}
+.switch[aria-checked="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
