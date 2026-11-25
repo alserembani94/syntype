@@ -23,7 +23,10 @@ Other scripts: `npm test` (engine tests, Vitest), `npm run build`, `npm run lint
   - The one difference from VS Code: a mistyped opener doesn't auto-close anything.
   - Closers you move past with `→`, `End` or `↓` don't count toward WPM. Personal bests are kept separately with auto-close on and off.
 - **IntelliSense** (on by default) is a constrained version of VS Code's suggestion list:
-  - It suggests the language's keywords and words you've already typed in the snippet. Built-ins, members after a dot and library packs such as React are planned next.
+  - It suggests the language's keywords, its built-ins (`console`, `Math`, `Promise`, `setTimeout`…), and words you've already typed in the snippet. Words that appear later in the snippet aren't offered, because a real file wouldn't have them yet.
+  - Typing `.` opens members straight away. Known receivers (`Math.`, `console.`, `Object.`, `Promise.`…) show only their own members. Unknown ones (`list.`, or after `)`) show common methods such as `map`, `filter`, `then` and `trim`, plus words already typed. Chains continued on a new line (`.filter(…)`) and optional chaining (`a?.b`) work too. Spreads (`...`) and numbers (`0.5`) don't open the list.
+  - Library packs switch on when the snippet imports the library: React (`useState`, `useCallback`…) and Express (`express.json`, and members for `app.`, `req.` and `res.`).
+  - Ties are ranked as in VS Code with TypeScript: names from the file first, then alphabetical.
   - The list opens as you type a word, but not inside strings or comments (VS Code's `quickSuggestions` defaults). Matching is fuzzy, so `uC` finds `useCallback`.
   - `Tab` or `Enter` accepts, `↑`/`↓` choose and `Esc` closes. Clicking or tapping a row also accepts. As in VS Code (`acceptSuggestionOnEnter: "on"`), Enter accepts even when the word is already complete. Press `Esc` first if you want a new line.
   - Accepting a wrong suggestion inserts it anyway, and its letters are checked like typed ones.
@@ -42,10 +45,11 @@ src/
     types.ts            Language, Snippet and HighlightRules types
     snippets.ts         parses snippets files, picks a random snippet
     javascript/
-      index.ts          name, extension and highlighting rules
+      index.ts          name, extension, highlighting, auto-close and completion settings
+      completions.ts    vocabulary: built-ins, React and Express packs
       snippets.txt      the snippets: "=== name.js" header, then the code
   lib/engine.ts         pure typing engine (type, backspace, auto-indent, auto-close, →/End/↓)
-  lib/suggest.ts        constrained IntelliSense: word detection, candidates, fuzzy matching
+  lib/suggest.ts        constrained IntelliSense: context (word or member), candidates, fuzzy matching
   lib/pairs.ts          matches brackets and quotes per snippet, with VS Code's auto-close rules
   lib/stats.ts          WPM, accuracy and the results summary
   lib/tokenize.ts       highlighter driven by a language's HighlightRules
@@ -61,6 +65,12 @@ src/
 3. Add it to `LANGUAGES` in `src/languages/index.ts`.
 
 It then appears in the language picker. `npm test` checks every registered language's snippets.
+
+### Suggestions for a language
+
+A language's `completion` section sets which characters make a word (`wordChar`), what opens member lists (`memberTriggers`, e.g. `["."]` or `["::", "->"]`) and its vocabulary `packs`. See `src/languages/javascript/completions.ts`. A pack without `detect` is always on (built-ins). A pack with `detect` switches on when the snippet matches it, usually an import. Each pack has `globals` and `members`, keyed by receiver, with `"*"` for receivers whose type we can't know.
+
+`npm test` prints how many words in the snippets suggestions can offer at the moment they're typed, and which are missed most. Use it to see what vocabulary to add with new snippets.
 
 ## Adding snippets
 

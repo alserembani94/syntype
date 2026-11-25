@@ -166,7 +166,11 @@ footer { color: var(--muted); font-size: 13px; display: flex; gap: 16px; flex-wr
 .suggest li.selected { background: var(--accent-soft); }
 .suggest .icon { flex: none; width: 26px; text-align: center; font-size: 10px; font-weight: 600; border-radius: 3px; padding: 1px 0; }
 .suggest .icon.keyword { color: var(--tok-kw); }
-.suggest .icon.word { color: var(--muted); }
+.suggest .icon.word, .suggest .icon.module { color: var(--muted); }
+.suggest .icon.function, .suggest .icon.method { color: var(--tok-fn); font-size: 13px; }
+.suggest .icon.variable { color: var(--tok-num); }
+.suggest .icon.class { color: var(--tok-ty); }
+.suggest .icon.property { color: var(--tok-str); }
 .suggest .label { overflow: hidden; text-overflow: ellipsis; font-variant-ligatures: none; }
 .suggest .label b { color: var(--accent); font-weight: 600; }
 .suggest .detail { margin-left: auto; color: var(--muted); font: 12px var(--f-ui); }

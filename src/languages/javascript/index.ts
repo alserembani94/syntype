@@ -1,6 +1,7 @@
 import type { Language } from '../types'
 import { parseSnippets } from '../snippets'
 import raw from './snippets.txt?raw'
+import { builtins, express, react } from './completions'
 
 export const javascript: Language = {
   id: 'javascript',
@@ -27,6 +28,8 @@ export const javascript: Language = {
   ],
   completion: {
     wordChar: /[\w$]/,
+    memberTriggers: ['.'],
+    packs: [builtins, react, express],
   },
   snippets: parseSnippets(raw),
 }

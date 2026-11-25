@@ -7,8 +7,26 @@ const ROW_HEIGHT = 26
 const VISIBLE_ROWS = 8
 const BOX_WIDTH = 300
 
-const KIND_ICON: Record<SuggestionKind, string> = { keyword: 'kw', word: 'abc' }
-const KIND_LABEL: Record<SuggestionKind, string> = { keyword: 'keyword', word: 'word in file' }
+const KIND_ICON: Record<SuggestionKind, string> = {
+  keyword: 'kw',
+  word: 'abc',
+  function: 'ƒ',
+  method: 'ƒ',
+  variable: 'var',
+  class: 'cls',
+  property: 'prop',
+  module: 'mod',
+}
+const KIND_LABEL: Record<SuggestionKind, string> = {
+  keyword: 'keyword',
+  word: 'word in file',
+  function: 'function',
+  method: 'method',
+  variable: 'variable',
+  class: 'class',
+  property: 'property',
+  module: 'module',
+}
 
 const boxHeight = (count: number) => Math.min(count, VISIBLE_ROWS) * ROW_HEIGHT + 2
 
@@ -91,7 +109,12 @@ export function SuggestBox({ suggest, editorRef, scrollerRef, codeRef, onAccept 
                 ),
               )}
             </span>
-            {selected && <span className="detail">{KIND_LABEL[item.kind]}</span>}
+            {selected && (
+              <span className="detail">
+                {KIND_LABEL[item.kind]}
+                {item.detail && ` · ${item.detail}`}
+              </span>
+            )}
           </li>
         )
       })}

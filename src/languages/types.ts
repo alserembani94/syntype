@@ -28,14 +28,42 @@ export interface AutoClosingPair {
   notIn?: ('string' | 'comment')[]
 }
 
+/** Kinds of suggestion, shown as icons like VS Code's. */
+export type SuggestionKind = 'keyword' | 'word' | 'function' | 'method' | 'variable' | 'class' | 'property' | 'module'
+
+export interface CompletionItem {
+  label: string
+  kind: SuggestionKind
+}
+
+/**
+ * A vocabulary: what the language or a library provides. A pack without
+ * `detect` is always on (built-ins); one with `detect` switches on when the
+ * snippet matches it, e.g. when it imports the library.
+ */
+export interface VocabularyPack {
+  /** Shown next to the suggestion, e.g. "react". */
+  name: string
+  detect?: RegExp
+  /** Suggested anywhere a word starts. */
+  globals?: CompletionItem[]
+  /**
+   * Suggested after a member trigger such as ".", keyed by the word before it
+   * (e.g. "Math"). "*" lists members for receivers we don't know.
+   */
+  members?: Record<string, CompletionItem[]>
+}
+
 /**
  * Constrained IntelliSense for a language. Keywords come from `highlight`;
- * words the user has typed are added automatically. Built-ins, members and
- * library packs (e.g. React) will live here too.
+ * words the user has typed are added automatically.
  */
 export interface CompletionConfig {
   /** A single word character, e.g. /[\w$]/ for JavaScript or /[\w-]/ for CSS. Defaults to /[\w$]/. */
   wordChar?: RegExp
+  /** What opens member suggestions, e.g. ["."] or ["::", "->"]. Defaults to ["."]. */
+  memberTriggers?: string[]
+  packs?: VocabularyPack[]
 }
 
 export interface Language {

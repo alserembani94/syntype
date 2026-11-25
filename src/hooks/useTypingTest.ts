@@ -11,7 +11,7 @@ import {
   type Run,
   type RunOptions,
 } from '../lib/engine'
-import { canSuggestAt, getSuggestions, wordStart, type SuggestConfig, type Suggestion } from '../lib/suggest'
+import { getSuggestions, suggestContext, type SuggestConfig, type Suggestion } from '../lib/suggest'
 import { wpm, type Sample } from '../lib/stats'
 import type { Snippet } from '../languages'
 
@@ -58,17 +58,21 @@ type Action =
   | { type: 'dismiss' }
 
 /**
- * Recomputes the suggestion list after an edit. Typing a word character opens
- * it (VS Code's quick suggestions); other edits only refilter an open list.
+ * Recomputes the suggestion list after an edit. Typing a word character or a
+ * member trigger such as "." opens it (VS Code's quick suggestions and trigger
+ * characters); other edits only refilter an open list.
  */
 function refreshSuggest(s: TestState, open: boolean): SuggestState | null {
   const cfg = s.suggestConfig
   if (!cfg || (!open && !s.suggest) || isFinished(s.run)) return null
-  const start = wordStart(s.run, cfg)
-  if (!canSuggestAt(cfg, start)) return null
-  const items = getSuggestions(s.run, start, cfg)
-  return items.length ? { start, items, selected: 0 } : null
+  const ctx = suggestContext(s.run, cfg)
+  if (!ctx) return null
+  const items = getSuggestions(s.run, ctx, cfg)
+  return items.length ? { start: ctx.start, items, selected: 0 } : null
 }
+
+const opensSuggest = (cfg: SuggestConfig | null, ch: string) =>
+  !!cfg && (cfg.wordChar.test(ch) || cfg.memberTriggers.some((t) => t.endsWith(ch)))
 
 function sample(s: TestState, now: number): Sample {
   const t = (now - s.startedAt) / 1000
@@ -128,7 +132,7 @@ function reducer(s: TestState, a: Action): TestState {
         intervalTyped: s.intervalTyped + 1,
         intervalErrors: s.intervalErrors + (run.correctKeystrokes === before ? 1 : 0),
       }
-      next.suggest = refreshSuggest(next, !!s.suggestConfig?.wordChar.test(a.ch))
+      next.suggest = refreshSuggest(next, opensSuggest(s.suggestConfig, a.ch))
       return finishIfDone(next, a.now)
     }
 
