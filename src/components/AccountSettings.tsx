@@ -5,7 +5,7 @@
  */
 import { useEffect, useState } from 'react'
 import { LANGUAGES } from '../languages'
-import { deleteAccount, deleteEntry, downloadData, fetchEntries, setHidden, type Entry, type Player } from '../lib/account'
+import { deleteAccount, deleteEntry, downloadData, fetchEntries, setHidden, signOutEverywhere, type Entry, type Player } from '../lib/account'
 import { whenPlayed } from '../lib/board'
 import { POLICY_LINKS } from '../seo/policies'
 import { Dialog } from './Account'
@@ -21,9 +21,11 @@ interface Props {
   onPlayer: (p: Player) => void
   /** The account is gone; `clearLocal` asks to clear this device's run history too. */
   onDeleted: (clearLocal: boolean) => Promise<void>
+  /** Every session has ended, this one too. */
+  onSignedOut: () => void
 }
 
-export function AccountSettings({ player, onClose, onRename, onPlayer, onDeleted }: Props) {
+export function AccountSettings({ player, onClose, onRename, onPlayer, onDeleted, onSignedOut }: Props) {
   const [entries, setEntries] = useState<Entry[] | null | 'error'>(null)
   const [problem, setProblem] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -52,7 +54,7 @@ export function AccountSettings({ player, onClose, onRename, onPlayer, onDeleted
       <Dialog label="Account deleted" onClose={onClose} className="account-settings">
         <h2>Your account is deleted</h2>
         <p className="dialog-text">
-          Your name, scores and replays are off Syntype’s leaderboards and out of its database. Backups that still hold them are gone within 7 days.
+          Your name, scores and replays are off Syntype’s leaderboards and out of its database. Backups that still hold them are gone within 30 days at most.
         </p>
         <p className="dialog-text">
           To finish, you can remove Syntype from the apps connected to your {PROVIDERS[player.provider]} account:{' '}
@@ -158,9 +160,30 @@ export function AccountSettings({ player, onClose, onRename, onPlayer, onDeleted
         <p className="dialog-note">Deleting a run takes it off its board. If you have a run on the same snippet with other typing aids, that one takes its place.</p>
       </section>
 
+      <section className="settings-block" aria-labelledby="acct-sessions">
+        <h3 id="acct-sessions">Devices</h3>
+        <p className="dialog-note">Signs you out on every device and browser where you’re signed in, this one included. Use it if you signed in somewhere you no longer use.</p>
+        <div>
+          <button
+            type="button"
+            className="btn"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true)
+              const r = await signOutEverywhere()
+              setBusy(false)
+              if (r.ok) onSignedOut()
+              else setProblem(r.error)
+            }}
+          >
+            Sign out everywhere
+          </button>
+        </div>
+      </section>
+
       <section className="settings-block" aria-labelledby="acct-data">
         <h3 id="acct-data">Your data</h3>
-        <p className="dialog-note">A file with everything Syntype keeps about you: your account, best scores, kept keystroke logs and the reports you sent. Your run history stays on this device (My runs has its own export).</p>
+        <p className="dialog-note">A file with everything Syntype keeps about you: your account, best scores, kept keystroke logs, the reports you sent, and reports and moderator actions about you (without other people’s details). Your run history stays on this device (My runs has its own export).</p>
         <div>
           <button
             type="button"

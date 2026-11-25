@@ -71,7 +71,7 @@ export const privacyPage: PolicyPage = {
     {
       heading: 'What is public',
       body: [
-        'On the leaderboards, anyone can see your leaderboard name, your best runs (WPM, accuracy, typing aids, date) and replays of runs in a board’s top 20. Nothing else about you is shown. You can hide yourself from every board at any time.',
+        'On the leaderboards, anyone can see your leaderboard name, your best runs (WPM, accuracy, typing aids, date) and replays of runs in a board’s top 20. Each entry also carries a random player ID that means nothing outside Syntype. Nothing else about you is shown. You can hide yourself from every board at any time. Boards are cached for up to a minute, so a change (hiding, deleting a run, deleting your account) can take that long to show everywhere.',
       ],
     },
     {
@@ -103,7 +103,7 @@ export const privacyPage: PolicyPage = {
       body: [
         '- Your account and runs: until you delete them. Accounts nobody has signed in to for 2 years are deleted automatically.',
         '- Keystrokes: only while the run is in its board’s top 20.',
-        '- After deletion, the database’s automatic backups keep the data for at most 7 more days, then it is gone.',
+        '- After deletion, the database’s automatic backups keep the data for at most 30 more days (7 on the plan Syntype uses now), then it is gone.',
         '- Reports you sent stay after you delete your account, without your name, so moderation keeps its record. The moderator’s log of actions keeps no names of deleted accounts.',
       ],
     },
@@ -111,10 +111,11 @@ export const privacyPage: PolicyPage = {
       heading: 'Your choices',
       body: [
         'Signed in, open your name at the top right, then Account & data, to:',
-        '- download everything Syntype keeps about you, as a file',
+        '- download everything Syntype keeps about you, as a file: your account, scores, kept keystrokes, the reports you sent, reports about you and moderator actions on your account. To protect other people, it leaves out who reported you, notes other players wrote, and the moderator’s email',
         '- hide yourself from the leaderboards, or show yourself again',
         '- delete any of your runs from the leaderboards',
         '- change your leaderboard name (once a week)',
+        '- sign out on every device at once',
         '- delete your account, which removes your name, scores and replays at once',
         `You also have the right to ask what is kept about you, to have it corrected or deleted, and to object to how it is used: write to ${contact}. If you are unhappy with the answer, you can complain to Malaysia’s Personal Data Protection Commissioner, or, in the EU or UK, to your data protection authority.`,
       ],

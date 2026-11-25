@@ -115,6 +115,11 @@ export function Account({ available, onOpenChange, onMyRuns, onPlayer, history }
             if (clearLocal) await (await history)?.clear()
             setAccount({ state: 'signed-out' })
           }}
+          onSignedOut={() => {
+            setAccount({ state: 'signed-out' })
+            setOpen(null)
+            setNotice('Signed out on every device.')
+          }}
         />
       )}
       {open === 'menu' && player && (

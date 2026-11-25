@@ -158,3 +158,6 @@ export async function downloadData(): Promise<string | null> {
 
 /** Deletes the account; `confirm` is the player's name, typed to make sure. */
 export const deleteAccount = (confirm: string) => post<{ deleted: true }>('/api/me/delete', { confirm })
+
+/** Ends every session the player has, on every device, this one included. */
+export const signOutEverywhere = () => post<{ signedIn: false }>('/api/me/signout-everywhere', {})

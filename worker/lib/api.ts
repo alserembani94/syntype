@@ -13,6 +13,7 @@
  *   POST /api/me/runs/:runId/delete       delete one of them
  *   GET  /api/me/data                     download everything kept about the player
  *   POST /api/me/delete                   delete the account ({ confirm: their name })
+ *   POST /api/me/signout-everywhere       end every session the player has, on every device
  *   POST /api/reports                     report a player or one of their runs
  *   POST /api/runs/start                  a run token, when a signed-in player starts a snippet
  *   POST /api/runs                        submit a finished run (runs.ts)
@@ -103,9 +104,25 @@ const redirect = (to: string, cookies: string[] = []) => {
   return new Response(null, { status: 302, headers })
 }
 
+/**
+ * Every signed token says what it is (`k`), and each check requires its own
+ * kind, so a token of one kind can never pass as another, though all are
+ * signed with the same secret: 'session' (the cookie), 'signin' (a sign-in in
+ * progress) and 'run' (runs.ts).
+ */
 interface Session {
+  k: 'session'
   p: string
   v: number
+  exp: number
+}
+
+interface PendingSignIn {
+  k: 'signin'
+  s: string
+  cv: string
+  pr: string
+  r: string
   exp: number
 }
 
@@ -113,7 +130,7 @@ interface Session {
 async function signedIn(request: Request, deps: Deps): Promise<PlayerRow | null> {
   const token = readCookies(request.headers.get('Cookie'))[SESSION_COOKIE]
   const session = await verify<Session>(deps.config.SESSION_SECRET, token, (deps.now?.() ?? new Date()).getTime())
-  if (!session) return null
+  if (!session || session.k !== 'session' || typeof session.p !== 'string') return null
   const player = await getPlayer(deps.db, session.p)
   // A deleted player, or one signed out everywhere since, no longer counts.
   return player && player.session_version === session.v ? player : null
@@ -150,6 +167,7 @@ export async function handle(request: Request, deps: Deps): Promise<Response> {
       const state = randomToken()
       const verifier = randomToken(48)
       const pending = await sign(config.SESSION_SECRET, {
+        k: 'signin',
         s: state,
         cv: verifier,
         pr: provider,
@@ -162,11 +180,12 @@ export async function handle(request: Request, deps: Deps): Promise<Response> {
     }
 
     // The callback: check it answers the sign-in this browser started.
-    const pending = await verify<{ s: string; cv: string; pr: string; r: string; exp: number }>(
+    const signin = await verify<PendingSignIn>(
       config.SESSION_SECRET,
       readCookies(request.headers.get('Cookie'))[SIGNIN_COOKIE],
       now.getTime(),
     )
+    const pending = signin?.k === 'signin' ? signin : null
     const clearPending = cookie(SIGNIN_COOKIE, '', { maxAge: 0, secure, path: '/api/auth' })
     const back = (r: string, error?: string) => redirect(error ? `${r}${r.includes('?') ? '&' : '?'}signin=${encodeURIComponent(error)}` : r, [clearPending])
     if (url.searchParams.get('error')) return back(pending?.r ?? '/', 'cancelled')
@@ -176,7 +195,7 @@ export async function handle(request: Request, deps: Deps): Promise<Response> {
       const profile = await exchange(provider, config, origin, code, pending.cv, deps.fetch, now.getTime())
       const player = await playerFor(db, provider, profile, now)
       await touch(db, player, now)
-      const session = await sign(config.SESSION_SECRET, { p: player.id, v: player.session_version, exp: now.getTime() + SESSION_DAYS * 86_400_000 })
+      const session = await sign(config.SESSION_SECRET, { k: 'session', p: player.id, v: player.session_version, exp: now.getTime() + SESSION_DAYS * 86_400_000 } satisfies Session)
       return redirect(pending.r, [clearPending, cookie(SESSION_COOKIE, session, { maxAge: SESSION_DAYS * 86_400, secure })])
     } catch (err) {
       console.warn('Sign-in failed:', err instanceof Error ? err.message : err)
@@ -207,10 +226,10 @@ export async function handle(request: Request, deps: Deps): Promise<Response> {
   }
 
   // The player's own data (account.ts).
-  const mine = url.pathname.match(/^\/api\/me\/(hide|runs|data|delete)$|^\/api\/me\/runs\/([\w-]{1,64})\/delete$/)
+  const mine = url.pathname.match(/^\/api\/me\/(hide|runs|data|delete|signout-everywhere)$|^\/api\/me\/runs\/([\w-]{1,64})\/delete$/)
   if (mine) {
     const action = mine[1] ?? 'delete-run'
-    const post = action === 'hide' || action === 'delete' || action === 'delete-run'
+    const post = action !== 'runs' && action !== 'data'
     if (method !== (post ? 'POST' : 'GET')) return json({ error: 'Not found' }, 404)
     if (post && !fromOurPages(request, config)) return json({ error: 'Not allowed from here.' }, 403)
     const player = await signedIn(request, deps)
@@ -228,6 +247,11 @@ export async function handle(request: Request, deps: Deps): Promise<Response> {
       case 'delete-run': {
         const r = await deleteMyRun(db, player, mine[2])
         return r.ok ? json({ ok: true }) : json({ error: r.error }, r.status)
+      }
+      case 'signout-everywhere': {
+        // Every session this player has, on every device, stops working (sessions carry the version they were made with).
+        await db.prepare('UPDATE players SET session_version = session_version + 1 WHERE id = ?').bind(player.id).run()
+        return json({ signedIn: false }, 200, { 'Set-Cookie': cookie(SESSION_COOKIE, '', { maxAge: 0, secure }) })
       }
       case 'data':
         return json(await myData(db, player, now), 200, { 'Content-Disposition': 'attachment; filename="syntype-account-data.json"' })

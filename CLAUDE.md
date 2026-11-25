@@ -55,6 +55,10 @@ The site is https://syntype.vercel.my (`SITE_URL` in `src/seo/site.ts`). `npm ru
 
 The admin page (`/admin`, `src/admin/`) sits behind Cloudflare Access. Every `/api/admin/*` route must go through `accessEmail` (`worker/lib/access.ts`), which checks Access's signed token, and every admin change must be written to `admin_actions`.
 
+## Security headers
+
+`public/_headers` sets a Content Security Policy on every page. `scripts/build-pages.mjs` builds it, hashing the inline code it finds in the built pages, so inline scripts and handlers are covered automatically. Anything loaded from another origin (a script, stylesheet, font, frame or API) needs that origin added to the policy there, or browsers will block it.
+
 ## Working in this repo
 
 - Commits are authored as Atif <alserembani94@gmail.com> (set in the repo's git config).

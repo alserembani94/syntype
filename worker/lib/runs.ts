@@ -25,9 +25,18 @@ import type { LogEntry, TypingAids } from '../../src/lib/runcore'
 export type Assets = (path: string) => Promise<Response>
 
 export interface RunConfig {
+  SITE_URL: string
   SESSION_SECRET: string
   TURNSTILE_SECRET_KEY: string
 }
+
+/** The action the game's Turnstile widget runs (src/lib/turnstile.ts). */
+export const TURNSTILE_ACTION = 'submit-run'
+/**
+ * Cloudflare's always-pass test secret (local development). Its answers name
+ * the hostname example.com and carry no action, so those checks are skipped for it.
+ */
+const TURNSTILE_TEST_SECRET = '1x0000000000000000000000000000000AA'
 
 /** A token is good for this long after the run starts. */
 export const TOKEN_HOURS = 2
@@ -111,17 +120,29 @@ const reject = (reason: SubmitRejection, status = 422): SubmitResult => ({ ok: f
 /** '110': auto-indent, auto-close, autocomplete. */
 export const aidsKey = (a: TypingAids) => `${+a.autoIndent}${+a.autoClose}${+a.autocomplete}`
 
-async function turnstilePasses(fetchImpl: (input: string, init?: RequestInit) => Promise<Response>, secret: string, token: unknown, ip: string | null, key: string) {
+/**
+ * Whether Turnstile says a person made this submission, on our site. Each
+ * token is checked once: no idempotency key, so Cloudflare's own reuse check
+ * applies (a key is only for safely retrying a failed check, which we never do).
+ */
+async function turnstilePasses(fetchImpl: (input: string, init?: RequestInit) => Promise<Response>, config: RunConfig, token: unknown, ip: string | null) {
   if (typeof token !== 'string' || !token || token.length > 4096) return false
   try {
     const res = await fetchImpl('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ secret, response: token, remoteip: ip ?? undefined, idempotency_key: key }),
+      body: JSON.stringify({ secret: config.TURNSTILE_SECRET_KEY, response: token, remoteip: ip ?? undefined }),
     })
-    const result = (await res.json()) as { success?: boolean; 'error-codes'?: string[] }
-    if (!result.success) console.warn('Turnstile:', result['error-codes'])
-    return result.success === true
+    const result = (await res.json()) as { success?: boolean; hostname?: string; action?: string; 'error-codes'?: string[] }
+    if (!result.success) {
+      console.warn('Turnstile:', result['error-codes'])
+      return false
+    }
+    if (config.TURNSTILE_SECRET_KEY === TURNSTILE_TEST_SECRET) return true
+    // Solved for this action, on this site.
+    const ours = result.action === TURNSTILE_ACTION && result.hostname === new URL(config.SITE_URL).hostname
+    if (!ours) console.warn('Turnstile: unexpected action or hostname', result.action, result.hostname)
+    return ours
   } catch (err) {
     console.warn('Turnstile unreachable:', err instanceof Error ? err.message : err)
     return false
@@ -168,7 +189,7 @@ export async function submitRun(deps: Deps, player: PlayerRow, body: unknown, no
   if (!snippet) return reject('snippet-changed', 410)
 
   // A person, then the run itself.
-  if (!(await turnstilePasses(deps.fetch, config.TURNSTILE_SECRET_KEY, b.turnstile, deps.ip, token.id))) return reject('turnstile', 403)
+  if (!(await turnstilePasses(deps.fetch, config, b.turnstile, deps.ip))) return reject('turnstile', 403)
   const checked = checkRun(snippet, aids, b.log, claim)
   if (!checked.ok) return reject(checked.reason)
   const run = checked.run

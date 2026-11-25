@@ -250,6 +250,14 @@ Indexes:
 - **Privacy:** what's kept and why, on the server and on the device; how to download, hide and delete; the backup window; Google and GitHub sign-in.
 - **Fair play:** typing aids are allowed (they're tracked and filterable), while macros, scripts and pasting aren't, and cheating runs are removed.
 
+**Privacy and security as built** (task 13):
+- **Download my data** includes reports about the player and moderator actions on them, leaving out other people's details: who reported, notes other players wrote, and the moderator's email. Syntype's automatic flags keep their note.
+- **Sign out** ends the session on this device; **Sign out everywhere** (Account & data) increases `session_version`, which ends every session.
+- **Signed tokens** all carry a kind (`session`, `signin`, `run`), and each check requires its own, so one can never pass as another.
+- **Sign-in** uses PKCE with both GitHub and Google.
+- **Turnstile:** a token is checked once (no idempotency key, so Cloudflare's reuse check applies), and must be for the `submit-run` action on our hostname. Cloudflare's always-pass test secret, used locally, skips those two checks, since its answers carry neither.
+- **Headers** (`public/_headers`): no framing, HSTS for a year, no camera, microphone, location, payment or USB access, and a Content Security Policy. `scripts/build-pages.mjs` fills in the hashes of the built pages' inline code, so the policy always matches what shipped. A new third-party script, style, font or frame needs its origin added there.
+
 Have the privacy page checked against the laws that apply: Malaysia's PDPA for a `.my` site, and the EU's GDPR for European players.
 
 **As built** (task 9):

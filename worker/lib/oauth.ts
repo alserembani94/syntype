@@ -26,11 +26,18 @@ export class SignInError extends Error {}
 
 export const callbackUrl = (origin: string, provider: Provider) => `${origin}/api/auth/${provider}/callback`
 
-/** Where to send the player to sign in. `challenge` is PKCE's code challenge (used by Google). */
+/** Where to send the player to sign in. `challenge` is PKCE's code challenge (S256), sent to both providers. */
 export function authorizeUrl(provider: Provider, config: OAuthConfig, origin: string, state: string, challenge: string): string {
   if (provider === 'github') {
     // No scope: read-only access to public profile information.
-    const q = new URLSearchParams({ client_id: config.GITHUB_CLIENT_ID, redirect_uri: callbackUrl(origin, 'github'), state, allow_signup: 'true' })
+    const q = new URLSearchParams({
+      client_id: config.GITHUB_CLIENT_ID,
+      redirect_uri: callbackUrl(origin, 'github'),
+      state,
+      allow_signup: 'true',
+      code_challenge: challenge,
+      code_challenge_method: 'S256',
+    })
     return `https://github.com/login/oauth/authorize?${q}`
   }
   const q = new URLSearchParams({
@@ -58,10 +65,10 @@ export async function exchange(
   fetchImpl: Fetch,
   now = Date.now(),
 ): Promise<Profile> {
-  return provider === 'github' ? github(config, origin, code, fetchImpl) : google(config, origin, code, verifier, fetchImpl, now)
+  return provider === 'github' ? github(config, origin, code, verifier, fetchImpl) : google(config, origin, code, verifier, fetchImpl, now)
 }
 
-async function github(config: OAuthConfig, origin: string, code: string, fetchImpl: Fetch): Promise<Profile> {
+async function github(config: OAuthConfig, origin: string, code: string, verifier: string, fetchImpl: Fetch): Promise<Profile> {
   const tokenRes = await fetchImpl('https://github.com/login/oauth/access_token', {
     method: 'POST',
     headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -70,6 +77,7 @@ async function github(config: OAuthConfig, origin: string, code: string, fetchIm
       client_secret: config.GITHUB_CLIENT_SECRET,
       code,
       redirect_uri: callbackUrl(origin, 'github'),
+      code_verifier: verifier,
     }),
   })
   const token = (await tokenRes.json().catch(() => ({}))) as { access_token?: string; error?: string }

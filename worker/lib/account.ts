@@ -63,12 +63,22 @@ export async function deleteMyRun(db: Db, player: PlayerRow, runId: string) {
   return { ok: true as const }
 }
 
-/** Everything the server keeps about the player, as one file. */
+/**
+ * Everything the server keeps about the player, as one file. Reports about
+ * them and moderator actions on them are included without what belongs to
+ * other people: who reported them, notes other players wrote, and the
+ * moderator's email. (Syntype's own automatic flags keep their note.)
+ */
 export async function myData(db: Db, player: PlayerRow, now: Date) {
-  const [bests, logs, reports] = await Promise.all([
+  const [bests, logs, reports, about, actions] = await Promise.all([
     db.prepare('SELECT fingerprint, aids, language, run_id, wpm, raw_wpm, accuracy, seconds, run_aids, finished_at FROM bests WHERE player_id = ? ORDER BY fingerprint, aids').bind(player.id).all(),
     db.prepare('SELECT run_id, fingerprint, log, created_at FROM logs WHERE player_id = ?').bind(player.id).all<{ run_id: string; fingerprint: string; log: ArrayBuffer; created_at: string }>(),
     db.prepare('SELECT target_player_id, target_run_id, reason, note, status, created_at FROM reports WHERE reporter_id = ? ORDER BY created_at').bind(player.id).all(),
+    db
+      .prepare("SELECT target_run_id AS run_id, reason, CASE WHEN source = 'auto' THEN note END AS note, source, status, created_at FROM reports WHERE target_player_id = ? ORDER BY created_at")
+      .bind(player.id)
+      .all(),
+    db.prepare('SELECT action, target_run_id AS run_id, detail, created_at FROM admin_actions WHERE target_player_id = ? ORDER BY created_at').bind(player.id).all(),
   ])
   return {
     format: 'syntype-account-data',
@@ -89,6 +99,9 @@ export async function myData(db: Db, player: PlayerRow, now: Date) {
     bests: bests.results,
     logs: await Promise.all(logs.results.map(async (l) => ({ runId: l.run_id, fingerprint: l.fingerprint, createdAt: l.created_at, log: JSON.parse(await gunzip(new Uint8Array(l.log))) }))),
     reportsMade: reports.results,
+    reportsAboutYou: about.results,
+    moderatorActions: actions.results,
+    withheld: 'Who reported you, notes other players wrote in their reports, and the moderator’s email are left out, to protect other people.',
   }
 }
 

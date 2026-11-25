@@ -6,6 +6,7 @@
 // files the server replays submitted runs against (src/lib/snippetfiles.ts). Everything comes from
 // src/seo/site.ts and the language list, loaded through Vite (the languages
 // import their snippets with ?raw, which only Vite understands).
+import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { createServer } from 'vite'
@@ -175,4 +176,35 @@ fs.mkdirSync(dataDir, { recursive: true })
 for (const f of files) fs.writeFileSync(path.join(dataDir, `${f.fingerprint}.json`), JSON.stringify(f))
 fs.writeFileSync(path.join(dataDir, 'index.json'), JSON.stringify(files.map(({ fingerprint, language, name, length }) => ({ fingerprint, language, name, length }))))
 fs.writeFileSync(path.join(dist, 'robots.txt'), seo.robotsTxt())
+// The Content Security Policy (public/_headers): only our own scripts, Turnstile,
+// and the inline code the built pages actually contain, by hash.
+const CSP_ENFORCED = false // report-only until the live pages are checked for violations
+const hashOf = (text) => `'sha256-${crypto.createHash('sha256').update(text).digest('base64')}'`
+const decode = (v) => v.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
+const inlineScripts = new Set()
+const inlineHandlers = new Set()
+for (const file of fs.readdirSync(dist).filter((f) => f.endsWith('.html'))) {
+  const html = fs.readFileSync(path.join(dist, file), 'utf8')
+  for (const m of html.matchAll(/<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/g)) {
+    if (!/type="application\/ld\+json"/.test(m[1]) && m[2].trim()) inlineScripts.add(hashOf(m[2]))
+  }
+  for (const m of html.matchAll(/\son[a-z]+="([^"]*)"/g)) inlineHandlers.add(hashOf(decode(m[1])))
+}
+const csp = [
+  "default-src 'self'",
+  `script-src 'self' https://challenges.cloudflare.com ${[...inlineScripts].join(' ')}${inlineHandlers.size ? ` 'unsafe-hashes' ${[...inlineHandlers].join(' ')}` : ''}`,
+  "style-src 'self' https://fonts.googleapis.com",
+  'font-src https://fonts.gstatic.com',
+  "img-src 'self' data:",
+  "connect-src 'self'",
+  'frame-src https://challenges.cloudflare.com',
+  "worker-src 'self'",
+  "object-src 'none'",
+  "base-uri 'none'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join('; ')
+const headersFile = path.join(dist, '_headers')
+fs.writeFileSync(headersFile, fs.readFileSync(headersFile, 'utf8').replace('__CSP__', `${CSP_ENFORCED ? 'Content-Security-Policy' : 'Content-Security-Policy-Report-Only'}: ${csp}`))
+
 console.log(`${dist}/: ${pages.length} pages, ${seo.RUNS_PAGE.file}, ${policyList.map((p) => p.file).join(', ')}, sitemap.xml, robots.txt, ${files.length} snippet data files`)

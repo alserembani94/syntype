@@ -212,6 +212,46 @@ describe('sessions', () => {
     expect((await me(session)).signedIn).toBe(false)
   })
 
+  it('a token of one kind never passes as another, and old untyped sessions no longer count', async () => {
+    const { session } = await signIn('github', providers({ github: { id: ids++, login: 'kinds' } }).fetchImpl)
+    const player = (await me(session)).player!
+    const untyped = await sign(config.SESSION_SECRET, { p: player.id, v: 1, exp: Date.now() + 60_000 })
+    expect((await me(untyped)).signedIn).toBe(false)
+    // A sign-in in progress, or a run token, in the session cookie: signed out, not a server error.
+    const signinToken = await sign(config.SESSION_SECRET, { k: 'signin', s: 'x', cv: 'y', pr: 'github', r: '/', exp: Date.now() + 60_000 })
+    const runToken = await sign(config.SESSION_SECRET, { k: 'run', id: 'r', p: player.id, f: 'x', t: 1, v: 1, exp: Date.now() + 60_000 })
+    for (const t of [signinToken, runToken]) {
+      const res = await handle(new Request(`${SITE}/api/me`, { headers: { Cookie: `${SESSION_COOKIE}=${t}` } }), deps())
+      expect(res.status).toBe(200)
+      expect(((await res.json()) as { signedIn: boolean }).signedIn).toBe(false)
+    }
+  })
+
+  it('GitHub sign-in uses PKCE too', async () => {
+    const start = await handle(new Request(`${SITE}/api/auth/github/start`), deps())
+    const to = new URL(start.headers.get('Location')!)
+    expect(to.searchParams.get('code_challenge_method')).toBe('S256')
+    expect(to.searchParams.get('code_challenge')).toMatch(/^[\w-]{43}$/)
+    const sent: string[] = []
+    const { fetchImpl } = providers({ github: { id: ids++, login: 'pkce-check' } })
+    await signIn('github', async (input, init) => {
+      if (typeof init?.body === 'object' && init.body instanceof URLSearchParams) sent.push(init.body.get('code_verifier') ?? '')
+      return fetchImpl(input, init)
+    })
+    expect(sent[0]).toMatch(/^[\w-]{60,}$/)
+  })
+
+  it('signing out everywhere ends every session the player has', async () => {
+    const a = await signIn('github', providers({ github: { id: 4242, login: 'two-devices' } }).fetchImpl)
+    const b = await signIn('github', providers({ github: { id: 4242, login: 'two-devices' } }).fetchImpl)
+    expect((await me(b.session)).signedIn).toBe(true)
+    const out = await handle(new Request(`${SITE}/api/me/signout-everywhere`, { method: 'POST', headers: { Cookie: `${SESSION_COOKIE}=${a.session}`, Origin: SITE } }), deps())
+    expect(out.status).toBe(200)
+    expect(out.headers.get('Set-Cookie')).toMatch(/^syntype_session=; /)
+    expect((await me(a.session)).signedIn).toBe(false)
+    expect((await me(b.session)).signedIn).toBe(false)
+  })
+
   it('signing out clears the cookie, and only from the site itself', async () => {
     const out = (origin: string | null) =>
       handle(new Request(`${SITE}/api/auth/signout`, { method: 'POST', headers: origin ? { Origin: origin } : {} }), deps())
@@ -440,12 +480,20 @@ describe('submitting runs', () => {
     fp = [...snippetData.values()].find((f) => f.language === 'python' && f.name === snippet.name)!.fingerprint
   })
 
-  /** Turnstile: passes the token 'person', fails anything else. */
+  /**
+   * Turnstile: 'person' passes, solved on our site for our action; 'elsewhere'
+   * and 'other-action' pass but for another hostname or action; anything else fails.
+   */
   const turnstile = (seen: unknown[] = []) => async (input: string, init?: RequestInit) => {
     if (input !== 'https://challenges.cloudflare.com/turnstile/v0/siteverify') return new Response('unexpected', { status: 500 })
     const body = JSON.parse(String(init?.body)) as { secret: string; response: string }
     seen.push(body)
-    return Response.json({ success: body.secret === 'turnstile-secret' && body.response === 'person' })
+    const genuine = body.secret === 'turnstile-secret' && ['person', 'elsewhere', 'other-action'].includes(body.response)
+    return Response.json({
+      success: genuine,
+      hostname: body.response === 'elsewhere' ? 'evil.example' : 'syntype.vercel.my',
+      action: body.response === 'other-action' ? 'login' : 'submit-run',
+    })
   }
   const post = (path: string, session: string, body: unknown, at: Date, fetchImpl = turnstile()) =>
     handle(
@@ -508,6 +556,8 @@ describe('submitting runs', () => {
     expect(body.rank).toBeGreaterThanOrEqual(1)
     expect(Math.abs(body.wpm! - run.result.wpm)).toBeLessThan(0.01)
     expect(seen).toEqual([expect.objectContaining({ secret: 'turnstile-secret', response: 'person' })])
+    // No idempotency key: each Turnstile token is checked once, so Cloudflare's reuse check applies.
+    expect(seen[0]).not.toHaveProperty('idempotency_key')
 
     const bests = await db.prepare('SELECT aids, run_aids, run_id FROM bests WHERE player_id = ? ORDER BY aids').bind(p.id).all<{ aids: string; run_aids: string; run_id: string }>()
     expect(bests.results).toEqual([
@@ -589,6 +639,9 @@ describe('submitting runs', () => {
     const p = await named('checked-typist')
     const run = honestRun(1, 51)
     expect((await submit(p.session, run, { turnstileToken: 'bot' })).body.reason).toBe('turnstile')
+    // Solved on another site, or for another action: not ours.
+    expect((await submit(p.session, run, { turnstileToken: 'elsewhere' })).body.reason).toBe('turnstile')
+    expect((await submit(p.session, run, { turnstileToken: 'other-action' })).body.reason).toBe('turnstile')
     const t0 = Date.now()
     const token = await start(p.session, new Date(t0))
     expect(run.duration).toBeGreaterThan(6000)
@@ -758,6 +811,18 @@ describe('submitting runs', () => {
       expect(data.body.logs).toEqual([expect.objectContaining({ runId: again.body.runId })])
       expect(data.body.logs[0].log.length).toBeGreaterThan(10)
       expect(data.body.reportsMade).toEqual([expect.objectContaining({ note: 'checking' })])
+      // Reports about them and moderator actions: included, without who reported, their notes, or the moderator's email.
+      await reportAs(other.session, { player: me.id, reason: 'other', note: 'written by data-other' })
+      await db.prepare("INSERT INTO reports (id, reporter_id, target_player_id, target_run_id, reason, note, created_at, source) VALUES ('auto-about', NULL, ?, NULL, 'cheating', 'Automatic: test', ?, 'auto')").bind(me.id, new Date().toISOString()).run()
+      await db.prepare("INSERT INTO admin_actions (id, action, target_player_id, target_run_id, detail, created_at, admin) VALUES ('act-about', 'hide', ?, NULL, NULL, ?, 'owner@example.com')").bind(me.id, new Date().toISOString()).run()
+      const full = await call<{ reportsAboutYou: Record<string, unknown>[]; moderatorActions: Record<string, unknown>[] }>('/api/me/data', me.session)
+      const text = JSON.stringify(full.body)
+      expect(text).not.toMatch(/written by data-other|owner@example\.com|reporter/)
+      expect(full.body.reportsAboutYou).toEqual(
+        expect.arrayContaining([expect.objectContaining({ reason: 'other', note: null, source: 'player' }), expect.objectContaining({ note: 'Automatic: test', source: 'auto' })]),
+      )
+      expect(full.body.moderatorActions).toEqual([expect.objectContaining({ action: 'hide' })])
+      await db.prepare("DELETE FROM reports WHERE target_player_id = ? AND reason != 'name'").bind(me.id).run()
       expect((await call('/api/me/data', 'not-a-session')).status).toBe(401)
 
       // Delete the account: confirmed by name; data gone, reports made kept without a name, reports about them gone.
