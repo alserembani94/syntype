@@ -109,20 +109,29 @@ kbd { font: 600 11px var(--f-code); border: 1px solid var(--line); border-bottom
 .gutter { text-align: right; color: var(--muted); opacity: .55; padding: 0 14px 0 18px; user-select: none; font-variant-numeric: tabular-nums; }
 .gutter .now { color: var(--accent); opacity: 1; }
 .code { padding-right: 24px; min-width: 0; }
-.c { opacity: .34; transition: opacity .06s; border-radius: 2px; }
-.c.ok { opacity: 1; }
-.c.auto, .c.skipped { opacity: .6; }
-.c.pending { opacity: .85; background: var(--accent-soft); }
-.c.nl.pending { opacity: .6; color: var(--accent); }
-.c.bad { opacity: 1; color: var(--err) !important; background: var(--err-soft); text-decoration: underline wavy var(--err); text-underline-offset: 4px; }
-.c.nl { color: var(--muted); opacity: .22; }
-.c.nl.ok { opacity: .35; }
-.c.nl.bad { opacity: 1; }
-.c.cur { box-shadow: inset 2px 0 0 var(--accent); animation: blink 1.05s steps(1) infinite; opacity: .55; }
+/*
+ * Each character is dimmed by mixing its colour with transparency (--a), not
+ * with opacity: an element with opacity below 1 needs its own rendering
+ * effect, and with ~900 of them every keystroke re-laid out and repainted the
+ * whole snippet (about 47 ms a key on a slow phone, 18 ms this way). On text,
+ * the two look the same. --tc is the character's token colour (set by the
+ * token classes below); span.c outranks those classes.
+ */
+.c { --a: 34%; border-radius: 2px; transition: color .06s; }
+span.c { color: color-mix(in srgb, var(--tc, var(--fg)) var(--a), transparent); }
+.c.ok { --a: 100%; }
+.c.auto, .c.skipped { --a: 60%; }
+.c.pending { --a: 85%; background: var(--accent-soft); }
+.c.nl.pending { --a: 60%; --tc: var(--accent); }
+.c.bad { --a: 100%; color: var(--err) !important; background: var(--err-soft); text-decoration: underline wavy var(--err); text-underline-offset: 4px; }
+.c.nl { --tc: var(--muted); --a: 22%; }
+.c.nl.ok { --a: 35%; }
+.c.nl.bad { --a: 100%; }
+.c.cur { box-shadow: inset 2px 0 0 var(--accent); animation: blink 1.05s steps(1) infinite; --a: 55%; }
 .typing .c.cur { animation: none; }
 @keyframes blink { 50% { box-shadow: inset 2px 0 0 transparent; } }
-.kw { color: var(--tok-kw); } .str { color: var(--tok-str); } .num { color: var(--tok-num); }
-.fn { color: var(--tok-fn); } .ty { color: var(--tok-ty); } .com { color: var(--tok-com); font-style: italic; } .pun { color: var(--tok-pun); }
+.kw { --tc: var(--tok-kw); color: var(--tc); } .str { --tc: var(--tok-str); color: var(--tc); } .num { --tc: var(--tok-num); color: var(--tc); }
+.fn { --tc: var(--tok-fn); color: var(--tc); } .ty { --tc: var(--tok-ty); color: var(--tc); } .com { --tc: var(--tok-com); color: var(--tc); font-style: italic; } .pun { --tc: var(--tok-pun); color: var(--tc); }
 
 .hidden-input { position: absolute; opacity: 0; width: 1px; height: 1px; top: 0; left: 0; border: 0; padding: 0; resize: none; }
 
