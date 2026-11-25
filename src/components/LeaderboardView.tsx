@@ -387,8 +387,13 @@ function SnippetBoard({
                 ))}
                 {mine && !inTop && (
                   <>
-                    <tr className="gap" aria-hidden="true">
-                      <td colSpan={8}>⋯</td>
+                    {/* How far down "you" are: the players between the top 15 and you. */}
+                    <tr className="gap">
+                      <td colSpan={8}>
+                        {mine.rank - (board?.rows.length ?? 0) > 1
+                          ? `⋯ ${mine.rank - (board?.rows.length ?? 0) - 1} more ${mine.rank - (board?.rows.length ?? 0) - 1 === 1 ? 'player' : 'players'} ⋯`
+                          : '⋯'}
+                      </td>
                     </tr>
                     <Row row={mine} mine canReport={false} onReplay={onReplay} onReport={setReporting} />
                   </>
