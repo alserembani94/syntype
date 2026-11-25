@@ -10,6 +10,7 @@ import type { CompletionService } from '../lib/service'
 import type { Completer } from '../lib/ts/completer'
 import type { Language, Snippet } from '../languages/types'
 import { tsCompleter } from './tsCompleter'
+import { encodeLog, replayLog, resultOf, type LogEntry } from '../lib/runcore'
 
 /** Node-side completers for languages that have a service, by language id. */
 export const TEST_COMPLETERS: Record<string, Completer> = {
@@ -145,4 +146,24 @@ export function firstMistake(s: TestState): string | null {
   if (i < 0) return null
   const around = s.run.chars.slice(Math.max(0, i - 15), i + 10).join('')
   return `expected ${JSON.stringify(s.run.chars[i])}, got ${JSON.stringify(s.run.typed[i])} in …${JSON.stringify(around)}…`
+}
+
+/**
+ * A run as the game records and submits it: its encoded log, the result the
+ * server will get by replaying it, and how long it took in ms. `speed` scales
+ * the typing (2 is twice as fast); suggestions are accepted only when
+ * `acceptSuggestions` (default: when autocomplete is on).
+ */
+export function honestRun(lang: Language, snippet: Snippet, aids: Aids, opts: { seed?: number; speed?: number; acceptSuggestions?: boolean } = {}) {
+  const speed = opts.speed ?? 1
+  const state = play(lang, snippet, { acceptSuggestions: opts.acceptSuggestions ?? aids.autocomplete, service: hasService(lang), aids, typist: { seed: opts.seed ?? 7, typos: 0.02 } })
+  const log = encodeLog(state.log).map((e) => {
+    const copy = [...e] as LogEntry
+    copy[copy.length - 1] = Math.round((e[e.length - 1] as number) / speed)
+    return copy
+  })
+  const pairs = computePairs(snippet.code, lang)
+  const r = resultOf(replayLog({ name: snippet.name, code: snippet.code, length: snippet.length }, aids, pairs, log))
+  const duration = log.reduce((t, e) => t + (e[e.length - 1] as number), 0)
+  return { log, result: { wpm: r.wpm, rawWpm: r.rawWpm, accuracy: r.accuracy, seconds: r.seconds }, duration }
 }

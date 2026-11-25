@@ -5,8 +5,8 @@
  */
 import { beforeAll, describe, expect, it } from 'vitest'
 import { LANGUAGES } from '../../src/languages'
-import { hasService, play } from '../../src/test/harness'
-import { encodeLog, replayLog, resultOf, type LogEntry, type TypingAids } from '../../src/lib/runcore'
+import { honestRun } from '../../src/test/harness'
+import { replayLog, resultOf, type LogEntry, type TypingAids } from '../../src/lib/runcore'
 import { snippetFiles, type SnippetFile } from '../../src/lib/snippetfiles'
 import { checkRun, humanProblem, type Claim } from './runcheck'
 
@@ -22,9 +22,8 @@ beforeAll(async () => {
 /** A run as the game would submit it. */
 function honest(key: string, aids: TypingAids, seed = 7) {
   const [, lang, s] = snippets.find(([k]) => k === key)!
-  const state = play(lang, s, { acceptSuggestions: aids.autocomplete, service: hasService(lang), aids, typist: { seed, typos: 0.02 } })
-  const r = resultOf(state)
-  return { log: encodeLog(state.log), claim: { wpm: r.wpm, rawWpm: r.rawWpm, accuracy: r.accuracy, seconds: r.seconds } as Claim }
+  const run = honestRun(lang, s, aids, { seed })
+  return { log: run.log, claim: run.result as Claim }
 }
 
 describe('honest runs pass', () => {

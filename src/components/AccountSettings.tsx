@@ -6,11 +6,11 @@
 import { useEffect, useState } from 'react'
 import { LANGUAGES } from '../languages'
 import { deleteAccount, deleteEntry, downloadData, fetchEntries, setHidden, signOutEverywhere, type Entry, type Player } from '../lib/account'
-import { whenPlayed } from '../lib/board'
+import { speed, whenPlayed } from '../lib/format'
+import { PROVIDER_NAMES as PROVIDERS } from '../lib/labels'
 import { POLICY_LINKS } from '../seo/policyLinks'
 import { Dialog } from './Account'
 
-const PROVIDERS = { github: 'GitHub', google: 'Google' }
 /** Where players remove Syntype from the apps connected to their account. */
 const CONNECTED_APPS = { github: 'https://github.com/settings/applications', google: 'https://myaccount.google.com/connections' }
 
@@ -125,7 +125,7 @@ export function AccountSettings({ player, onClose, onRename, onPlayer, onDeleted
                   {langName(e.language)} · {e.snippet}
                 </span>
                 <span className="entry-stat">
-                  {Math.round(e.wpm)} wpm · {Math.round(e.accuracy)}% · {whenPlayed(e.finishedAt)}
+                  {speed(e)} · {whenPlayed(e.finishedAt)}
                 </span>
                 {confirming === e.runId ? (
                   <span className="entry-actions">

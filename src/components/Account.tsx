@@ -1,10 +1,11 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { PROVIDER_NAMES } from '../lib/labels'
 import type { History } from '../lib/history'
 import { POLICY_LINKS } from '../seo/policyLinks'
 
 // Loaded when the player opens Account & data.
 const AccountSettings = lazy(() => import('./AccountSettings').then((m) => ({ default: m.AccountSettings })))
-import { justSignedIn, nameHint, saveName, signIn, signInProblem, signOut, fetchAccount, type Account as AccountState, type Player, type Provider } from '../lib/account'
+import { justSignedIn, nameHint, saveName, signIn, signInProblem, signOut, fetchAccount, type Account as AccountState, type Player } from '../lib/account'
 
 interface Props {
   /** Only on the site itself; the single-file artifact has no server. */
@@ -20,7 +21,6 @@ interface Props {
 
 type Open = null | 'signin' | 'name' | 'menu' | 'settings'
 
-const PROVIDER_NAMES: Record<Provider, string> = { github: 'GitHub', google: 'Google' }
 
 /** Sign in, the leaderboard name step, and the account menu, in the header. */
 export function Account({ available, onOpenChange, onMyRuns, onPlayer, history }: Props) {

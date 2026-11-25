@@ -4,6 +4,8 @@
  * snippet's board (top 15, by typing aids, with your own place), replays of
  * the kept runs, and reports. The data comes from /api/boards (worker/lib/boards.ts).
  */
+import { REPORT_REASON_LABELS } from '../lib/labels'
+import { REPORT_REASONS } from '../lib/apiTypes'
 import { useAddressPlace, type AddressSpec } from '../hooks/useAddressPlace'
 import { useEffect, useMemo, useState } from 'react'
 import type { Language, Snippet, SnippetLength } from '../languages'
@@ -12,7 +14,7 @@ import { AIDS, aidsKey, aidsOf } from '../lib/aids'
 import { AidTags } from './AidTags'
 import { fetchBoard, fetchLanguageBoards, fetchMyPlace, fetchReplay, sendReport, type Board, type BoardReplay, type BoardRow, type LanguageBoards, type ReportReason } from '../lib/boards'
 import { fingerprint } from '../lib/runlog'
-import { whenPlayed } from '../lib/board'
+import { whenPlayed } from '../lib/format'
 import { ReplayView } from './ReplayView'
 import { LanguagePicker } from './LanguagePicker'
 
@@ -424,11 +426,12 @@ function Row({ row: r, mine, canReport, onReplay, onReport }: { row: BoardRow; m
   )
 }
 
-const REASONS: { id: ReportReason; label: string; hint: string }[] = [
-  { id: 'cheating', label: 'Cheating', hint: 'The run looks automated or faked.' },
-  { id: 'name', label: 'Offensive name', hint: 'The player’s name is abusive or inappropriate.' },
-  { id: 'other', label: 'Something else', hint: 'Tell the moderator in the note.' },
-]
+const REASON_HINTS: Record<ReportReason, string> = {
+  cheating: 'The run looks automated or faked.',
+  name: 'The player’s name is abusive or inappropriate.',
+  other: 'Tell the moderator in the note.',
+}
+const REASONS = REPORT_REASONS.map((id) => ({ id, label: REPORT_REASON_LABELS[id], hint: REASON_HINTS[id] }))
 
 function ReportDialog({ row, onClose, onSent }: { row: BoardRow; onClose: () => void; onSent: () => void }) {
   const [reason, setReason] = useState<ReportReason | null>(null)

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Language, Snippet } from '../languages'
 import type { LogEntry, TypingAids } from '../lib/runcore'
 import { buildReplay, frameAt, type Replay } from '../lib/replay'
-import { duration } from '../lib/board'
+import { duration, speed as runSpeed } from '../lib/format'
 import { CodeView } from './CodeView'
 
 interface Props {
@@ -87,7 +87,7 @@ export function ReplayView({ lang, snippet, run, loadLog, crumbs, by, onClose }:
             <span>{snippet.name} · replay</span>
           </div>
           <span className="lang">
-            {Math.round(run.wpm)} wpm · {Math.round(run.accuracy)}%
+            {runSpeed(run)}
           </span>
         </div>
         {replay === 'missing' ? (

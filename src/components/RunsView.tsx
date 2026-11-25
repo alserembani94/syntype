@@ -4,14 +4,12 @@ import type { Language, SnippetLength } from '../languages'
 import { keepSafe, snippetKey, storageInfo, type History, type StoredRun } from '../lib/history'
 import { fingerprint } from '../lib/runlog'
 import {
-  duration,
   matchesAids,
   overview,
-  runTime,
   snippetStats,
-  whenPlayed,
   type AidsFilter,
 } from '../lib/board'
+import { duration, runTime, speed, whenPlayed } from '../lib/format'
 import { ReplayView } from './ReplayView'
 import { useAddressPlace, type AddressSpec } from '../hooks/useAddressPlace'
 
@@ -595,7 +593,7 @@ function RunsChart({ runs, best }: { runs: StoredRun[]; best: StoredRun | null }
       {runs.length > 1 && <polyline className="runs-line" points={runs.map((r, i) => `${x(i)},${y(r.wpm)}`).join(' ')} />}
       {runs.map((r, i) => (
         <circle key={r.id} className={r.id === best?.id ? 'runs-dot best' : 'runs-dot'} cx={x(i)} cy={y(r.wpm)} r={r.id === best?.id ? 5 : 3.5}>
-          <title>{`${runTime(r.finishedAt)}: ${Math.round(r.wpm)} wpm, ${Math.round(r.accuracy)}%`}</title>
+          <title>{`${runTime(r.finishedAt)}: ${speed(r)}`}</title>
         </circle>
       ))}
     </svg>

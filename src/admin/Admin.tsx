@@ -2,6 +2,8 @@
  * The admin page (/admin, behind Cloudflare Access): the report queue, player
  * search and the action log. docs/leaderboard.md, "Moderation", has the rules.
  */
+import { date, dateTime } from '../lib/format'
+import { PROVIDER_NAMES, REPORT_REASON_LABELS } from '../lib/labels'
 import { aidNames, aidsOf } from '../lib/aids'
 import { useCallback, useEffect, useState } from 'react'
 import {
@@ -18,7 +20,6 @@ import {
   type RunInfo,
   type AdminPlayer,
   type PlayerAction,
-  type Reason,
   type ReportGroup,
 } from './api'
 
@@ -29,8 +30,8 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'activity', label: 'Activity' },
 ]
 
-const REASONS: Record<Reason, string> = { cheating: 'Cheating', name: 'Offensive name', other: 'Other' }
-const PROVIDERS = { github: 'GitHub', google: 'Google' }
+const REASONS = REPORT_REASON_LABELS
+const PROVIDERS = PROVIDER_NAMES
 const ACTIONS: Record<string, string> = {
   rename: 'Renamed',
   hide: 'Hid',
@@ -41,8 +42,8 @@ const ACTIONS: Record<string, string> = {
   'remove-run': 'Removed a run by',
 }
 
-const when = (iso: string) => new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-const day = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+const when = dateTime
+const day = date
 const message = (err: unknown) => (err instanceof Error ? err.message : String(err))
 
 export function Admin() {
