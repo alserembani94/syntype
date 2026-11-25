@@ -180,3 +180,27 @@ describe("Rust auto-close, from VS Code's Rust configuration", () => {
     expect(closeOf[code.indexOf('(')]).toBe(code.indexOf(')'))
   })
 })
+
+describe('Go: tab indentation and VS Code\'s Go auto-close', () => {
+  const go = getLanguage('go')
+  const startGo = (code: string) =>
+    createRun(code, { autoIndent: true, autoClose: true, pairs: computePairs(code, go) })
+
+  it('auto-indent skips tabs the way it skips spaces', () => {
+    const run = typeAll(startGo('if ok {\n\treturn\n}'), 'if ok {\n')
+    expect(run.chars[run.pos]).toBe('r')
+    expect(run.states[run.pos - 1]).toBe('auto')
+  })
+
+  it('Enter between braces moves the closer to its own line with tab indentation too', () => {
+    const code = 'func f() {\n\tif ok {\n\t\treturn\n\t}\n}'
+    const run = typeAll(startGo(code), 'func f() {\nif ok {\n')
+    expect(pendingText(run)).toBe('\n\t}\n}')
+  })
+
+  it('auto-closes raw-string backticks, but not quotes inside them', () => {
+    const code = 'type U struct {\n\tID int `json:"id"`\n}'
+    const run = typeAll(startGo(code), 'type U struct {\nID int `json:"')
+    expect(pendingText(run)).toBe('`\n}')
+  })
+})

@@ -183,6 +183,8 @@ svg.chart .er path { stroke: var(--err); stroke-width: 2; stroke-linecap: round;
 .review-legend { display: flex; flex-wrap: wrap; gap: 16px; font: 12px var(--f-code); color: var(--muted); }
 .review-legend i { font-style: normal; padding: 0 3px; margin-right: 4px; }
 .review-code { margin: 0; font: 14px/1.7 var(--f-code); font-variant-ligatures: none; white-space: pre; overflow-x: auto; }
+/* Tab-indented languages (Go) show tabs at the language's indent width. */
+.code, .review-code { tab-size: var(--tab-size, 4); }
 .r-bad { color: var(--err); background: var(--err-soft); border-radius: 2px; text-decoration: underline wavy var(--err); text-underline-offset: 4px; }
 .r-sug { box-shadow: inset 0 -2px 0 var(--accent); }
 .r-auto { opacity: .5; }

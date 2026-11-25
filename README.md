@@ -1,6 +1,6 @@
 # Syntype
 
-A typing speed test for code, in the spirit of monkeytype. It uses real code snippets, colours them like an editor, and reports how fast and how accurately you type them. Languages: JavaScript, TypeScript, Python and Rust. The game is built so more can be added.
+A typing speed test for code, in the spirit of monkeytype. It uses real code snippets, colours them like an editor, and reports how fast and how accurately you type them. Languages: JavaScript, TypeScript, Python, Rust and Go. The game is built so more can be added.
 
 ## Run it
 
@@ -34,6 +34,7 @@ Other scripts: `npm test` (unit and playthrough tests, Vitest), `npm run build`,
   - Accepting a wrong suggestion inserts it anyway, and its letters are checked like typed ones.
 - **Python suggestions** come from keywords, words you've typed, and vocabulary for Python's built-ins plus the standard-library modules a snippet imports (`json`, `re`, `collections`, `pathlib`, `asyncio` and more). There's no type engine for Python yet, so after a dot on an unknown value it offers common `str`/`list`/`dict`/`set` methods. Auto-close follows VS Code's Python configuration, including string prefixes (`f"`, `r'`), and indentation is 4 spaces.
 - **Rust suggestions** work the same way: keywords, typed words, the prelude (`Vec`, `String`, `Option`, `Some`/`None`, primitive types, macros like `println`/`vec`) and the `std` modules a snippet `use`s (`collections`, `fs`, `io`, `fmt`, `thread`, `sync`). Both `.` and `::` open member lists, so `String::` offers `new`/`from` and `HashMap::` offers `new`. Auto-close follows VS Code's Rust configuration: brackets and `"` only, with no `'` pair because Rust uses `'` for lifetimes and chars. Indentation is 4 spaces (rustfmt).
+- **Go suggestions** cover keywords, typed words, built-ins (`len`, `make`, `append`…) and the standard-library packages a snippet imports, including inside an `import ( … )` block (`fmt`, `strings`, `errors`, `sync`, `time`, `net/http`, `encoding/json`, `context` and more). A package's members follow its last path part, so `net/http` gives `http.`. Go is indented with **tabs**, as gofmt does: auto-indent skips them, Tab types one, they display 4 columns wide, and the status bar shows "Tab Size: 4". Auto-close follows VS Code's Go configuration, including backtick raw strings and `'` runes.
 - After a dot, in languages without a type engine, the vocabulary's methods are listed before words from the file.
 - **IntelliSense is type-aware** for JavaScript and TypeScript: their snippets both get suggestions from TypeScript's real language service, the engine VS Code uses for both, running in a Web Worker. JavaScript is analysed for inference only (no type errors), as VS Code does without `// @ts-check`. Names it can't resolve are offered as plain words, as in VS Code. It knows the types declared in the snippet: after `interface User { name: string }`, `u.` offers `name`, `users.filter((x) => x.` knows `x` is a `User`, and `Pick<>`, generics, union narrowing, enums and string-literal unions (`"up"`) all work. It only sees what you've typed so far, as a real editor would, so a typo breaks suggestions there too. The status bar shows "… IntelliSense starting…" while it loads (about a second). Until then, and if it can't start, basic suggestions (keywords and words you've typed) are used. If it can't start, hovering over the status-bar label shows why.
 - **Commit characters** (VS Code's): with the list open, typing `.` `,` `;` or `(` accepts the selected item and then types the character. They apply everywhere except where you're declaring a new name, because the service knows those spots. Basic suggestions have none, since they can't tell when a new name is being declared. An exact, fully typed word always outranks longer words it starts (VS Code's full-match boost), so typing `fetch(` commits `fetch`, not `fetchUser`.
@@ -56,6 +57,7 @@ src/
     typescript/         the same for TypeScript (its service lives in lib/ts/)
     python/             the same for Python, plus completions.ts (built-in and stdlib vocabulary)
     rust/               the same for Rust, plus completions.ts (prelude and std vocabulary)
+    go/                 the same for Go, plus completions.ts (built-ins and stdlib packages)
   lib/engine.ts         pure typing engine (type, backspace, auto-indent, auto-close, →/End/↓)
   lib/suggest.ts        IntelliSense: context (word or member), local candidates, fuzzy matching, ranking
   lib/service.ts        the interface a language's completion service implements
@@ -73,7 +75,7 @@ src/
 ## Adding a language
 
 1. Create `src/languages/<id>/snippets.txt` with snippets in the format below. Name each file with the language's extension.
-2. Create `src/languages/<id>/index.ts`, using `javascript/index.ts` as a model: set `id`, `name`, `extension`, `highlight` (keywords, comment and string syntax), `autoClosingPairs` and `completion`. Copy `autoClosingPairs` from the language's VS Code `language-configuration.json` so auto-close matches the editor. **Don't copy JavaScript's `completion.service`, `serviceMode` or `triggerCharacters`**: those wire in TypeScript's service. A language without its own service sets `wordChar` and, if useful, vocabulary `packs` (see below).
+2. Create `src/languages/<id>/index.ts`, using `javascript/index.ts` as a model: set `id`, `name`, `extension`, `indentSize` (and `indentWithTabs` if the language's formatter uses tabs), `highlight` (keywords, comment and string syntax), `autoClosingPairs` and `completion`. Copy `autoClosingPairs` from the language's VS Code `language-configuration.json` so auto-close matches the editor. **Don't copy JavaScript's `completion.service`, `serviceMode` or `triggerCharacters`**: those wire in TypeScript's service. A language without its own service sets `wordChar` and, if useful, vocabulary `packs` (see below).
 3. Add it to `LANGUAGES` in `src/languages/index.ts`.
 
 It then appears in the language picker, and `npm test` holds it to every language rule (R1–R9 in `CLAUDE.md`, checked by `src/languages/conformance.test.ts`): identity, at least 4 snippets per length, formatting, highlighting, playthroughs with and without its service, and suggestions that save keystrokes. A language with a service also needs a stand-in for it in `TEST_COMPLETERS` (`src/test/harness.ts`).

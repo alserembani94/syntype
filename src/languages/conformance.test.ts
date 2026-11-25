@@ -45,11 +45,16 @@ describe.each(LANGUAGES.map((l) => [l.name, l] as const))('%s', (_, lang) => {
   it.each(snippets)('R4 · %s is formatted for typing', (name, s) => {
     const lines = s.code.split('\n')
     const indent = lang.indentSize ?? 2
-    expect(s.code, `${name}: printable ASCII only`).toMatch(/^[\x20-\x7e\n]+$/)
+    const tabs = !!lang.indentWithTabs
+    expect(s.code, `${name}: printable ASCII only`).toMatch(tabs ? /^[\x20-\x7e\n\t]+$/ : /^[\x20-\x7e\n]+$/)
     for (const line of lines) {
-      expect(line, `${name}: trailing space`).not.toMatch(/ $/)
-      expect(line.length, `${name}: line too long: ${line}`).toBeLessThanOrEqual(MAX_LINE_LENGTH)
-      expect(line.match(/^ */)![0].length % indent, `${name}: indent in ${indent}-space steps: ${line}`).toBe(0)
+      const lead = line.match(/^[ \t]*/)![0]
+      expect(line, `${name}: trailing space`).not.toMatch(/[ \t]$/)
+      expect(line.slice(lead.length), `${name}: tab outside indentation: ${line}`).not.toContain('\t')
+      if (tabs) expect(lead, `${name}: indent with tabs only: ${JSON.stringify(line)}`).toMatch(/^\t*$/)
+      else expect(lead.length % indent, `${name}: indent in ${indent}-space steps: ${line}`).toBe(0)
+      const columns = lead.length * (tabs ? indent : 1) + line.length - lead.length
+      expect(columns, `${name}: line too long: ${line}`).toBeLessThanOrEqual(MAX_LINE_LENGTH)
     }
     expect(lines[0].trim(), `${name}: starts with a blank line`).not.toBe('')
   })

@@ -98,7 +98,7 @@ export default function App() {
 
   // Keyboard: the whole page listens, so typing works without clicking first.
   const suggestOpen = !!state.suggest
-  const keyState = { phase, autoIndent, indentSize: language.indentSize ?? 2, suggestOpen, next, retry, type, back, move, suggestNav, accept, dismiss }
+  const keyState = { phase, autoIndent, indentSize: language.indentSize ?? 2, indentWithTabs: !!language.indentWithTabs, suggestOpen, next, retry, type, back, move, suggestNav, accept, dismiss }
   const latest = useRef(keyState)
   useLayoutEffect(() => {
     latest.current = keyState
@@ -156,7 +156,10 @@ export default function App() {
         s.type('\n')
       } else if (e.key === 'Tab') {
         e.preventDefault()
-        if (!s.autoIndent) for (let i = 0; i < s.indentSize; i++) s.type(' ')
+        if (!s.autoIndent) {
+          if (s.indentWithTabs) s.type('\t')
+          else for (let i = 0; i < s.indentSize; i++) s.type(' ')
+        }
       } else if (e.key.length === 1) {
         e.preventDefault()
         s.type(e.key)
@@ -241,7 +244,7 @@ export default function App() {
   const best = currentBests[currentKey]
 
   return (
-    <div className="wrap">
+    <div className="wrap" style={{ '--tab-size': language.indentSize ?? 2 } as React.CSSProperties}>
       {pickerOpen && (
         <LanguagePicker languages={LANGUAGES} currentId={languageId} onSelect={pickLanguage} onClose={closePicker} />
       )}
@@ -375,7 +378,7 @@ export default function App() {
               {serviceLabel}
             </span>
           )}
-          <span>Spaces: {language.indentSize ?? 2}</span>
+          <span>{language.indentWithTabs ? 'Tab Size' : 'Spaces'}: {language.indentSize ?? 2}</span>
           <span>UTF-8</span>
         </div>
       </section>

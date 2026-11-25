@@ -277,3 +277,27 @@ describe('Rust vocabulary packs', () => {
     expect(tokenize(code, rs.highlight).filter((c) => c === 'str')).toHaveLength(0)
   })
 })
+
+describe('Go vocabulary packs', () => {
+  const go = getLanguage('go')
+  const goSetup = (code: string) => ({
+    run: createRun(code, { autoIndent: true, autoClose: false }),
+    cfg: buildSuggestConfig(code, go, false),
+  })
+
+  it('switches packages on from an import block and names them by their last path part', () => {
+    const code = 'import (\n\t"fmt"\n\t"net/http"\n)\n\nfunc f() { http.Get(u) }'
+    const { run, cfg } = goSetup(code)
+    expect(cfg.globals.map((g) => g.label)).toEqual(expect.arrayContaining(['fmt', 'http']))
+    expect(labels(typeAll(run, 'import (\n"fmt"\n"net/http"\n)\n\nfunc f() { http.'), cfg)).toContain('Get')
+  })
+
+  it('leaves packages off when they are not imported', () => {
+    expect(goSetup('func f() { fmt.Println(1) }').cfg.globals.some((g) => g.label === 'fmt')).toBe(false)
+  })
+
+  it('offers built-ins such as make and append', () => {
+    const { run, cfg } = goSetup('xs := make([]int, 0)')
+    expect(labels(typeAll(run, 'xs := ma'), cfg)).toContain('make')
+  })
+})

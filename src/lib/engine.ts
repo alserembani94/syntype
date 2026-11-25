@@ -46,6 +46,8 @@ export interface Run {
 }
 
 const isSymbol = (ch: string) => /[^\w\s]/.test(ch)
+/** Indentation is spaces, or tabs in languages such as Go. */
+const isIndent = (ch: string) => ch === ' ' || ch === '\t'
 const isWordChar = (ch: string) => /[\w$]/.test(ch)
 
 export function createRun(code: string, options: RunOptions): Run {
@@ -92,7 +94,7 @@ function skipIndent(run: Run) {
   if (!run.autoIndent) return
   const { chars, states } = run
   if (run.pos > 0 && chars[run.pos - 1] !== '\n') return
-  while (run.pos < chars.length && chars[run.pos] === ' ' && (states[run.pos] ?? 'pending') === 'pending') {
+  while (run.pos < chars.length && isIndent(chars[run.pos]) && (states[run.pos] ?? 'pending') === 'pending') {
     states[run.pos] = 'auto'
     run.pos++
   }
@@ -127,7 +129,7 @@ function expandOnEnter(run: Run, nl: number) {
   if (c < 0 || run.states[c] !== 'pending' || run.states[o] !== 'ok') return
   const ls = lineStart(run.chars, c)
   if (ls - 1 <= nl) return
-  for (let i = ls; i < c; i++) if (run.chars[i] !== ' ') return
+  for (let i = ls; i < c; i++) if (!isIndent(run.chars[i])) return
   for (let i = ls - 1; i < c; i++) if (run.states[i] === undefined) run.states[i] = 'pending'
 }
 
