@@ -74,7 +74,18 @@ export function languagePage(lang: Language): Page {
   }
 }
 
-export const allPages = (languages: Language[]): Page[] => [homePage(languages), ...languages.map(languagePage)]
+/** The global leaderboards, at /leaderboard: public, so indexed and in the sitemap. */
+export const leaderboardPage = (languages: Language[]): Page => ({
+  path: '/leaderboard',
+  file: 'leaderboard.html',
+  url: `${SITE_URL}/leaderboard`,
+  title: 'Code Typing Leaderboards by Language | Syntype',
+  description: `The fastest typists of real code on every Syntype snippet, in ${languages.length} languages. Each board ranks players by WPM, with replays of the top runs.`,
+  heading: 'Code typing leaderboards',
+  intro: `Every snippet in Syntype has its own leaderboard: the fastest signed-in players, ranked by WPM with at least 75% accuracy, each run checked by replaying its keystrokes. Filter by typing aids, and watch replays of the top runs.`,
+})
+
+export const allPages = (languages: Language[]): Page[] => [homePage(languages), ...languages.map(languagePage), leaderboardPage(languages)]
 
 /** The language a page address names (/python, /python.html, /python/), if any. */
 export function languageFromPath(pathname: string, languages: Language[]): string | null {
@@ -91,9 +102,11 @@ export const RUNS_PAGE = { path: '/runs', file: 'runs.html', title: 'My runs | S
 
 export const isRunsPath = (pathname: string) => /^\/runs(\.html)?\/?$/.test(pathname)
 
-/** Whether this page is the site itself (home, a language page or /runs), so it can keep the address in step with what's shown. */
+export const isLeaderboardPath = (pathname: string) => /^\/leaderboard(\.html)?\/?$/.test(pathname)
+
+/** Whether this page is the site itself (home, a language page, /runs or /leaderboard), so it can keep the address in step with what's shown. */
 export function isSitePath(pathname: string, languages: Language[]): boolean {
-  return /^\/(index\.html)?$/.test(pathname) || languageFromPath(pathname, languages) !== null || isRunsPath(pathname)
+  return /^\/(index\.html)?$/.test(pathname) || languageFromPath(pathname, languages) !== null || isRunsPath(pathname) || isLeaderboardPath(pathname)
 }
 
 export function sitemapXml(pages: Page[]): string {

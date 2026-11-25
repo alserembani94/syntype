@@ -129,7 +129,7 @@ export function RunsView({ languages, history, language, length, inAddress, onTy
           lang={lang}
           snippet={snippet}
           run={run}
-          history={store}
+          loadLog={() => store.log(run.id)}
           crumbs={['My runs', lang.name, place.length, snippet.name]}
           onClose={() => go({ replay: null }, true)}
         />

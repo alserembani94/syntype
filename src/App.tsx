@@ -22,7 +22,8 @@ import { AboutDialog } from './components/AboutDialog'
 import { RunsView } from './components/RunsView'
 import { Account } from './components/Account'
 import { applyTheme, getTheme, loadTheme, saveTheme } from './themes'
-import { isRunsPath, isSitePath, languageFromPath, languagePage, RUNS_PAGE } from './seo/site'
+import { isLeaderboardPath, isRunsPath, isSitePath, languageFromPath, languagePage, leaderboardPage, RUNS_PAGE } from './seo/site'
+import { LeaderboardView } from './components/LeaderboardView'
 import { Results } from './components/Results'
 
 interface Settings {
@@ -55,12 +56,14 @@ const runOptions = (snippet: Snippet, s: Settings): TestOptions => {
 const onSite = typeof location !== 'undefined' && /^https?:$/.test(location.protocol) && isSitePath(location.pathname, LANGUAGES)
 const languageInAddress = onSite ? languageFromPath(location.pathname, LANGUAGES) : null
 
-/** Typing, or the personal board (My runs, at /runs). */
-type View = 'type' | 'runs'
-const viewInAddress = (): View => (onSite && isRunsPath(location.pathname) ? 'runs' : 'type')
+/** Typing, the personal board (My runs, at /runs) or the global leaderboards (/leaderboard). */
+type View = 'type' | 'runs' | 'board'
+const viewInAddress = (): View => (!onSite ? 'type' : isRunsPath(location.pathname) ? 'runs' : isLeaderboardPath(location.pathname) ? 'board' : 'type')
+const BOARD_PAGE = leaderboardPage(LANGUAGES)
+const pageTitle = (v: View, languageId: string) => (v === 'runs' ? RUNS_PAGE.title : v === 'board' ? BOARD_PAGE.title : languagePage(getLanguage(languageId)).title)
 
 function showLanguageInAddress(id: string) {
-  if (!onSite || isRunsPath(location.pathname)) return
+  if (!onSite || isRunsPath(location.pathname) || isLeaderboardPath(location.pathname)) return
   const page = languagePage(getLanguage(id))
   document.title = page.title
   try {
@@ -288,7 +291,7 @@ export default function App() {
     if (v === view) return
     setView(v)
     if (onSite) {
-      const page = v === 'runs' ? RUNS_PAGE : languagePage(language)
+      const page = v === 'runs' ? RUNS_PAGE : v === 'board' ? BOARD_PAGE : languagePage(language)
       history.pushState(null, '', page.path)
       document.title = page.title
     }
@@ -299,14 +302,14 @@ export default function App() {
     const onPop = () => {
       const v = viewInAddress()
       setView(v)
-      document.title = v === 'runs' ? RUNS_PAGE.title : languagePage(getLanguage(languageId)).title
+      document.title = pageTitle(v, languageId)
     }
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
   }, [languageId])
   useEffect(() => {
-    if (view === 'runs' && onSite) document.title = RUNS_PAGE.title
-  }, [view])
+    if (view !== 'type' && onSite) document.title = pageTitle(view, languageId)
+  }, [view, languageId])
 
   // The site's pages carry an about section in their HTML, for search engines
   // and link previews. Once the app runs, it opens as a dialog from the footer
@@ -464,6 +467,14 @@ export default function App() {
             </svg>
             <span>My runs</span>
           </button>
+          {onSite && (
+            <button type="button" aria-current={view === 'board' ? 'page' : undefined} onClick={() => showView('board')}>
+              <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+                <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span>Leaderboard</span>
+            </button>
+          )}
         </nav>
         <div className="top-actions">
           <Account available={onSite} onOpenChange={setAccountOpen} onMyRuns={() => showView('runs')} onPlayer={onPlayer} />
@@ -491,7 +502,9 @@ export default function App() {
         </div>
       </header>
 
-      {view === 'runs' ? (
+      {view === 'board' ? (
+        <LeaderboardView languages={LANGUAGES} language={languageId} length={length} player={player.player} onType={typeSnippet} />
+      ) : view === 'runs' ? (
         <RunsView languages={LANGUAGES} history={runHistory} language={languageId} length={length} inAddress={onSite} onType={typeSnippet} />
       ) : (
         <>

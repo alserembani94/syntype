@@ -18,8 +18,10 @@ describe('SEO pages', () => {
     expect(Object.keys(BLURBS).sort()).toEqual(LANGUAGES.map((l) => l.id).sort())
   })
 
-  it('there is a home page and one page per language, each with its own address, title and description', () => {
-    expect(pages.length).toBe(LANGUAGES.length + 1)
+  it('there is a home page, one page per language and the leaderboard, each with its own address, title and description', () => {
+    expect(pages.length).toBe(LANGUAGES.length + 2)
+    expect(pages.at(-1)?.path).toBe('/leaderboard')
+    expect(LANGUAGES.some((l) => l.id === 'leaderboard')).toBe(false)
     for (const key of ['path', 'file', 'url', 'title', 'description'] as const) {
       const values = pages.map((p) => p[key])
       expect(new Set(values).size, `${key}s repeat`).toBe(values.length)

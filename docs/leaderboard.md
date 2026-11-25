@@ -140,6 +140,12 @@ Built in task 6: the tables (`migrations/0001_init.sql`), sign-in and sessions (
   - A removed snippet's board is archived the same way.
 - **Caching:** each board is cached for 60 seconds, so heavy viewing costs few database reads.
 
+**As built** (task 8):
+- **Pages:** `/leaderboard` (`src/components/LeaderboardView.tsx`, `dist/leaderboard.html`, indexed and in the sitemap): languages and lengths, then each snippet's top score and who holds it; a snippet's board with the typing-aid filter (**any**, or **exactly** a combination), "you" highlighted or added below the top 15; replays of kept runs; and a report flag on other players' rows (signed in with a name). Older versions of changed snippets are listed under the language, with their closed boards and replays.
+- **API** (`worker/lib/boards.ts`): `GET /api/boards?lang=` reads one top row per current snippet (not every score); `GET /api/boards/:fingerprint?aids=` the top 15 through `bests_board`; `GET /api/boards/:fingerprint/me` your place (never cached); `GET /api/replays/:runId` a kept run by a visible player, with the text it was typed on.
+- **Cache:** boards, language overviews and replays are kept in the Cache API of each Cloudflare data centre for 60 seconds (`worker/index.ts`). The submitter sees their place at once on the results screen, and in "you" on the board.
+- **Admin:** for a reported run, the queue offers **Watch replay** (`/leaderboard?replay=…&admin=1`, read through `/api/admin/replays`, so any kept run, hidden players' too) and **Remove run**: its best rows and log go, and if it was the player's overall best, their best with other typing aids takes its place.
+
 ## Data model (D1)
 
 | Table | One row per | Holds |

@@ -408,6 +408,25 @@ svg.chart .er path { stroke: var(--err); stroke-width: 2; stroke-linecap: round;
 .runs-storage { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
 .runs-storage .confirm { display: inline-flex; gap: 6px; align-items: center; }
 .runs-message { flex-basis: 100%; color: var(--fg); }
+/* The global leaderboards (LeaderboardView). */
+.boards .runs-head h2 { margin: 0; }
+.boards .runs-head p { margin: 0; flex-basis: 100%; }
+.runs-note.problem { color: var(--err); }
+.board-table td.rank { font: 700 15px var(--f-display); color: var(--muted); width: 1%; }
+.board-table tr.mine td { background: var(--accent-soft); }
+.board-table tr.gap td { text-align: center; color: var(--muted); padding: 2px; }
+.icon-link { border: 0; background: none; cursor: pointer; color: var(--muted); font-size: 14px; padding: 2px 6px; border-radius: 6px; }
+.icon-link:hover, .icon-link:focus-visible { color: var(--err); background: var(--err-soft); outline: none; }
+.tag-archived { font: 600 10px var(--f-ui); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px; margin-left: 8px; }
+.archived h3 { margin: 6px 0 4px; font: 700 15px var(--f-display); }
+.archived p { margin: 0 0 8px; }
+.archived ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.reasons { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; }
+.reason-option { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; cursor: pointer; }
+.reason-option:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.reason-option > span { display: grid; gap: 2px; font-size: 14px; }
+.field textarea { font: 14px var(--f-ui); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); resize: vertical; }
+.field textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
 .runs-head { display: flex; gap: 12px; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; }
 .crumbs { font: 13px var(--f-code); color: var(--muted); }
 .crumbs b { color: var(--fg); font-weight: 600; }

@@ -35,6 +35,7 @@ let db: Db
 let snippetData: Map<string, SnippetFile>
 /** The build's snippet data files, as the Worker's static assets serve them. */
 const assets = async (path: string) => {
+  if (path.endsWith('/index.json')) return Response.json([...snippetData.values()].map(({ fingerprint, language, name, length }) => ({ fingerprint, language, name, length })))
   const f = snippetData.get(path.split('/').pop()!.replace('.json', ''))
   return f ? Response.json(f) : new Response('Not found', { status: 404 })
 }
@@ -593,6 +594,102 @@ describe('submitting runs', () => {
     expect((await submit(p.session, run, { late: 3 * 3_600_000 })).body.reason).toBe('expired')
     const forged = await submit(p.session, { ...run, result: { ...run.result, wpm: run.result.wpm * 2 } })
     expect(forged).toMatchObject({ status: 422, body: { accepted: false, reason: 'result-mismatch' } })
+  })
+
+  it('boards: top scores by language, a board’s top 15 for an aid filter, your place, replays, and removal', async () => {
+    const saved = { snippet, fp }
+    snippet = lang.snippets.filter((x) => x.length === 'medium')[0]
+    fp = [...snippetData.values()].find((f) => f.language === 'python' && f.name === snippet.name)!.fingerprint
+    try {
+      const get = async <T,>(path: string, session?: string) => {
+        const res = await handle(new Request(`${SITE}${path}`, { headers: session ? { Cookie: `${SESSION_COOKIE}=${session}` } : {} }), deps())
+        return { status: res.status, cache: res.headers.get('Cache-Control'), body: (await res.json()) as T }
+      }
+      const fast = await named('board-fast')
+      const slow = await named('board-slow')
+      const shy = await named('board-hidden')
+      const fastRun = await submit(fast.session, honestRun(1.4, 71))
+      const slowRun = await submit(slow.session, honestRun(1, 72))
+      const shyRun = await submit(shy.session, honestRun(1.6, 73))
+      for (const r of [fastRun, slowRun, shyRun]) expect(r.body.accepted).toBe(true)
+      await db.prepare('UPDATE players SET hidden = 1 WHERE id = ?').bind(shy.id).run()
+      // An older text of a Python snippet, with a score: an archived board.
+      const old = 'e'.repeat(64)
+      const at = new Date().toISOString()
+      await db.batch([
+        db.prepare("INSERT INTO snippet_versions (fingerprint, language, name, length, code, first_seen_at) VALUES (?, 'python', 'old.py', 'short', 'print(1)', ?)").bind(old, at),
+        db.prepare("INSERT INTO bests (player_id, fingerprint, aids, language, run_id, wpm, raw_wpm, accuracy, seconds, run_aids, finished_at) VALUES (?, ?, 'any', 'python', 'old-run', 50, 50, 100, 2, '000', ?)").bind(slow.id, old, at),
+      ])
+
+      type Lang = { snippets: { fingerprint: string; name: string; top: { name: string; wpm: number } | null }[]; archived: { fingerprint: string; name: string }[] }
+      const overview = await get<Lang>('/api/boards?lang=python')
+      expect(overview.cache).toBe('public, max-age=60')
+      expect(overview.body.snippets).toHaveLength(lang.snippets.length)
+      expect(overview.body.snippets.find((x) => x.fingerprint === fp)?.top?.name).toBe('board-fast')
+      expect(overview.body.archived).toEqual([expect.objectContaining({ fingerprint: old, name: 'old.py' })])
+
+      type Board = { snippet: { name: string; current: boolean; code?: string }; rows: { rank: number; player: { name: string }; runId: string; hasLog: boolean; aids: string }[] }
+      const b = await get<Board>(`/api/boards/${fp}`)
+      expect(b.body.snippet).toMatchObject({ name: snippet.name, current: true })
+      expect(b.body.rows.map((r) => [r.rank, r.player.name, r.hasLog])).toEqual([
+        [1, 'board-fast', true],
+        [2, 'board-slow', true],
+      ])
+      expect((await get<Board>(`/api/boards/${fp}?aids=110`)).body.rows).toHaveLength(2)
+      expect((await get<Board>(`/api/boards/${fp}?aids=111`)).body.rows).toEqual([])
+      expect((await get<Board>(`/api/boards/${old}`)).body.snippet).toMatchObject({ current: false, code: 'print(1)' })
+      expect((await get(`/api/boards/${'0'.repeat(64)}`)).status).toBe(404)
+
+      // Your place, even when hidden from everyone else.
+      const me = await get<{ row: { rank: number } }>(`/api/boards/${fp}/me`, slow.session)
+      expect(me.cache).toBe('no-store')
+      expect(me.body.row.rank).toBe(2)
+      expect((await get<{ row: { rank: number } }>(`/api/boards/${fp}/me`, shy.session)).body.row.rank).toBe(1)
+
+      // Replays of kept runs; a hidden player's only for the admin.
+      type Replay = { log: LogEntry[]; snippet: { code: string }; player: { name: string } }
+      const replay = await get<Replay>(`/api/replays/${fastRun.body.runId}`)
+      expect(replay.body.player.name).toBe('board-fast')
+      expect(replay.body.snippet.code).toBe(snippet.code)
+      expect(replay.body.log.length).toBeGreaterThan(10)
+      expect((await get(`/api/replays/${shyRun.body.runId}`)).status).toBe(404)
+      clearAccessKeys()
+      const access = await fakeAccess()
+      const asAdmin = (path: string, method = 'GET') =>
+        handle(new Request(`${SITE}/api/admin${path}`, { method, headers: { [ACCESS_HEADER]: adminToken, ...(method === 'POST' ? { Origin: SITE } : {}) } }), deps(access.fetchImpl))
+      const adminToken = await access.token()
+      expect((await asAdmin(`/replays/${shyRun.body.runId}`)).status).toBe(200)
+
+      // Removing the fastest run: off the board, its log gone, and the action logged.
+      const removed = await asAdmin(`/runs/${fastRun.body.runId}/remove`, 'POST')
+      expect(await removed.json()).toEqual({ ok: true, removed: 2 })
+      expect((await get<Board>(`/api/boards/${fp}`)).body.rows.map((r) => r.player.name)).toEqual(['board-slow'])
+      expect(await db.prepare('SELECT 1 AS x FROM logs WHERE run_id = ?').bind(fastRun.body.runId).first()).toBeNull()
+      expect(await db.prepare("SELECT action FROM admin_actions WHERE target_run_id = ?").bind(fastRun.body.runId).first()).toEqual({ action: 'remove-run' })
+      expect((await asAdmin(`/runs/${fastRun.body.runId}/remove`, 'POST')).status).toBe(404)
+    } finally {
+      ;({ snippet, fp } = saved)
+    }
+  })
+
+  it('removing a player’s overall best brings back their best with other typing aids', async () => {
+    const p = await named('two-aids')
+    const withAids = await submit(p.session, honestRun(1.5, 81))
+    // A slower best with every aid off, inserted as the server would keep it.
+    const at = new Date().toISOString()
+    await db.prepare("INSERT INTO bests (player_id, fingerprint, aids, language, run_id, wpm, raw_wpm, accuracy, seconds, run_aids, finished_at) VALUES (?, ?, '000', 'python', 'slower-run', 40, 40, 98, 9, '000', ?)").bind(p.id, fp, at).run()
+    clearAccessKeys()
+    const access = await fakeAccess()
+    const res = await handle(
+      new Request(`${SITE}/api/admin/runs/${withAids.body.runId}/remove`, { method: 'POST', headers: { [ACCESS_HEADER]: await access.token(), Origin: SITE } }),
+      deps(access.fetchImpl),
+    )
+    expect(res.status).toBe(200)
+    const rows = await db.prepare('SELECT aids, run_id FROM bests WHERE player_id = ? ORDER BY aids').bind(p.id).all()
+    expect(rows.results).toEqual([
+      { aids: '000', run_id: 'slower-run' },
+      { aids: 'any', run_id: 'slower-run' },
+    ])
   })
 
   it('a token is the player’s own', async () => {

@@ -67,3 +67,4 @@ export const reportQueue = (status: 'open' | 'closed') => call<{ groups: ReportG
 export const closeReports = (player: string, run: string | null, status: 'resolved' | 'dismissed') =>
   call<{ closed: number }>('/reports/close', { player, run, status })
 export const actionLog = (before?: string) => call<{ actions: AdminAction[] }>(`/actions${before ? `?before=${encodeURIComponent(before)}` : ''}`).then((r) => r.actions)
+export const removeRun = (runId: string) => call<{ removed: number }>(`/runs/${encodeURIComponent(runId)}/remove`, {})

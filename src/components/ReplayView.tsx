@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Language, Snippet } from '../languages'
-import type { History, StoredRun } from '../lib/history'
+import type { LogEntry, TypingAids } from '../lib/runcore'
 import { buildReplay, frameAt, type Replay } from '../lib/replay'
 import { duration } from '../lib/board'
 import { CodeView } from './CodeView'
@@ -8,24 +8,33 @@ import { CodeView } from './CodeView'
 interface Props {
   lang: Language
   snippet: Snippet
-  run: StoredRun
-  history: History
+  /** The run's numbers, as shown above the replay. */
+  run: { wpm: number; accuracy: number; finishedAt: string; aids: TypingAids }
+  /** Its keystrokes, if they were kept. */
+  loadLog: () => Promise<LogEntry[] | undefined>
   crumbs: string[]
+  /** Who typed it, on a leaderboard. */
+  by?: string
   onClose: () => void
 }
 
 const SPEEDS = [0.5, 1, 2, 4]
 
 /** Plays a run back in the editor at its own pace, mistakes and all. */
-export function ReplayView({ lang, snippet, run, history, crumbs, onClose }: Props) {
+export function ReplayView({ lang, snippet, run, loadLog, crumbs, by, onClose }: Props) {
   const [replay, setReplay] = useState<Replay | null | 'missing'>(null)
+  const loadRef = useRef(loadLog)
+  const { aids } = run
   useEffect(() => {
     let live = true
-    history.log(run.id).then((log) => live && setReplay(log ? buildReplay(lang, snippet, run.aids, log) : 'missing'))
+    loadRef
+      .current()
+      .catch(() => undefined)
+      .then((log) => live && setReplay(log ? buildReplay(lang, snippet, aids, log) : 'missing'))
     return () => {
       live = false
     }
-  }, [history, run, lang, snippet])
+  }, [lang, snippet, aids])
 
   const [t, setT] = useState(0)
   const [playing, setPlaying] = useState(true)
@@ -65,7 +74,7 @@ export function ReplayView({ lang, snippet, run, history, crumbs, onClose }: Pro
     <section className="runs" aria-labelledby="replay-title">
       <div className="runs-head">
         <nav className="crumbs" aria-label="Breadcrumb">
-          {crumbs.join(' › ')} › <b id="replay-title">replay of {new Date(run.finishedAt).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</b>
+          {crumbs.join(' › ')} › <b id="replay-title">replay{by ? ` of ${by}` : ''} from {new Date(run.finishedAt).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</b>
         </nav>
         <button type="button" className="btn" onClick={onClose}>
           ✕ close

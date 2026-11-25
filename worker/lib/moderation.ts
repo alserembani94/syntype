@@ -173,6 +173,37 @@ export function actOnPlayer(db: Db, admin: string, id: string, action: PlayerAct
   })
 }
 
+/**
+ * Takes a run off the boards: its best rows and its log go. Where it was the
+ * player's overall best, their next best (from another typing-aid
+ * combination) takes its place, so they stay on the board with a run that
+ * still stands.
+ */
+export async function removeRun(db: Db, admin: string, runId: string, now: Date): Promise<Result<{ removed: number }>> {
+  const rows = (await db.prepare('SELECT player_id, fingerprint, aids FROM bests WHERE run_id = ?').bind(runId).all<{ player_id: string; fingerprint: string; aids: string }>()).results
+  if (!rows.length) return fail(404, 'That run isn’t on the boards.')
+  const { player_id: player, fingerprint } = rows[0]
+  const writes = [
+    db.prepare('DELETE FROM bests WHERE run_id = ?').bind(runId),
+    db.prepare('DELETE FROM logs WHERE run_id = ?').bind(runId),
+  ]
+  if (rows.some((r) => r.aids === 'any')) {
+    writes.push(
+      db
+        .prepare(
+          `INSERT INTO bests (player_id, fingerprint, aids, language, run_id, wpm, raw_wpm, accuracy, seconds, run_aids, finished_at)
+           SELECT player_id, fingerprint, 'any', language, run_id, wpm, raw_wpm, accuracy, seconds, run_aids, finished_at
+           FROM bests WHERE player_id = ? AND fingerprint = ? AND aids != 'any' AND run_id != ?
+           ORDER BY wpm DESC, accuracy DESC, finished_at LIMIT 1`,
+        )
+        .bind(player, fingerprint, runId),
+    )
+  }
+  writes.push(logAction(db, admin, 'remove-run', player, runId, JSON.stringify({ fingerprint }), now))
+  await db.batch(writes)
+  return { ok: true, removed: rows.length }
+}
+
 export interface ReportGroup {
   player: AdminPlayer | null
   run: string | null

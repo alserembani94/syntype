@@ -8,6 +8,7 @@ import {
   actOnPlayer,
   closeReports,
   findPlayers,
+  removeRun,
   reportQueue,
   whoAmI,
   type AdminAction,
@@ -33,6 +34,7 @@ const ACTIONS: Record<string, string> = {
   signout: 'Signed out everywhere',
   'resolve-reports': 'Resolved reports about',
   'dismiss-reports': 'Dismissed reports about',
+  'remove-run': 'Removed a run by',
 }
 
 const when = (iso: string) => new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -188,6 +190,7 @@ function Reports({ onNotice }: { onNotice: Notify }) {
                 </li>
               ))}
             </ul>
+            {g.run && status === 'open' && <RunTools runId={g.run} onRemoved={load} onNotice={onNotice} />}
             {g.player && <PlayerTools player={g.player} onChange={updated} onNotice={onNotice} />}
           </article>
         ))
@@ -387,4 +390,36 @@ function RenameDetail({ detail }: { detail: string }) {
     return null
   }
   return <span className="admin-meta"> (was {from ?? 'unnamed'})</span>
+}
+
+/** For a reported run: watch its replay (if its keystrokes are kept), or take it off the boards. */
+function RunTools({ runId, onRemoved, onNotice }: { runId: string; onRemoved: () => void; onNotice: Notify }) {
+  const [busy, setBusy] = useState(false)
+  return (
+    <div className="admin-tools">
+      <a className="btn" href={`/leaderboard?replay=${encodeURIComponent(runId)}&admin=1`} target="_blank" rel="noreferrer">
+        Watch replay ↗
+      </a>
+      <button
+        type="button"
+        className="btn danger"
+        disabled={busy}
+        onClick={async () => {
+          if (!confirm('Take this run off the leaderboards? Its keystrokes are deleted too.')) return
+          setBusy(true)
+          try {
+            await removeRun(runId)
+            onNotice('The run is off the leaderboards. Resolve the reports when you’re done.')
+            onRemoved()
+          } catch (err) {
+            onNotice(message(err))
+          } finally {
+            setBusy(false)
+          }
+        }}
+      >
+        Remove run
+      </button>
+    </div>
+  )
 }

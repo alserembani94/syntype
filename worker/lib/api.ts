@@ -11,6 +11,10 @@
  *   POST /api/reports                     report a player or one of their runs
  *   POST /api/runs/start                  a run token, when a signed-in player starts a snippet
  *   POST /api/runs                        submit a finished run (runs.ts)
+ *   GET  /api/boards?lang=                a language's boards: each snippet's top score (boards.ts)
+ *   GET  /api/boards/:fingerprint?aids=   one board's top 15
+ *   GET  /api/boards/:fingerprint/me      the signed-in player's place on it
+ *   GET  /api/replays/:runId              a kept run on the boards, to replay
  *
  * The admin page's API, behind Cloudflare Access (access.ts checks its token
  * on every request):
@@ -21,14 +25,17 @@
  *   GET  /api/admin/reports?status=       the report queue: open or closed
  *   POST /api/admin/reports/close         resolve or dismiss reports about a player or run
  *   GET  /api/admin/actions?before=       the action log
+ *   GET  /api/admin/replays/:runId        any kept run, to replay
+ *   POST /api/admin/runs/:runId/remove    take a run off the boards
  */
 import type { Db } from './db'
 import { cookie, readCookies } from './cookies'
 import { randomToken, sha256, sign, verify } from './crypto'
 import { authorizeUrl, exchange, PROVIDERS, SignInError, type OAuthConfig, type Provider } from './oauth'
 import { accessEmail, type AccessConfig } from './access'
-import { actionLog, actOnPlayer, closeReports, findPlayers, PLAYER_ACTIONS, report, reportQueue, type PlayerAction } from './moderation'
-import { MAX_BODY, rejectionMessage, startRun, submitRun, type Assets } from './runs'
+import { actionLog, actOnPlayer, closeReports, findPlayers, PLAYER_ACTIONS, removeRun, report, reportQueue, type PlayerAction } from './moderation'
+import { board, BOARD_CACHE_SECONDS, languageBoards, myPlace, runForReplay, validAids } from './boards'
+import { MAX_BODY, gunzip, rejectionMessage, startRun, submitRun, type Assets } from './runs'
 import { getPlayer, playerFor, publicPlayer, setName, touch, type PlayerRow } from './players'
 
 export interface ApiConfig extends OAuthConfig, AccessConfig {
@@ -214,6 +221,30 @@ export async function handle(request: Request, deps: Deps): Promise<Response> {
     return result.ok ? json({ accepted: true, ...result.run }) : json({ accepted: false, reason: result.reason, error: result.error }, result.status)
   }
 
+  // Boards and replays are the same for everyone: cached for a minute (worker/index.ts).
+  const shared = { 'Cache-Control': `public, max-age=${BOARD_CACHE_SECONDS}` }
+  if (url.pathname === '/api/boards' && method === 'GET') {
+    const language = url.searchParams.get('lang') ?? ''
+    if (!/^[a-z0-9-]{1,40}$/.test(language)) return json({ error: 'Which language?' }, 400)
+    return json(await languageBoards(db, deps.assets, language, now.getTime()), 200, shared)
+  }
+  const boardPath = url.pathname.match(/^\/api\/boards\/([0-9a-f]{64})(\/me)?$/)
+  if (boardPath && method === 'GET') {
+    const aids = validAids(url.searchParams.get('aids'))
+    if (boardPath[2]) {
+      const player = await signedIn(request, deps)
+      if (!player) return json({ signedIn: false })
+      return json({ signedIn: true, row: await myPlace(db, player.id, boardPath[1], aids) })
+    }
+    const b = await board(db, deps.assets, boardPath[1], aids, now.getTime())
+    return b ? json(b, 200, shared) : json({ error: 'No such board.' }, 404)
+  }
+  const replayPath = url.pathname.match(/^\/api\/replays\/([\w-]{1,64})$/)
+  if (replayPath && method === 'GET') {
+    const run = await runForReplay(db, replayPath[1], { admin: false })
+    return run ? json({ ...run, log: JSON.parse(await gunzip(new Uint8Array(run.log))) }, 200, shared) : json({ error: 'That run can’t be replayed.' }, 404)
+  }
+
   if (url.pathname.startsWith('/api/admin/')) return admin(request, url, deps, now)
 
   return json({ error: 'Not found' }, 404)
@@ -241,5 +272,12 @@ async function admin(request: Request, url: URL, deps: Deps, now: Date): Promise
   }
   if (path === '/reports/close' && method === 'POST') return reply(await closeReports(db, email, await body(), now))
   if (path === '/actions' && method === 'GET') return json({ actions: await actionLog(db, url.searchParams.get('before')) })
+  const replay = path.match(/^\/replays\/([\w-]{1,64})$/)
+  if (replay && method === 'GET') {
+    const run = await runForReplay(db, replay[1], { admin: true })
+    return run ? json({ ...run, log: JSON.parse(await gunzip(new Uint8Array(run.log))) }) : json({ error: 'That run’s keystrokes aren’t kept.' }, 404)
+  }
+  const remove = path.match(/^\/runs\/([\w-]{1,64})\/remove$/)
+  if (remove && method === 'POST') return reply(await removeRun(db, email, remove[1], now))
   return json({ error: 'Not found' }, 404)
 }
