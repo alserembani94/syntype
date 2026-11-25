@@ -180,6 +180,12 @@ svg.chart .er path { stroke: var(--err); stroke-width: 2; stroke-linecap: round;
 .focus-overlay:focus-visible { outline: 2px solid var(--accent); outline-offset: -6px; border-radius: 8px; }
 
 footer { color: var(--muted); font-size: 13px; display: flex; gap: 16px; flex-wrap: wrap; }
+.new-snippet {
+  display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px 5px 10px; margin-left: -8px;
+  font: 13px var(--f-ui); color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 999px; cursor: pointer;
+}
+.new-snippet:hover, .new-snippet:focus-visible { color: var(--fg); border-color: var(--line); background: var(--surface); }
+.new-snippet svg { color: var(--accent); }
 .theme-button {
   margin-left: auto; display: inline-flex; align-items: center; gap: 7px; padding: 3px 10px 3px 8px;
   font: 13px var(--f-ui); color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 999px; cursor: pointer;

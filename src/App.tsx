@@ -7,6 +7,7 @@ import { atPending, caretPosition } from './lib/engine'
 import { buildSuggestConfig } from './lib/suggest'
 import { computePairs } from './lib/pairs'
 import { load, save } from './lib/storage'
+import { CHORD_TIMEOUT_MS, keyLabels, shortcut, shortcutText } from './lib/shortcuts'
 import { CodeView } from './components/CodeView'
 import { ConfigBar } from './components/ConfigBar'
 import { AdSlot } from './components/AdSlot'
@@ -104,9 +105,26 @@ export default function App() {
   )
   const retry = useCallback(() => start(snippet), [start, snippet])
 
+  // Ctrl/⌘+K was pressed: the next key completes the two-step shortcut (or cancels it).
+  // The ref is what the key handler reads; the state shows the hint.
+  const [chord, setChordShown] = useState(false)
+  const chordRef = useRef(false)
+  const chordTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const setChord = useCallback((on: boolean) => {
+    chordRef.current = on
+    setChordShown(on)
+    clearTimeout(chordTimer.current)
+    if (on)
+      chordTimer.current = setTimeout(() => {
+        chordRef.current = false
+        setChordShown(false)
+      }, CHORD_TIMEOUT_MS)
+  }, [])
+  useEffect(() => () => clearTimeout(chordTimer.current), [])
+
   // Keyboard: the whole page listens, so typing works without clicking first.
   const suggestOpen = !!state.suggest
-  const keyState = { phase, autoIndent, indentSize: language.indentSize ?? 2, indentWithTabs: !!language.indentWithTabs, suggestOpen, next, retry, type, back, move, suggestNav, accept, dismiss }
+  const keyState = { openLanguage: () => setPickerOpen(true), openTheme: () => setThemeOpen(true), setChord, phase, autoIndent, indentSize: language.indentSize ?? 2, indentWithTabs: !!language.indentWithTabs, suggestOpen, next, retry, type, back, move, suggestNav, accept, dismiss }
   const latest = useRef(keyState)
   useLayoutEffect(() => {
     latest.current = keyState
@@ -114,13 +132,28 @@ export default function App() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const s = latest.current
-      // The language picker handles its own keys.
+      // The pickers handle their own keys.
       if (e.target instanceof Element && e.target.closest('[role="dialog"]')) return
+
+      // Shortcuts (src/lib/shortcuts.ts) work everywhere outside the pickers.
+      const command = shortcut(e, chordRef.current)
+      if (command) {
+        e.preventDefault()
+        if (command === 'chordStart') return s.setChord(true)
+        s.setChord(false)
+        if (command === 'newSnippet') s.next()
+        else if (command === 'language') s.openLanguage()
+        else if (command === 'theme') s.openTheme()
+        // 'chordCancel': the key that cancelled is swallowed, as VS Code does.
+        return
+      }
+      if (chordRef.current) return // a modifier, pressed on the way to the second key
+
       const onButton = e.target instanceof Element && e.target.closest('button')
       if (onButton && (e.key === 'Enter' || e.key === ' ')) return
 
       if (s.phase === 'done') {
-        if (e.key === 'Enter' || e.key === 'Escape') {
+        if (e.key === 'Enter') {
           e.preventDefault()
           s.next()
         } else if (e.key.toLowerCase() === 'r' && !e.ctrlKey && !e.metaKey) {
@@ -146,11 +179,8 @@ export default function App() {
         }
       }
 
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        s.next()
-        return
-      }
+      // Esc only closes things; with nothing open it does nothing, so it can't cost a run.
+      if (e.key === 'Escape') return
       if (e.key === 'Backspace') {
         e.preventDefault()
         s.back(e.ctrlKey || e.altKey || e.metaKey)
@@ -265,6 +295,7 @@ export default function App() {
     start(snippet, { autocomplete: v })
   }
 
+  const keys = keyLabels()
   const { line, col } = caretPosition(run)
   const best = currentBests[currentKey]
 
@@ -304,29 +335,52 @@ export default function App() {
           className="lang-button"
           onClick={() => setPickerOpen(true)}
           aria-haspopup="dialog"
-          title="Change language"
+          title={`Change language (${shortcutText('language')})`}
         >
           <span className="lang-icon" aria-hidden="true">
             {'</>'}
           </span>
           {language.name}
         </button>
-        <span
-          className={`hint${atPending(run) || suggestOpen ? ' attention' : ''}`}
-          style={{ visibility: phase === 'done' ? 'hidden' : undefined }}
+        <button
+          type="button"
+          className="new-snippet"
+          onClick={() => {
+            next()
+            inputRef.current?.focus({ preventScroll: true })
+          }}
+          title={`New snippet (${shortcutText('newSnippet')})`}
         >
-          {suggestOpen ? (
+          <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+            <path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          new snippet
+        </button>
+        <span
+          className={`hint${chord || atPending(run) || suggestOpen ? ' attention' : ''}`}
+          style={{ visibility: phase === 'done' && !chord ? 'hidden' : undefined }}
+        >
+          {chord ? (
+            <>
+              <kbd>{keys.mod}</kbd>+
+              <kbd>K</kbd> pressed · <kbd>T</kbd> theme · any other key cancels
+            </>
+          ) : suggestOpen ? (
             <>
               <kbd>tab</kbd> <kbd>enter</kbd> accept · <kbd>↑</kbd> <kbd>↓</kbd> choose · <kbd>esc</kbd> close
             </>
           ) : !atPending(run) ? (
             phase === 'ready' ? (
               <>
-                start typing when you're ready · <kbd>esc</kbd> new snippet
+                start typing when you're ready · <kbd>{keys.mod}</kbd>+
+                <kbd>enter</kbd> new snippet · <kbd>{keys.mod}</kbd>+
+                <kbd>{keys.shift}</kbd>+
+                <kbd>L</kbd> language
               </>
             ) : (
               <>
-                <kbd>esc</kbd> new snippet · results appear when you finish
+                <kbd>{keys.mod}</kbd>+
+                <kbd>enter</kbd> new snippet · results appear when you finish
               </>
             )
           ) : run.chars[run.pos] === '\n' ? (
@@ -422,7 +476,7 @@ export default function App() {
           className="theme-button"
           onClick={() => setThemeOpen(true)}
           aria-haspopup="dialog"
-          title="Change theme"
+          title={`Change theme (${shortcutText('theme')})`}
         >
           <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
             <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="2" />
