@@ -432,3 +432,43 @@ describe('COBOL', () => {
     expect(suggestContext(typeAll(run, 'STOP RUN.'), cfg)).toBeNull()
   })
 })
+
+describe('Esoteric: Brainfuck and LOLCODE', () => {
+  const bf = getLanguage('brainfuck')
+  const lol = getLanguage('lolcode')
+
+  it('colours Brainfuck commands by role and everything else as a comment', () => {
+    const code = 'add one +\n[>.<-]'
+    const cls = tokenize(code, bf.highlight)
+    expect(cls[code.indexOf('add')]).toBe('com')
+    expect(cls[code.indexOf('+')]).toBe('num')
+    expect(cls[code.indexOf('[')]).toBe('kw')
+    expect(cls[code.indexOf('>')]).toBe('fn')
+    expect(cls[code.indexOf('.')]).toBe('str')
+  })
+
+  it('suggests nothing in Brainfuck, which has no words', () => {
+    const run = createRun('+++.', { autoIndent: true, autoClose: false })
+    const cfg = buildSuggestConfig('+++.', bf, false)
+    expect(suggestContext(typeAll(run, '+++.'), cfg)).toBeNull()
+  })
+
+  it('colours LOLCODE keywords, BTW and OBTW comments, and leaves variables plain', () => {
+    const code = 'HAI 1.2\n  I HAS A cat ITZ "OHAI" BTW a comment\nOBTW\n  note\nTLDR\nKTHXBYE'
+    const cls = tokenize(code, lol.highlight)
+    expect(cls[0]).toBe('kw')
+    expect(cls[code.indexOf('ITZ')]).toBe('kw')
+    expect(cls[code.indexOf('cat')]).toBe('')
+    expect(cls[code.indexOf('a comment')]).toBe('com')
+    expect(cls[code.indexOf('note')]).toBe('com')
+    expect(cls[code.indexOf('KTHXBYE')]).toBe('kw')
+  })
+
+  it('suggests LOLCODE keywords and variables typed earlier', () => {
+    const code = 'HAI 1.2\n  I HAS A burgers ITZ 0\n  VISIBLE burgers\nKTHXBYE'
+    const run = createRun(code, { autoIndent: true, autoClose: false })
+    const cfg = buildSuggestConfig(code, lol, false)
+    expect(labels(typeAll(run, 'HAI 1.2\nI HAS A burgers ITZ 0\nVIS'), cfg)).toContain('VISIBLE')
+    expect(labels(typeAll(run, 'HAI 1.2\nI HAS A burgers ITZ 0\nVISIBLE bur'), cfg)).toContain('burgers')
+  })
+})

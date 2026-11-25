@@ -30,7 +30,7 @@ describe.each(LANGUAGES.map((l) => [l.name, l] as const))('%s', (_, lang) => {
     expect(lang.name.trim()).not.toBe('')
     expect(CATEGORIES).toContain(lang.category)
     expect(lang.extension).toMatch(/^[a-z0-9]+$/)
-    expect(lang.highlight.keywords.length).toBeGreaterThan(0)
+    if (!lang.symbolic) expect(lang.highlight.keywords.length).toBeGreaterThan(0)
   })
 
   it.each(LENGTHS)(`R2 · has at least ${MIN_SNIPPETS_PER_LENGTH} %s snippets`, (length) => {
@@ -65,7 +65,19 @@ describe.each(LANGUAGES.map((l) => [l.name, l] as const))('%s', (_, lang) => {
     expect(lines[0].trim(), `${name}: starts with a blank line`).not.toBe('')
   })
 
-  it('R5 · highlighting colours every snippet and its keywords occur in them', () => {
+  if (lang.symbolic)
+    it('R5 · highlighting colours every command, and everything else reads as a comment', () => {
+      const commands = lang.highlight.commands ?? {}
+      expect(Object.keys(commands).length, 'a symbolic language lists its commands').toBeGreaterThan(0)
+      for (const s of lang.snippets) {
+        const classes = tokenize(s.code, lang.highlight)
+        ;[...s.code].forEach((ch, i) => {
+          if (commands[ch]) expect(classes[i], `${s.name}: ${ch}`).toBe(commands[ch])
+          else if (!/\s/.test(ch)) expect(classes[i], `${s.name}: ${ch}`).toBe('com')
+        })
+      }
+    })
+  else it('R5 · highlighting colours every snippet and its keywords occur in them', () => {
     const keywords = new Set(lang.highlight.keywords)
     let keywordHits = 0
     for (const s of lang.snippets) {
@@ -98,7 +110,7 @@ describe.each(LANGUAGES.map((l) => [l.name, l] as const))('%s', (_, lang) => {
     )
   }
 
-  it('R9 · accepting suggestions finishes every snippet without mistakes and saves keystrokes', () => {
+  it(`R9 · accepting suggestions finishes every snippet without mistakes${lang.symbolic ? '' : ' and saves keystrokes'}`, () => {
     let saved = 0
     let keystrokes = 0
     for (const s of lang.snippets) {
@@ -110,6 +122,7 @@ describe.each(LANGUAGES.map((l) => [l.name, l] as const))('%s', (_, lang) => {
       keystrokes += end.run.keystrokes
     }
     console.info(`${lang.name}: accepting suggestions takes ${keystrokes} keystrokes and saves ${saved}`)
-    expect(saved).toBeGreaterThan(0)
+    // A symbolic language has no words for suggestions to complete.
+    if (!lang.symbolic) expect(saved).toBeGreaterThan(0)
   })
 })

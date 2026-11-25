@@ -1,0 +1,133 @@
+=== hai.lol
+HAI 1.2
+  VISIBLE "HAI WORLD!"
+KTHXBYE
+=== greet.lol
+HAI 1.2
+  I HAS A name ITZ "CEILING CAT"
+  VISIBLE "O HAI " name
+KTHXBYE
+=== sum.lol
+HAI 1.2
+  I HAS A total ITZ SUM OF 21 AN 21
+  VISIBLE total
+KTHXBYE
+=== nom.lol
+HAI 1.2
+  I HAS A food
+  GIMMEH food
+  VISIBLE "NOM NOM " food
+KTHXBYE
+=== countdown.lol
+HAI 1.2
+  BTW count down from ten and then launch
+  IM IN YR countdown NERFIN YR n TIL BOTH SAEM n AN -10
+    VISIBLE SUM OF n AN 10
+  IM OUTTA YR countdown
+  VISIBLE "LIFTOFF!"
+KTHXBYE
+=== cheezburger.lol
+HAI 1.2
+  I HAS A age ITZ 21
+  BOTH SAEM BIGGR OF age AN 18 AN age, O RLY?
+    YA RLY
+      VISIBLE "U CAN HAS CHEEZBURGER"
+    NO WAI
+      VISIBLE "U CAN HAS MILK"
+  OIC
+KTHXBYE
+=== mood.lol
+HAI 1.2
+  I HAS A mood ITZ "HAPPY"
+  mood, WTF?
+    OMG "HAPPY"
+      VISIBLE "PURR"
+      GTFO
+    OMG "GRUMPY"
+      VISIBLE "HISS"
+      GTFO
+    OMGWTF
+      VISIBLE "MEOW?"
+  OIC
+KTHXBYE
+=== double.lol
+HAI 1.2
+  HOW IZ I double YR num
+    FOUND YR PRODUKT OF num AN 2
+  IF U SAY SO
+
+  VISIBLE I IZ double YR 21 MKAY
+KTHXBYE
+=== fizzbuzz.lol
+HAI 1.2
+  IM IN YR loop UPPIN YR i TIL BOTH SAEM i AN 100
+    I HAS A n ITZ SUM OF i AN 1
+    I HAS A fizz ITZ BOTH SAEM 0 AN MOD OF n AN 3
+    I HAS A buzz ITZ BOTH SAEM 0 AN MOD OF n AN 5
+    BOTH OF fizz AN buzz, O RLY?
+      YA RLY
+        VISIBLE "FIZZBUZZ"
+      MEBBE fizz
+        VISIBLE "FIZZ"
+      MEBBE buzz
+        VISIBLE "BUZZ"
+      NO WAI
+        VISIBLE n
+    OIC
+  IM OUTTA YR loop
+KTHXBYE
+=== factorial.lol
+HAI 1.2
+  BTW multiply our way up to a big number
+  HOW IZ I factorial YR n
+    BOTH SAEM n AN 0, O RLY?
+      YA RLY
+        FOUND YR 1
+    OIC
+    FOUND YR PRODUKT OF n AN I IZ factorial YR DIFF OF n AN 1 MKAY
+  IF U SAY SO
+
+  IM IN YR loop UPPIN YR i TIL BOTH SAEM i AN 8
+    VISIBLE "FACTORIAL OF " i " IZ " I IZ factorial YR i MKAY
+  IM OUTTA YR loop
+KTHXBYE
+=== shop.lol
+HAI 1.2
+  OBTW
+    count how many cheezburgers
+    we can buy wif our money
+  TLDR
+  I HAS A money ITZ 20
+  I HAS A price ITZ 3
+  I HAS A burgers ITZ 0
+
+  IM IN YR shop WILE BOTH SAEM BIGGR OF money AN price AN money
+    money R DIFF OF money AN price
+    burgers R SUM OF burgers AN 1
+  IM OUTTA YR shop
+
+  VISIBLE "WE CAN HAS " burgers " CHEEZBURGERS"
+  VISIBLE "MONEY LEFT: " money
+KTHXBYE
+=== guess.lol
+HAI 1.2
+  I HAS A secret ITZ 7
+  I HAS A guess
+  I HAS A tries ITZ 0
+
+  IM IN YR game
+    VISIBLE "GUESS MAH NUMBR:"
+    GIMMEH guess
+    guess IS NOW A NUMBR
+    tries R SUM OF tries AN 1
+    BOTH SAEM guess AN secret, O RLY?
+      YA RLY
+        VISIBLE "U WIN IN " tries " TRIES!"
+        GTFO
+      MEBBE BOTH SAEM BIGGR OF guess AN secret AN guess
+        VISIBLE "2 BIG"
+      NO WAI
+        VISIBLE "2 SMOL"
+    OIC
+  IM OUTTA YR game
+KTHXBYE

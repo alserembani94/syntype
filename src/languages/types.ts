@@ -20,6 +20,11 @@ export interface HighlightRules {
    * languages written in uppercase throughout, like COBOL.
    */
   capitalizedTypes?: boolean
+  /**
+   * For languages made of single-character commands (Brainfuck): the colour of
+   * each command. Every other character is a comment.
+   */
+  commands?: Record<string, 'kw' | 'str' | 'num' | 'fn' | 'ty' | 'pun'>
   /** What an identifier looks like, as a RegExp source. Defaults to [A-Za-z_$][\w$]*; COBOL's include hyphens. */
   identifier?: string
   /** Line comment starters, e.g. ["//"] or ["#"]. */
@@ -109,7 +114,7 @@ export interface CompletionConfig {
 }
 
 /** Sections of the language picker, in the order they're shown. */
-export const CATEGORIES = ['Web', 'Systems', 'Scripting', 'Data & config', 'Mainframe'] as const
+export const CATEGORIES = ['Web', 'Systems', 'Scripting', 'Data & config', 'Mainframe', 'Esoteric'] as const
 export type LanguageCategory = (typeof CATEGORIES)[number]
 
 export interface Language {
@@ -121,6 +126,11 @@ export interface Language {
   category: LanguageCategory
   /** Other names people search for, e.g. "golang" or "sql". */
   aliases?: string[]
+  /**
+   * Built from symbols, not words (Brainfuck). Such a language has no keywords
+   * and word suggestions can't help, so rules R1, R5 and R9 adapt (see CLAUDE.md).
+   */
+  symbolic?: boolean
   /** File extension without the dot, e.g. "js". */
   extension: string
   highlight: HighlightRules

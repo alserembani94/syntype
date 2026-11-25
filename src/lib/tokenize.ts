@@ -72,6 +72,11 @@ export function tokens(code: string, rules: HighlightRules): Token[] {
 
 /** Returns one token class per character of `code`. */
 export function tokenize(code: string, rules: HighlightRules): TokenClass[] {
+  if (rules.commands) {
+    // Single-character commands; everything else (but whitespace) is a comment.
+    const commands = rules.commands
+    return [...code].map((ch) => commands[ch] ?? (/\s/.test(ch) ? '' : 'com'))
+  }
   const classes: TokenClass[] = new Array(code.length).fill('')
   for (const t of tokens(code, rules)) classes.fill(t.cls, t.start, t.end)
   if (rules.keyPattern) {

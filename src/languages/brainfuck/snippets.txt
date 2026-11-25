@@ -1,0 +1,108 @@
+=== cat.bf
+,[.,]
+=== move.bf
+[->+<]
+=== copy.bf
+[->+>+<<]>>[-<<+>>]
+=== reverse.bf
+>,[>,]<[.<]
+=== hello.bf
+++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]
+>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.
+=== digits.bf
+set cell one to 48 which is the digit zero
+++++++++[>++++++<-]
+set cell two to ten as a counter
+>>++++++++++
+print and step up the digit ten times
+[<.+>-]
+end with a newline
+++++++++++.
+=== alphabet.bf
+set cell one to 65 which is the letter A
+++++++++[>++++++++<-]>+
+count down from 26 in cell two
+>++++++++++++++++++++++++++
+print a letter then step to the next one
+[<.+>-]
+end with a newline
+++++++++++.
+=== countdown.bf
+set cell one to 57 which is the digit nine
++++++++[>++++++++<-]>+
+count ten digits in cell two
+>++++++++++
+print each digit going down
+[<.->-]
+end with a newline
+++++++++++.
+=== add_digits.bf
+read two digits into cells zero and one
+,>,
+turn the second digit into a number by taking away 48
+>++++++[<-------->-]<
+add it onto the first digit and print the sum
+[<+>-]<.
+=== hello_commented.bf
+build the letters we need in cells one to four
+cell one gets 72 and cell two gets 104
+cell three gets 88 and cell four gets 32
+++++++++[>+++++++++>+++++++++++++>+++++++++++>++++<<<<-]
+print H then e
+>.>---.
+print l l o
++++++++..+++.
+print a space
+>>.
+print W which is one below cell three
+<-.
+print o r l d
+<.+++.------.--------.
+print an exclamation mark then a newline
+>>+.>++++++++++.
+=== triangle.bf
+draw a triangle of stars five rows tall
+cell zero counts the rows left
++++++
+cell three holds a star which is 42 and cell four a newline
+>>>>++++++[<+++++++>-]++++++++++
+<<<<
+[
+  add one star to this row in cell one
+  >+
+  copy cell one into cell two using cell six as spare room
+  [->+>>>>+<<<<<]>>>>>[-<<<<<+>>>>>]<<<<
+  print as many stars as cell two says
+  [>.<-]
+  end the row with a newline
+  >>.
+  back to cell zero and count the row off
+  <<<<-
+]
+=== uppercase.bf
+read a word in lowercase and print it in uppercase
+read the first character and take away 10 to test for a newline
+,----------
+[
+  put the 10 back then take away 32 more to reach uppercase
+  ++++++++++--------------------------------
+  print it
+  .
+  read the next character and test it the same way
+  ,----------
+]
+finish with a newline
+++++++++++.
+=== count_chars.bf
+count the characters in a line and print the count as a digit
+it prints one digit so it suits lines of up to nine characters
+read characters in cell zero and add one to cell one for each
+,----------
+[
+  >+<
+  ,----------
+]
+turn the count into a digit by adding 48 from cell two
+>>++++++[<++++++++>-]<
+print the digit then a newline
+.>++++++++++.
