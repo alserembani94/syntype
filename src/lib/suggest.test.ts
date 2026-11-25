@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { acceptCompletion, counts, createRun, typeChar, type Run } from './engine'
 import { buildSuggestConfig, fuzzyMatch, getSuggestions, suggestContext, wordStart, type Suggestion } from './suggest'
 import { summarize } from './stats'
+import { tokenize } from './tokenize'
 import { getLanguage, type Language } from '../languages'
 
 const js = getLanguage('javascript')
@@ -242,5 +243,37 @@ describe('Python vocabulary packs', () => {
   it('offers os.path members after "os.path."', () => {
     const { run, cfg } = pySetup('import os\np = os.path.join(a, b)')
     expect(labels(typeAll(run, 'import os\np = os.path.'), cfg)).toContain('join')
+  })
+})
+
+describe('Rust vocabulary packs', () => {
+  const rs = getLanguage('rust')
+  const rsSetup = (code: string) => ({
+    run: createRun(code, { autoIndent: true, autoClose: false }),
+    cfg: buildSuggestConfig(code, rs, false),
+  })
+
+  it('opens members after "::" as well as "."', () => {
+    const { run, cfg } = rsSetup('let s = String::new();')
+    expect(labels(typeAll(run, 'let s = String::'), cfg)).toEqual(expect.arrayContaining(['new', 'from']))
+  })
+
+  it('offers HashMap only once std::collections is used', () => {
+    const code = 'use std::collections::HashMap;\nlet m = HashMap::new();'
+    const { run, cfg } = rsSetup(code)
+    expect(labels(typeAll(run, 'use std::collections::HashMap;\nlet m = HashMap::'), cfg)).toContain('new')
+    expect(rsSetup('let m = HashMap::new();').cfg.globals.some((g) => g.label === 'HashMap')).toBe(false)
+  })
+
+  it('lists methods before words from the file right after a dot', () => {
+    const code = 'let counts = 1;\nlet n = text.split_whitespace();'
+    const { run, cfg } = rsSetup(code)
+    const items = list(typeAll(run, 'let counts = 1;\nlet n = text.'), cfg)
+    expect(items[0].kind).not.toBe('word')
+  })
+
+  it('keeps lifetimes out of string highlighting', () => {
+    const code = "fn f<'a>(s: &'a str) -> &'a str { s }"
+    expect(tokenize(code, rs.highlight).filter((c) => c === 'str')).toHaveLength(0)
   })
 })

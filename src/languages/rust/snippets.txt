@@ -1,0 +1,217 @@
+=== add.rs
+fn add(a: i32, b: i32) -> i32 {
+    a + b
+}
+=== is_even.rs
+fn is_even(n: u64) -> bool {
+    n % 2 == 0
+}
+=== greet.rs
+fn greet(name: &str) -> String {
+    format!("Hello, {name}!")
+}
+=== sum_squares.rs
+fn sum_squares(values: &[i64]) -> i64 {
+    values.iter().map(|v| v * v).sum()
+}
+=== first_word.rs
+fn first_word<'a>(text: &'a str) -> &'a str {
+    text.split_whitespace().next().unwrap_or("")
+}
+=== point.rs
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct Point {
+    x: f64,
+    y: f64,
+}
+
+impl Point {
+    fn distance(&self, other: &Point) -> f64 {
+        ((self.x - other.x).powi(2) + (self.y - other.y).powi(2)).sqrt()
+    }
+}
+=== word_count.rs
+use std::collections::HashMap;
+
+fn word_count(text: &str) -> HashMap<&str, usize> {
+    let mut counts = HashMap::new();
+    for word in text.split_whitespace() {
+        *counts.entry(word).or_insert(0) += 1;
+    }
+    counts
+}
+=== parse_port.rs
+fn parse_port(value: &str) -> Result<u16, String> {
+    value
+        .trim()
+        .parse::<u16>()
+        .map_err(|e| format!("invalid port {value}: {e}"))
+}
+=== read_lines.rs
+use std::fs;
+use std::io;
+
+fn read_lines(path: &str) -> io::Result<Vec<String>> {
+    let text = fs::read_to_string(path)?;
+    Ok(text.lines().map(String::from).collect())
+}
+=== average.rs
+fn average(values: &[f64]) -> Option<f64> {
+    if values.is_empty() {
+        return None;
+    }
+    let total: f64 = values.iter().sum();
+    Some(total / values.len() as f64)
+}
+=== direction.rs
+#[derive(Debug, Clone, Copy)]
+enum Direction {
+    North,
+    East,
+    South,
+    West,
+}
+
+impl Direction {
+    fn turn_right(self) -> Direction {
+        match self {
+            Direction::North => Direction::East,
+            Direction::East => Direction::South,
+            Direction::South => Direction::West,
+            Direction::West => Direction::North,
+        }
+    }
+}
+=== shapes.rs
+trait Shape {
+    fn area(&self) -> f64;
+    fn name(&self) -> String;
+}
+
+struct Circle {
+    radius: f64,
+}
+
+struct Rect {
+    width: f64,
+    height: f64,
+}
+
+impl Shape for Circle {
+    fn area(&self) -> f64 {
+        std::f64::consts::PI * self.radius * self.radius
+    }
+
+    fn name(&self) -> String {
+        String::from("circle")
+    }
+}
+
+impl Shape for Rect {
+    fn area(&self) -> f64 {
+        self.width * self.height
+    }
+
+    fn name(&self) -> String {
+        String::from("rect")
+    }
+}
+=== stack.rs
+pub struct Stack<T> {
+    items: Vec<T>,
+}
+
+impl<T> Stack<T> {
+    pub fn new() -> Self {
+        Stack { items: Vec::new() }
+    }
+
+    pub fn push(&mut self, item: T) {
+        self.items.push(item);
+    }
+
+    pub fn pop(&mut self) -> Option<T> {
+        self.items.pop()
+    }
+
+    pub fn peek(&self) -> Option<&T> {
+        self.items.last()
+    }
+
+    pub fn len(&self) -> usize {
+        self.items.len()
+    }
+}
+=== config.rs
+use std::collections::HashMap;
+use std::fs;
+
+#[derive(Debug)]
+enum ConfigError {
+    Io(std::io::Error),
+    Missing(String),
+}
+
+impl From<std::io::Error> for ConfigError {
+    fn from(err: std::io::Error) -> Self {
+        ConfigError::Io(err)
+    }
+}
+
+fn load(path: &str) -> Result<HashMap<String, String>, ConfigError> {
+    let text = fs::read_to_string(path)?;
+    let pairs: HashMap<String, String> = text
+        .lines()
+        .filter_map(|line| line.split_once("="))
+        .map(|(k, v)| (k.trim().to_string(), v.trim().to_string()))
+        .collect();
+    if !pairs.contains_key("name") {
+        return Err(ConfigError::Missing("name".into()));
+    }
+    Ok(pairs)
+}
+=== counter.rs
+use std::sync::{Arc, Mutex};
+use std::thread;
+
+fn main() {
+    let counter = Arc::new(Mutex::new(0));
+    let mut handles = vec![];
+
+    for _ in 0..8 {
+        let counter = Arc::clone(&counter);
+        handles.push(thread::spawn(move || {
+            *counter.lock().unwrap() += 1;
+        }));
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+
+    println!("Result: {}", *counter.lock().unwrap());
+}
+=== inventory.rs
+#[derive(Debug, Clone)]
+struct Item {
+    name: String,
+    price: u32,
+    quantity: u32,
+}
+
+struct Inventory {
+    items: Vec<Item>,
+}
+
+impl Inventory {
+    fn total_value(&self) -> u32 {
+        self.items.iter().map(|item| item.price * item.quantity).sum()
+    }
+
+    fn low_stock(&self, threshold: u32) -> Vec<&Item> {
+        self.items
+            .iter()
+            .filter(|item| item.quantity < threshold)
+            .collect()
+    }
+}

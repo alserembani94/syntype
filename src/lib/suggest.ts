@@ -222,7 +222,9 @@ export function getSuggestions(run: Run, ctx: SuggestContext, cfg: SuggestConfig
   }
   // Ties go the way TypeScript's sortText sends them in VS Code: names from the
   // file before globals and keywords, then alphabetical.
-  const rank = (x: Suggestion) => (x.kind === 'word' ? 0 : 1)
+  // After a member trigger, the vocabulary's members come before words from the
+  // file: they're what can follow the dot. Elsewhere file words come first.
+  const rank = (x: Suggestion) => (x.kind === 'word' ? 0 : 1) ^ (receiver !== null ? 1 : 0)
   out.sort((a, b) => b.score - a.score || rank(a) - rank(b) || a.label.localeCompare(b.label))
   return out.slice(0, MAX_SUGGESTIONS)
 }

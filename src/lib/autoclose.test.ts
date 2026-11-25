@@ -164,3 +164,19 @@ describe('Python auto-close, from VS Code\'s Python configuration', () => {
     expect(closeOf[q] === -1 || allowed[q] === false).toBe(true)
   })
 })
+
+describe("Rust auto-close, from VS Code's Rust configuration", () => {
+  const rs = getLanguage('rust')
+
+  it("never pairs ', since Rust uses it for lifetimes and chars", () => {
+    const code = "fn f<'a>(s: &'a str) -> char { 'x' }"
+    const { closeOf } = computePairs(code, rs)
+    for (let i = 0; i < code.length; i++) if (code[i] === "'") expect(closeOf[i]).toBe(-1)
+  })
+
+  it('still pairs brackets around lifetimes', () => {
+    const code = "fn f<'a>(s: &'a str) {}"
+    const { closeOf } = computePairs(code, rs)
+    expect(closeOf[code.indexOf('(')]).toBe(code.indexOf(')'))
+  })
+})
