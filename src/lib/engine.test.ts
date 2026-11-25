@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { backspace, caretPosition, counts, createRun, isFinished, typeChar, type Run } from './engine'
 import { summarize } from './stats'
-import { SNIPPETS, parseSnippets } from '../data/snippets'
+import { LANGUAGES, getLanguage, pickSnippet } from '../languages'
+import { parseSnippets } from '../languages/snippets'
+import type { HighlightRules } from '../languages'
 import { tokenize } from './tokenize'
 
 const typeAll = (run: Run, text: string) => [...text].reduce(typeChar, run)
@@ -64,28 +66,56 @@ describe('engine', () => {
   })
 })
 
-describe('snippets', () => {
-  it('parses every snippet with a name and code', () => {
-    expect(SNIPPETS.length).toBeGreaterThan(20)
-    for (const s of SNIPPETS) {
-      expect(s.name).toMatch(/\.js$/)
-      expect(s.code).not.toMatch(/\t|[ ]+$/m)
-    }
+describe('languages', () => {
+  it('has unique ids and gives a fallback for unknown ones', () => {
+    expect(new Set(LANGUAGES.map((l) => l.id)).size).toBe(LANGUAGES.length)
+    expect(getLanguage('nope')).toBe(LANGUAGES[0])
   })
 
-  it('buckets by length', () => {
+  describe.each(LANGUAGES)('$name', (lang) => {
+    it('has snippets named with its extension, without tabs or trailing spaces', () => {
+      expect(lang.snippets.length).toBeGreaterThan(0)
+      for (const s of lang.snippets) {
+        expect(s.name.endsWith(`.${lang.extension}`)).toBe(true)
+        expect(s.code).not.toMatch(/\t|[ ]+$/m)
+      }
+    })
+  })
+
+  it('buckets snippets by length', () => {
     const [s] = parseSnippets('=== a.js\nconst a = 1;\n')
     expect(s).toEqual({ name: 'a.js', code: 'const a = 1;', length: 'short' })
+  })
+
+  it('falls back to any length when a language has none of the requested one', () => {
+    const only = parseSnippets('=== a.js\nx;\n')
+    expect(pickSnippet(only, 'long').name).toBe('a.js')
   })
 })
 
 describe('tokenize', () => {
-  it('colours keywords, strings, calls and numbers', () => {
-    const code = 'const s = fn("x", 2);'
-    const cls = tokenize(code)
+  it('colours JavaScript keywords, strings, calls and numbers', () => {
+    const code = 'const s = fn("x", 2); // done'
+    const cls = tokenize(code, getLanguage('javascript').highlight)
     expect(cls[0]).toBe('kw')
     expect(cls[code.indexOf('fn')]).toBe('fn')
     expect(cls[code.indexOf('"')]).toBe('str')
     expect(cls[code.indexOf('2')]).toBe('num')
+    expect(cls[code.indexOf('done')]).toBe('com')
+  })
+
+  it('works with another language\'s rules', () => {
+    const python: HighlightRules = {
+      keywords: ['def', 'return'],
+      lineComments: ['#'],
+      strings: ['"', "'"],
+      multilineStrings: ['"""'],
+    }
+    const code = 'def f(x):\n    """Doc\n    more"""\n    return x  # out'
+    const cls = tokenize(code, python)
+    expect(cls[0]).toBe('kw')
+    expect(cls[code.indexOf('more')]).toBe('str')
+    expect(cls[code.indexOf('out')]).toBe('com')
+    expect(cls[code.indexOf('return')]).toBe('kw')
   })
 })

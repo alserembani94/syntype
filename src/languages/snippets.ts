@@ -1,15 +1,9 @@
-import raw from './snippets.txt?raw'
+import type { LengthFilter, Snippet } from './types'
 
-export type SnippetLength = 'short' | 'medium' | 'long'
-export type LengthFilter = SnippetLength | 'any'
-
-export interface Snippet {
-  name: string
-  code: string
-  length: SnippetLength
-}
-
-/** Snippets live in snippets.txt as `=== file.js` headers followed by code. */
+/**
+ * Parses a snippets file: each snippet starts with a `=== file-name` line,
+ * followed by its code. Length is bucketed by character count.
+ */
 export function parseSnippets(text: string): Snippet[] {
   return text
     .split(/^=== /m)
@@ -26,10 +20,10 @@ export function parseSnippets(text: string): Snippet[] {
     })
 }
 
-export const SNIPPETS = parseSnippets(raw)
-
-export function pickSnippet(filter: LengthFilter, avoid?: string): Snippet {
-  let pool = SNIPPETS.filter((s) => filter === 'any' || s.length === filter)
+/** Random snippet of the given length, avoiding a repeat where possible. */
+export function pickSnippet(snippets: Snippet[], filter: LengthFilter, avoid?: string): Snippet {
+  let pool = snippets.filter((s) => filter === 'any' || s.length === filter)
+  if (!pool.length) pool = snippets
   if (pool.length > 1 && avoid) pool = pool.filter((s) => s.name !== avoid)
   return pool[Math.floor(Math.random() * pool.length)]
 }

@@ -1,9 +1,11 @@
 import { useLayoutEffect, useMemo, useRef } from 'react'
 import { tokenize } from '../lib/tokenize'
 import type { Run } from '../lib/engine'
+import type { HighlightRules } from '../languages'
 
 interface Props {
   code: string
+  highlight: HighlightRules
   run: Run
   typing: boolean
   inputRef: React.RefObject<HTMLTextAreaElement | null>
@@ -13,8 +15,8 @@ interface Props {
 /** Kept in the hidden textarea so a mobile Backspace still fires an input event. */
 const SENTINEL = ' '
 
-export function CodeView({ code, run, typing, inputRef, onMobileInput }: Props) {
-  const classes = useMemo(() => tokenize(code), [code])
+export function CodeView({ code, highlight, run, typing, inputRef, onMobileInput }: Props) {
+  const classes = useMemo(() => tokenize(code, highlight), [code, highlight])
   const lineCount = useMemo(() => code.split('\n').length, [code])
   const scrollerRef = useRef<HTMLDivElement>(null)
   const caretRef = useRef<HTMLSpanElement>(null)

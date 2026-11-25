@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { pickSnippet, type LengthFilter, type Snippet } from './data/snippets'
+import { getLanguage, LANGUAGES, pickSnippet, type LengthFilter, type Snippet } from './languages'
 import { useTypingTest } from './hooks/useTypingTest'
 import { accuracy, MIN_ACCURACY_FOR_BEST, summarize, wpm } from './lib/stats'
 import { caretPosition, counts } from './lib/engine'
@@ -8,17 +8,22 @@ import { CodeView } from './components/CodeView'
 import { ConfigBar } from './components/ConfigBar'
 import { Results } from './components/Results'
 
-type Bests = Partial<Record<LengthFilter, number>>
+/** Personal bests keyed by "languageId:length". */
+type Bests = Record<string, number>
+const bestKey = (languageId: string, length: LengthFilter) => `${languageId}:${length}`
 
 export default function App() {
+  const [languageId, setLanguageId] = useState(() => getLanguage(load('language', '')).id)
+  const language = getLanguage(languageId)
   const [length, setLength] = useState<LengthFilter>(() => load('length', 'medium'))
   const [autoIndent, setAutoIndent] = useState(() => load('autoIndent', true))
   const [bests, setBests] = useState<Bests>(() => load('bests', {}))
-  const [firstSnippet] = useState(() => pickSnippet(length))
+  const [firstSnippet] = useState(() => pickSnippet(language.snippets, length))
   const { state, elapsed, load: loadSnippet, type, back } = useTypingTest(firstSnippet, autoIndent)
-  const [bestAtStart, setBestAtStart] = useState(() => bests[length] ?? 0)
+  const [bestAtStart, setBestAtStart] = useState(() => bests[bestKey(languageId, length)] ?? 0)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const { run, phase, snippet } = state
+  const currentKey = bestKey(languageId, length)
 
   const result = useMemo(
     () => (phase === 'done' ? summarize(run, elapsed, state.samples) : null),
@@ -27,8 +32,8 @@ export default function App() {
   const isBest = !!result && result.wpm > bestAtStart && result.accuracy >= MIN_ACCURACY_FOR_BEST
   // Bests including the run that just finished.
   const currentBests = useMemo<Bests>(
-    () => (isBest && result ? { ...bests, [length]: result.wpm } : bests),
-    [isBest, result, bests, length],
+    () => (isBest && result ? { ...bests, [currentKey]: result.wpm } : bests),
+    [isBest, result, bests, currentKey],
   )
 
   useEffect(() => {
@@ -36,16 +41,18 @@ export default function App() {
   }, [isBest, currentBests])
 
   const start = useCallback(
-    (s: Snippet, opts: { length?: LengthFilter; autoIndent?: boolean } = {}) => {
-      const len = opts.length ?? length
+    (s: Snippet, opts: { languageId?: string; length?: LengthFilter; autoIndent?: boolean } = {}) => {
       setBests(currentBests)
-      setBestAtStart(currentBests[len] ?? 0)
+      setBestAtStart(currentBests[bestKey(opts.languageId ?? languageId, opts.length ?? length)] ?? 0)
       loadSnippet(s, opts.autoIndent ?? autoIndent)
       inputRef.current?.focus({ preventScroll: true })
     },
-    [length, autoIndent, currentBests, loadSnippet],
+    [languageId, length, autoIndent, currentBests, loadSnippet],
   )
-  const next = useCallback(() => start(pickSnippet(length, snippet.name)), [start, length, snippet.name])
+  const next = useCallback(
+    () => start(pickSnippet(language.snippets, length, snippet.name)),
+    [start, language, length, snippet.name],
+  )
   const retry = useCallback(() => start(snippet), [start, snippet])
 
   // Keyboard: the whole page listens, so typing works without clicking first.
@@ -106,10 +113,16 @@ export default function App() {
     for (const ch of text) type(ch)
   }
 
+  const changeLanguage = (id: string) => {
+    const lang = getLanguage(id)
+    setLanguageId(lang.id)
+    save('language', lang.id)
+    start(pickSnippet(lang.snippets, length), { languageId: lang.id })
+  }
   const changeLength = (l: LengthFilter) => {
     setLength(l)
     save('length', l)
-    start(pickSnippet(l), { length: l })
+    start(pickSnippet(language.snippets, l), { length: l })
   }
   const toggleIndent = () => {
     const v = !autoIndent
@@ -120,18 +133,26 @@ export default function App() {
 
   const liveWpm = Math.round(wpm(counts(run).correct, elapsed))
   const { line, col } = caretPosition(run)
-  const best = currentBests[length]
+  const best = currentBests[currentKey]
 
   return (
     <div className="wrap">
       <header>
         <div className="brand">
           <h1>
-            Keystroke<span>.js</span>
+            Keystroke<span>.{language.extension}</span>
           </h1>
           <small>typing speed, measured in code</small>
         </div>
-        <ConfigBar length={length} autoIndent={autoIndent} onLength={changeLength} onToggleIndent={toggleIndent} />
+        <ConfigBar
+          languages={LANGUAGES}
+          language={language}
+          length={length}
+          autoIndent={autoIndent}
+          onLanguage={changeLanguage}
+          onLength={changeLength}
+          onToggleIndent={toggleIndent}
+        />
       </header>
 
       <div className="live" style={{ visibility: phase === 'done' ? 'hidden' : undefined }}>
@@ -155,7 +176,7 @@ export default function App() {
             <span className="dot" />
             <span>{snippet.name}</span>
           </div>
-          <span className="lang">JavaScript</span>
+          <span className="lang">{language.name}</span>
         </div>
 
         {result ? (
@@ -163,6 +184,7 @@ export default function App() {
         ) : (
           <CodeView
             code={snippet.code}
+            highlight={language.highlight}
             run={run}
             typing={phase === 'running'}
             inputRef={inputRef}
@@ -178,7 +200,7 @@ export default function App() {
             {run.pos} / {run.chars.length} chars
           </span>
           <span className="push">
-            best ({length}): {best ? `${Math.round(best)} wpm` : '—'}
+            best ({language.name}, {length}): {best ? `${Math.round(best)} wpm` : '—'}
           </span>
           <span>Spaces: 2</span>
           <span>UTF-8</span>

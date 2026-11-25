@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useReducer } from 'react'
 import { backspace, counts, createRun, isFinished, typeChar, type Run } from '../lib/engine'
 import { wpm, type Sample } from '../lib/stats'
-import type { Snippet } from '../data/snippets'
+import type { Snippet } from '../languages'
 
 export type Phase = 'ready' | 'running' | 'done'
 
