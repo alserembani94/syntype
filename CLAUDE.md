@@ -40,6 +40,8 @@ Every theme in `THEMES` (`src/themes/index.ts`) must meet these; `src/themes/the
 - **T2 · Swatches.** A theme's `swatches` name themes that exist.
 - **T3 · Readable.** Contrast against the backgrounds of at least 4.5:1 for text (`--fg`, `--muted`), 4:1 for code colours, 2.5:1 for comments, and 3:1 for `--accent`, `--err` and `--ok`. When a borrowed palette falls short, use another colour from the same theme (One Dark Pro's status bar text for `--muted`) rather than inventing one.
 
+- **T4 · Colour vision.** A theme made for a colour vision deficiency (`vision` in `THEMES`) keeps plain text, comments, mistakes and the five code colours at least 12 apart (CIEDE2000) from each other, both as its audience sees them (Machado et al. 2009 simulation, full severity, in `src/test/colour.ts`) and with normal vision; mistakes and success at least 30 apart; and its text and signal colours readable as its audience sees them. Pick colours from the base palette's own scales; don't trust a palette's colour-blind label without running the check (GitHub's own syntax colours fail it).
+
 A theme borrowed from an editor takes its colours from that theme's source files, not memory, with the file named in a comment above its block.
 
 ## Working in this repo

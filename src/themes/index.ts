@@ -6,7 +6,7 @@
 import { load, save } from '../lib/storage'
 
 /** Picker sections, in the order they're shown. */
-export const THEME_SECTIONS = ['Syntype', 'Black', 'Dark', 'Light', 'Retro'] as const
+export const THEME_SECTIONS = ['Syntype', 'Black', 'Dark', 'Light', 'Colour vision', 'Retro'] as const
 export type ThemeSection = (typeof THEME_SECTIONS)[number]
 
 export interface Theme {
@@ -18,7 +18,11 @@ export interface Theme {
   credit?: string
   /** For the picker's swatches: the theme ids to show (System shows both of its own). */
   swatches?: string[]
+  /** Made for this colour vision deficiency; rule T4 checks its colours stay apart for it. */
+  vision?: Deficiency
 }
+
+export type Deficiency = 'protanopia' | 'deuteranopia' | 'tritanopia'
 
 export const SYSTEM_THEME = 'system'
 
@@ -29,6 +33,9 @@ export const THEMES: Theme[] = [
   { id: 'hc-black', name: 'Dark High Contrast', section: 'Black', credit: 'VS Code' },
   { id: 'one-dark-pro', name: 'One Dark Pro', section: 'Dark', credit: 'Binaryify' },
   { id: 'github-light', name: 'GitHub Light', section: 'Light', credit: 'GitHub' },
+  { id: 'protanopia', name: 'Protanopia', section: 'Colour vision', credit: 'red-blind · on GitHub Dark', vision: 'protanopia' },
+  { id: 'deuteranopia', name: 'Deuteranopia', section: 'Colour vision', credit: 'green-blind · on GitHub Dark', vision: 'deuteranopia' },
+  { id: 'tritanopia', name: 'Tritanopia', section: 'Colour vision', credit: 'blue-blind · on GitHub Dark', vision: 'tritanopia' },
   { id: 'phosphor', name: 'Green Phosphor', section: 'Retro', credit: 'terminal' },
 ]
 

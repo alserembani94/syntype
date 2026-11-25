@@ -5,6 +5,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { SYSTEM_THEME, THEME_SECTIONS, THEMES } from '.'
+import { contrast, difference } from '../test/colour'
 
 // Read from disk: Vitest stubs out CSS imports, even with ?raw.
 const css = readFileSync(new URL('./themes.css', import.meta.url), 'utf8')
@@ -16,6 +17,13 @@ const VARIABLES = [
 ]
 /** T3: minimum contrast against the theme's backgrounds (WCAG ratios). */
 export const MIN_CONTRAST = { text: 4.5, code: 4, comment: 2.5, ui: 3 }
+/**
+ * T4: for a colour vision theme, the least CIEDE2000 difference between the
+ * colours that must be told apart, as its audience sees them and with normal
+ * vision (10 or more reads as clearly different), and between mistakes and
+ * success.
+ */
+export const MIN_DIFFERENCE = { distinct: 12, mistakeVsSuccess: 30 }
 
 /** Each CSS block: its selector list and its declarations. Comments are dropped. */
 function blocks(source: string) {
@@ -36,16 +44,6 @@ const themeBlocks = blocks(css)
 const declsOf = (id: string) => {
   const found = themeBlocks.filter((b) => b.selector.split(',').some((s) => s.trim() === `[data-syntype-theme="${id}"]`))
   return found.length === 1 ? found[0].decls : null
-}
-
-function luminance(hex: string) {
-  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
-  const f = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
-  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
-}
-export function contrast(a: string, b: string) {
-  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x)
-  return (hi + 0.05) / (lo + 0.05)
 }
 
 describe('T1 · every theme has a unique id, a section and its own colours', () => {
@@ -93,5 +91,31 @@ describe.each(THEMES.filter((t) => t.id !== SYSTEM_THEME).map((t) => [t.name, t]
     for (const t of ['kw', 'str', 'num', 'fn', 'ty', 'pun']) check(`tok-${t}`, MIN_CONTRAST.code, ['surface'])
     check('tok-com', MIN_CONTRAST.comment, ['surface'])
     for (const ui of ['accent', 'err', 'ok']) check(ui, MIN_CONTRAST.ui, ['bg', 'surface'])
+  })
+})
+
+describe.each(THEMES.filter((t) => t.vision).map((t) => [t.name, t] as const))('%s', (_, theme) => {
+  const decls = declsOf(theme.id)!
+  const color = (name: string) => decls[`--${name}`]
+  const vision = theme.vision!
+  /** Plain text, comments, mistakes and the code colours: each must look different from the others. */
+  const distinct = ['fg', 'tok-com', 'err', 'tok-kw', 'tok-str', 'tok-num', 'tok-fn', 'tok-ty']
+
+  it.each([
+    ['as its audience sees it', vision],
+    ['with normal vision', undefined],
+  ] as const)('T4 · text, comments, mistakes and code colours stay apart %s', (_, seenWith) => {
+    for (let i = 0; i < distinct.length; i++)
+      for (const other of distinct.slice(i + 1)) {
+        const diff = difference(color(distinct[i]), color(other), seenWith)
+        expect(diff, `--${distinct[i]} vs --${other}: ${diff.toFixed(1)}`).toBeGreaterThanOrEqual(MIN_DIFFERENCE.distinct)
+      }
+  })
+
+  it('T4 · mistakes and success look different, and signals stay readable, as its audience sees them', () => {
+    expect(difference(color('err'), color('ok'), vision)).toBeGreaterThanOrEqual(MIN_DIFFERENCE.mistakeVsSuccess)
+    expect(contrast(color('fg'), color('surface'), vision)).toBeGreaterThanOrEqual(MIN_CONTRAST.text)
+    for (const ui of ['accent', 'err', 'ok'])
+      expect(contrast(color(ui), color('surface'), vision), ui).toBeGreaterThanOrEqual(MIN_CONTRAST.ui)
   })
 })

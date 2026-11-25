@@ -140,3 +140,48 @@
   --glow: 0 0 6px rgb(51 255 102 / 0.45); --tab-dot: #33ff66;
   color-scheme: dark;
 }
+
+/*
+ * Colour vision themes: GitHub Dark (MIT; @primer/primitives 11.10.0
+ * dark.css: canvas #0d1117 / #151b23 / #010409, border #3d444d, text #f0f6fc /
+ * #9198a1, accent #4493f8) with GitHub's colour-blind signal colours: for
+ * protanopia and deuteranopia, danger orange #f0883e and success blue
+ * #58a6ff (dark-colorblind.css); for tritanopia, danger red #f85149 and
+ * success blue #58a6ff (dark-tritanopia.css).
+ *
+ * The code colours are picked from Primer's dark display scales so that,
+ * under a simulation of that colour vision (Machado et al. 2009, full
+ * severity) and with normal vision, text, comments, mistakes and the five code
+ * colours all stay clearly apart. GitHub's own syntax colours don't: numbers
+ * and functions look the same to deuteranopes. themes.test.ts checks it (T4).
+ */
+[data-syntype-theme="protanopia"] {
+  --bg: #010409; --surface: #0d1117; --surface-2: #151b23; --line: #3d444d;
+  --fg: #f0f6fc; --muted: #9198a1; --accent: #4493f8; --accent-soft: #13233a;
+  --err: #f0883e; --err-soft: #2c1f1a; --ok: #58a6ff;
+  /* cyan.8, lime.8, brown.9, purple.6, red.7 */
+  --tok-kw: #45cbf7; --tok-str: #9fcc3e; --tok-num: #dbceb3; --tok-fn: #b687f7;
+  --tok-ty: #f48b8d; --tok-com: #9198a1; --tok-pun: #f0f6fc;
+  --glow: none; --tab-dot: #d29922;
+  color-scheme: dark;
+}
+[data-syntype-theme="deuteranopia"] {
+  --bg: #010409; --surface: #0d1117; --surface-2: #151b23; --line: #3d444d;
+  --fg: #f0f6fc; --muted: #9198a1; --accent: #4493f8; --accent-soft: #13233a;
+  --err: #f0883e; --err-soft: #2c1f1a; --ok: #58a6ff;
+  /* blue.6, green.9, auburn.8, cyan.9, pine.6 */
+  --tok-kw: #4da0ff; --tok-str: #99e090; --tok-num: #d4b7b5; --tok-fn: #80dbf9;
+  --tok-ty: #1bb673; --tok-com: #9198a1; --tok-pun: #f0f6fc;
+  --glow: none; --tab-dot: #d29922;
+  color-scheme: dark;
+}
+[data-syntype-theme="tritanopia"] {
+  --bg: #010409; --surface: #0d1117; --surface-2: #151b23; --line: #3d444d;
+  --fg: #f0f6fc; --muted: #9198a1; --accent: #4493f8; --accent-soft: #13233a;
+  --err: #f85149; --err-soft: #301b1e; --ok: #58a6ff;
+  /* pink.7, blue.9, olive.9, purple.6, green.6 */
+  --tok-kw: #ec8dbd; --tok-str: #a3d3ff; --tok-num: #e2d04b; --tok-fn: #b687f7;
+  --tok-ty: #41b445; --tok-com: #9198a1; --tok-pun: #f0f6fc;
+  --glow: none; --tab-dot: #d29922;
+  color-scheme: dark;
+}
