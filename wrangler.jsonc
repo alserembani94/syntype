@@ -24,5 +24,20 @@
     "GOOGLE_CLIENT_ID": "118095071688-iq0990p2p9nttq8hdj3b505j8sc8sc21.apps.googleusercontent.com",
     "TURNSTILE_SITE_KEY": "0x4AAAAAAGSwangBAPdG6nQF"
   },
+  // The leaderboard's database (docs/leaderboard.md). Schema changes are
+  // migrations in migrations/, applied with `wrangler d1 migrations apply`.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "syntype",
+      "database_id": "46fb237f-4075-4877-97cf-2fc1d68b310e",
+      "migrations_dir": "migrations"
+    }
+  ],
+  // Secrets the Worker needs. A deploy fails, saying which, if one is missing.
+  // Set them in the dashboard; for local development, in .dev.vars (not committed).
+  "secrets": {
+    "required": ["GITHUB_CLIENT_SECRET", "GOOGLE_CLIENT_SECRET", "TURNSTILE_SECRET_KEY", "SESSION_SECRET"]
+  },
   "observability": { "enabled": true }
 }

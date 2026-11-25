@@ -8,7 +8,9 @@ export default {
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url)
     if (url.pathname === '/api/health') {
-      return Response.json({ ok: true })
+      // Also proves the database binding works.
+      const row = await env.DB.prepare('SELECT 1 AS up').first<{ up: number }>()
+      return Response.json({ ok: true, database: row?.up === 1 })
     }
     if (url.pathname.startsWith('/api/')) {
       return Response.json({ error: 'Not found' }, { status: 404 })
