@@ -19,6 +19,7 @@ Other scripts: `npm test` (unit and playthrough tests, Vitest), `npm run build`,
 - **Language:** the button above the editor (`</> JavaScript`) opens a searchable list of languages, grouped into sections (Web, Systems, Scripting, Data & config, Testing & QA, Mainframe, Esoteric). Type to filter by name, extension, alias (`golang`, `sql`, `yml`) or section (`web` lists every web language), `↑`/`↓` and `Enter` to choose, `Esc` or a click outside to close. While it's open, keys go to the search and a run in progress is paused.
 - When the page can't receive keys (on first load in a frame, after clicking elsewhere, or when switching tab or window), the code blurs and asks you to click, or tap on phones. Mid-run, this **pauses the clock**. Time away isn't counted, and results show how long you were paused.
 - **Results:** WPM and accuracy beside a per-second chart (wpm, raw, and errors as ✕ with their own axis). Below that: test details, raw WPM, characters (right / wrong / suggested / auto-inserted), **consistency** (100% minus the variation in your per-second speed, shown for runs of 3 seconds or more) and time. A second row has code speed, keys saved, symbol accuracy and the keys you missed most. **Review** (`v`) shows the snippet with your mistakes, suggested text and auto-inserted text marked.
+- **Ad spaces:** placeholders only for now, at fixed sizes so nothing shifts once they're filled: a 728×90 banner on the results screen, below the buttons (it narrows on small screens), and a 160×600 column either side of the app on screens at least 1360px wide and 680px tall, which fades back while you type. Sizes are in `src/lib/ads.ts`, the placeholder in `src/components/AdSlot.tsx`.
 - **Auto-indent** (on by default) skips the leading spaces after Enter, the way an editor would. Skipped spaces don't count toward your score. With it off, you type the indentation, and Tab inserts 2 spaces.
 - **Auto-close** (on by default) behaves like VS Code:
   - Typing `(`, `[`, `{` or a quote inserts the closer after the caret (highlighted). Type the closer to step over it, or press `→` / `End` to move past it.
@@ -85,7 +86,7 @@ src/
   lib/storage.ts        localStorage wrapper for settings and personal bests
   hooks/useTypingTest.ts  engine, clock and suggestion requests as a React reducer
   hooks/usePageFocus.ts whether keys can reach the game (drives the focus overlay and pausing)
-  components/           CodeView, ConfigBar, Results, Review, SpeedChart, SuggestBox
+  components/           AdSlot, CodeView, ConfigBar, Results, Review, SpeedChart, SuggestBox
   App.tsx               layout, keyboard handling, settings, personal bests
 ```
 

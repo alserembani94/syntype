@@ -4,6 +4,7 @@ import type { Run } from '../lib/engine'
 import type { HighlightRules } from '../languages'
 import { SpeedChart } from './SpeedChart'
 import { Review } from './Review'
+import { AdSlot } from './AdSlot'
 
 export interface TestInfo {
   language: string
@@ -182,6 +183,8 @@ export function Results({ result: r, isBest, info, run, highlight, onNext, onRet
       <p className="r-hints">
         <kbd>enter</kbd> next · <kbd>r</kbd> retry · <kbd>v</kbd> review
       </p>
+      {/* Below the actions, so the stats and buttons never move when it fills. */}
+      <AdSlot slot="results" />
     </div>
   )
 }

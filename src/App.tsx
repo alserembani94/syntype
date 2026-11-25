@@ -9,6 +9,7 @@ import { computePairs } from './lib/pairs'
 import { load, save } from './lib/storage'
 import { CodeView } from './components/CodeView'
 import { ConfigBar } from './components/ConfigBar'
+import { AdSlot } from './components/AdSlot'
 import { LanguagePicker } from './components/LanguagePicker'
 import { Results } from './components/Results'
 
@@ -250,6 +251,9 @@ export default function App() {
 
   return (
     <div className="wrap" style={{ '--tab-size': language.indentSize ?? 2 } as React.CSSProperties}>
+      {/* Side ads on wide screens; they fade back while a snippet is being typed. */}
+      <AdSlot slot="rail" className={`ad-rail left${phase === 'running' ? ' dim' : ''}`} />
+      <AdSlot slot="rail" className={`ad-rail right${phase === 'running' ? ' dim' : ''}`} />
       {pickerOpen && (
         <LanguagePicker languages={LANGUAGES} currentId={languageId} onSelect={pickLanguage} onClose={closePicker} />
       )}
