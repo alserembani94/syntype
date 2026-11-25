@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { getLanguage, LANGUAGES, pickSnippet, type LengthFilter, type Snippet } from './languages'
 import { useTypingTest, type TestOptions } from './hooks/useTypingTest'
-import { accuracy, MIN_ACCURACY_FOR_BEST, summarize, wpm } from './lib/stats'
-import { atPending, caretPosition, counts } from './lib/engine'
+import { MIN_ACCURACY_FOR_BEST, summarize } from './lib/stats'
+import { atPending, caretPosition } from './lib/engine'
 import { buildSuggestConfig } from './lib/suggest'
 import { computePairs } from './lib/pairs'
 import { load, save } from './lib/storage'
@@ -201,7 +201,6 @@ export default function App() {
     start(snippet, { intellisense: v })
   }
 
-  const liveWpm = Math.round(wpm(counts(run).correct, elapsed))
   const { line, col } = caretPosition(run)
   const best = currentBests[currentKey]
 
@@ -229,16 +228,8 @@ export default function App() {
         />
       </header>
 
+      {/* No clock or score while typing: results appear only when the snippet is done. */}
       <div className="live" style={{ visibility: phase === 'done' ? 'hidden' : undefined }}>
-        <span>
-          <b>{Math.floor(elapsed)}</b> s
-        </span>
-        <span>
-          <b>{liveWpm}</b> wpm
-        </span>
-        <span>
-          <b>{Math.round(accuracy(run))}</b> %
-        </span>
         <span className={`hint${atPending(run) || suggestOpen ? ' attention' : ''}`}>
           {suggestOpen ? (
             <>
@@ -246,7 +237,7 @@ export default function App() {
             </>
           ) : !atPending(run) ? (
             <>
-              <kbd>esc</kbd> new snippet · timer starts on your first key
+              <kbd>esc</kbd> new snippet · results appear when you finish
             </>
           ) : run.chars[run.pos] === '\n' ? (
             <>
@@ -291,8 +282,10 @@ export default function App() {
           <span>
             {run.pos} / {run.chars.length} chars
           </span>
+          {/* Personal best is a score too, so it waits for the results screen. */}
           <span className="push">
-            best ({[language.name, length, autoClose && 'auto-close', intellisense && 'intellisense'].filter(Boolean).join(', ')}): {best ? `${Math.round(best)} wpm` : '—'}
+            {phase === 'done' &&
+              `best (${[language.name, length, autoClose && 'auto-close', intellisense && 'intellisense'].filter(Boolean).join(', ')}): ${best ? `${Math.round(best)} wpm` : '—'}`}
           </span>
           <span>Spaces: 2</span>
           <span>UTF-8</span>

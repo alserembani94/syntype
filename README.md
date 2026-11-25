@@ -13,7 +13,7 @@ Other scripts: `npm test` (engine tests, Vitest), `npm run build`, `npm run lint
 
 ## How it plays
 
-- The timer starts on your first key. `Esc` loads a new snippet.
+- Nothing is scored on screen while you type: no clock, no WPM, no accuracy, no personal best. Timing starts quietly on your first key, and everything appears on the results screen when you finish. `Esc` loads a new snippet.
 - **Auto-indent** (on by default) skips the leading spaces after Enter, the way an editor would. Skipped spaces don't count toward your score. With it off, you type the indentation, and Tab inserts 2 spaces.
 - **Auto-close** (on by default) behaves like VS Code:
   - Typing `(`, `[`, `{` or a quote inserts the closer after the caret (highlighted). Type the closer to step over it, or press `→` / `End` to move past it.
