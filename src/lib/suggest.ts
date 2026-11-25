@@ -43,7 +43,6 @@ export interface SuggestConfig {
   members: Map<string, Item[]>
   /** Per snippet position: true inside strings and comments, where VS Code shows no quick suggestions. */
   quiet: boolean[]
-  memberCommitCharacters: string[]
   /** The language's completion service, if it has one. */
   service: CompletionService | null
   triggerCharacters: string[]
@@ -70,7 +69,6 @@ export function buildSuggestConfig(code: string, lang: Language, withService = t
     globals,
     members,
     quiet: classes.map((c) => c === 'str' || c === 'com'),
-    memberCommitCharacters: lang.completion?.memberCommitCharacters ?? [],
     service: withService ? (lang.completion?.service?.() ?? null) : null,
     triggerCharacters: lang.completion?.triggerCharacters ?? [],
     serviceMode: lang.completion?.serviceMode,
@@ -210,18 +208,17 @@ export function getSuggestions(run: Run, ctx: SuggestContext, cfg: SuggestConfig
     let text = ''
     for (let i = 0; i < ctx.start; i++) text += charAt(run, i) ?? ''
     for (const [w] of text.matchAll(new RegExp(`${cfg.wordChar.source}+`, 'g'))) {
-      // VS Code's word-based list leaves out the word being typed. In a member
-      // list it stays, as TypeScript would list it, so a commit character never
-      // swaps a finished name for a longer one.
-      if (!/^\d/.test(w) && (w !== prefix || receiver !== null)) add({ label: w, kind: 'word' })
+      // VS Code's word-based list leaves out the word being typed.
+      if (!/^\d/.test(w) && w !== prefix) add({ label: w, kind: 'word' })
     }
   }
 
-  const commit = receiver !== null && cfg.memberCommitCharacters.length ? cfg.memberCommitCharacters : undefined
+  // No commit characters here: without a service we can't tell when a new name
+  // is being declared, so a "," after "(a" could commit the wrong word.
   const out: Suggestion[] = []
   for (const item of candidates.values()) {
     const m = fuzzyMatch(prefix, item.label)
-    if (m) out.push({ ...item, ...m, commit })
+    if (m) out.push({ ...item, ...m })
   }
   // Ties go the way TypeScript's sortText sends them in VS Code: names from the
   // file before globals and keywords, then alphabetical.

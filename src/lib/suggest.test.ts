@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { acceptCompletion, counts, createRun, typeChar, type Run } from './engine'
 import { buildSuggestConfig, fuzzyMatch, getSuggestions, suggestContext, wordStart, type Suggestion } from './suggest'
 import { summarize } from './stats'
-import { getLanguage } from '../languages'
+import { getLanguage, type Language } from '../languages'
 
 const js = getLanguage('javascript')
 const typeAll = (run: Run, text: string) => [...text].reduce(typeChar, run)
 const setup = (code: string) => ({
   run: createRun(code, { autoIndent: true, autoClose: false }),
-  cfg: buildSuggestConfig(code, js),
+  cfg: buildSuggestConfig(code, js, false),
 })
 type Cfg = ReturnType<typeof setup>['cfg']
 const list = (run: Run, cfg: Cfg): Suggestion[] => {
@@ -115,111 +115,102 @@ describe('accepting a suggestion', () => {
   })
 })
 
-describe('vocabulary packs and members', () => {
-  it('suggests built-ins anywhere a word starts', () => {
-    const { run, cfg } = setup('setTimeout(f, 1);')
+describe('vocabulary packs and members (for languages without a service)', () => {
+  // A small language with packs, standing in for a future one such as Python.
+  const toy: Language = {
+    ...js,
+    id: 'toy',
+    completion: {
+      packs: [
+        {
+          name: 'builtins',
+          globals: [
+            { label: 'setTimeout', kind: 'function' },
+            { label: 'console', kind: 'variable' },
+            { label: 'Math', kind: 'variable' },
+          ],
+          members: {
+            console: [{ label: 'log', kind: 'method' }],
+            Math: [
+              { label: 'max', kind: 'method' },
+              { label: 'min', kind: 'method' },
+            ],
+            '*': [
+              { label: 'filter', kind: 'method' },
+              { label: 'then', kind: 'method' },
+            ],
+          },
+        },
+        { name: 'react', detect: /from "react"/, globals: [{ label: 'useState', kind: 'function' }] },
+      ],
+    },
+  }
+  const toySetup = (code: string) => ({
+    run: createRun(code, { autoIndent: true, autoClose: false }),
+    cfg: buildSuggestConfig(code, toy, false),
+  })
+
+  it('suggests a pack\'s globals anywhere a word starts', () => {
+    const { run, cfg } = toySetup('setTimeout(f, 1);')
     expect(labels(typeAll(run, 'setT'), cfg)[0]).toBe('setTimeout')
   })
 
   it('opens member suggestions right after a dot, for a known receiver only', () => {
-    const { run, cfg } = setup('Math.max(a, b);')
+    const { run, cfg } = toySetup('Math.max(a, b);')
     const items = labels(typeAll(run, 'Math.'), cfg)
-    expect(items).toContain('max')
-    expect(items).not.toContain('filter')
-    expect(items).not.toContain('const')
+    expect(items).toEqual(['max', 'min'])
   })
 
-  it('shows common instance members plus typed words for an unknown receiver', () => {
-    const { run, cfg } = setup('const list = [];\nlist.filter(Boolean);')
-    const items = labels(typeAll(run, 'const list = [];\nlist.filt'), cfg)
-    expect(items[0]).toBe('filter')
+  it('shows "*" members plus typed words for an unknown receiver', () => {
+    const { run, cfg } = toySetup('const list = [];\nlist.filter(Boolean);')
+    expect(labels(typeAll(run, 'const list = [];\nlist.filt'), cfg)[0]).toBe('filter')
     expect(labels(typeAll(run, 'const list = [];\nlist.'), cfg)).toContain('list')
   })
 
   it('treats a dot after ) as a member access with an unknown receiver', () => {
-    const { run, cfg } = setup('f().then(g);')
+    const { run, cfg } = toySetup('f().then(g);')
     expect(suggestContext(typeAll(run, 'f().'), cfg)).toMatchObject({ receiver: '' })
   })
 
   it('does not open after a spread or inside a number', () => {
-    let { run, cfg } = setup('[...items]')
+    let { run, cfg } = toySetup('[...items]')
     expect(suggestContext(typeAll(run, '[...'), cfg)).toBeNull()
-    ;({ run, cfg } = setup('x = 0.5;'))
+    ;({ run, cfg } = toySetup('x = 0.5;'))
     expect(suggestContext(typeAll(run, 'x = 0.'), cfg)).toBeNull()
   })
 
   it('treats a chain continued on a new line as member access', () => {
-    const code = 'const t = todos\n  .filter(Boolean);'
-    const { run, cfg } = setup(code)
+    const { run, cfg } = toySetup('const t = todos\n  .filter(Boolean);')
     expect(labels(typeAll(run, 'const t = todos\n.fil'), cfg)).toContain('filter')
   })
 
   it('supports optional chaining', () => {
-    const { run, cfg } = setup('console?.log(x);')
+    const { run, cfg } = toySetup('console?.log(x);')
     expect(labels(typeAll(run, 'console?.'), cfg)).toContain('log')
   })
 
-  it('switches library packs on only when the snippet imports them', () => {
-    const withReact = setup('import { useState } from "react";\nuseState(0);')
-    expect(withReact.cfg.globals.some((g) => g.label === 'useState')).toBe(true)
-    const without = setup('useState(0);')
-    expect(without.cfg.globals.some((g) => g.label === 'useState')).toBe(false)
+  it('switches a pack on only when the snippet matches its detect pattern, and labels its items', () => {
+    const withReact = toySetup('import { useState } from "react";\nuseState(0);')
+    const r = typeAll(withReact.run, 'import { useState } from "react";\nuseS')
+    expect(list(r, withReact.cfg).find((x) => x.label === 'useState')).toMatchObject({ kind: 'function', detail: 'react' })
+    expect(toySetup('useState(0);').cfg.globals.some((g) => g.label === 'useState')).toBe(false)
   })
 
-  it('labels where a suggestion comes from', () => {
-    const { run, cfg } = setup('import { useState } from "react";\nuseS')
-    const r = typeAll(run, 'import { useState } from "react";\n')
-    const item = list(typeAll(r, 'useS'), cfg).find((s) => s.label === 'useState')
-    expect(item).toMatchObject({ kind: 'function', detail: 'react' })
+  it('basic suggestions never carry commit characters; only a service knows where names are declared', () => {
+    const { run, cfg } = toySetup('Math.max(a, b);')
+    expect(list(typeAll(run, 'Math.'), cfg).every((x) => !x.commit)).toBe(true)
   })
 
-  it('express gives app, req and res their members', () => {
-    const code = 'import express from "express";\napp.get("/", (req, res) => res.json(1));'
-    const { run, cfg } = setup(code)
-    expect(labels(typeAll(run, 'import express from "express";\napp.'), cfg)).toContain('listen')
-  })
-})
-
-describe('coverage of the JavaScript snippets', () => {
-  /**
-   * For every word in every snippet, checks whether suggestions could offer it
-   * at the moment it's typed (playing the snippet through). Prints the misses so
-   * it's clear which vocabulary to extend as snippets are added.
-   */
-  it('reports words suggestions cannot offer', () => {
-    let words = 0
-    let offered = 0
-    const misses = new Map<string, number>()
-    for (const s of js.snippets) {
-      const cfg = buildSuggestConfig(s.code, js)
-      let run = createRun(s.code, { autoIndent: true, autoClose: false })
-      const re = /[A-Za-z_$][\w$]*/g
-      let m: RegExpExecArray | null
-      while ((m = re.exec(s.code))) {
-        const at = m.index
-        if (cfg.quiet[at]) continue
-        while (run.pos < at + 1) run = typeChar(run, run.chars[run.pos])
-        words++
-        if (labels(run, cfg).includes(m[0])) offered++
-        else misses.set(m[0], (misses.get(m[0]) ?? 0) + 1)
-      }
-    }
-    const top = [...misses].sort((a, b) => b[1] - a[1]).slice(0, 15)
-    console.info(`suggestions offer ${offered} of ${words} words (${Math.round((offered / words) * 100)}%). Most missed: ${top.map(([w, n]) => `${w}×${n}`).join(' ')}`)
-    expect(offered / words).toBeGreaterThan(0.6)
+  it('puts names from the file before globals and keywords on a tie, then sorts alphabetically', () => {
+    const { run, cfg } = toySetup('const counter = 1;\ncounter;')
+    const items = labels(typeAll(run, 'const counter = 1;\nco'), cfg)
+    expect(items[0]).toBe('counter')
+    expect(items.indexOf('console')).toBeLessThan(items.indexOf('const'))
   })
 })
 
 describe('ranking', () => {
   it("ranks a fully typed word above longer words it starts, like VS Code's boostFullMatch", () => {
     expect(fuzzyMatch('fetch', 'fetch')!.score).toBeGreaterThan(fuzzyMatch('fetch', 'fetchUser')!.score)
-  })
-
-  it('puts names from the file before globals and keywords on a tie, then sorts alphabetically', () => {
-    const code = 'const counter = 1;\ncounter;'
-    const { run, cfg } = setup(code)
-    const items = labels(typeAll(run, 'const counter = 1;\nco'), cfg)
-    expect(items[0]).toBe('counter')
-    expect(items.indexOf('console')).toBeLessThan(items.indexOf('const'))
   })
 })

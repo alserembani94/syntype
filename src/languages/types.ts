@@ -79,16 +79,11 @@ export interface CompletionConfig {
   wordChar?: RegExp
   /** What opens member suggestions, e.g. ["."] or ["::", "->"]. Defaults to ["."]. */
   memberTriggers?: string[]
+  /** Vocabulary for languages without a service (JavaScript and TypeScript have one). */
   packs?: VocabularyPack[]
   /**
-   * Characters that accept the selected item in a member list and are then
-   * typed, like VS Code's commit characters. Only member lists use them here,
-   * because without a service we can't tell when a new name is being declared.
-   */
-  memberCommitCharacters?: string[]
-  /**
    * A real language service (e.g. TypeScript's). Started lazily; until it's
-   * ready, and if it fails, suggestions fall back to the packs above.
+   * ready, and if it fails, suggestions fall back to keywords, packs and typed words.
    */
   service?: () => CompletionService
   /** Characters that ask the service for suggestions, e.g. "." or a quote. */

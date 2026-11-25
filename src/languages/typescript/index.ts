@@ -1,7 +1,6 @@
 import type { Language } from '../types'
 import { parseSnippets } from '../snippets'
 import { javascript } from '../javascript'
-import { builtins } from '../javascript/completions'
 import { getTypeScriptService } from '../../lib/ts/client'
 import raw from './snippets.txt?raw'
 
@@ -22,10 +21,6 @@ export const typescript: Language = {
   autoClosingPairs: javascript.autoClosingPairs,
   completion: {
     wordChar: /[\w$]/,
-    memberTriggers: ['.'],
-    // Used until the TypeScript service is ready, or if it can't start.
-    packs: [builtins],
-    memberCommitCharacters: ['.', ',', ';', '('],
     service: getTypeScriptService,
     serviceMode: 'typescript',
     // VS Code's TypeScript trigger characters, minus "/", "@", "<" and " "

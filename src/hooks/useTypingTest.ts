@@ -122,7 +122,7 @@ function requestAt(s: TestState, start: number, trigger?: string): TestState {
   }
 }
 
-/** Without a service: keywords, packs and typed words, all computed here. */
+/** Without a service (or while it starts): keywords, the language's packs and typed words, computed here. */
 function localSuggest(s: TestState, open: boolean): SuggestState | null {
   const cfg = s.suggestConfig
   if (!cfg || (!open && !s.suggest) || isFinished(s.run)) return null

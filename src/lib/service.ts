@@ -1,8 +1,8 @@
 /**
  * A language's completion service: something that understands the code (like
  * TypeScript's language service) and answers "what can go here?". It runs
- * asynchronously, usually in a worker. Languages without one use vocabulary
- * packs instead (see suggest.ts).
+ * asynchronously, usually in a worker. Languages without one use keywords,
+ * vocabulary packs and words already typed instead (see suggest.ts).
  */
 import type { SuggestionKind } from '../languages/types'
 
