@@ -11,9 +11,22 @@ import type { PlayerRow } from './players'
 
 export const INACTIVE_YEARS = 2
 
-/** Shows or hides the player on every board. A moderator's hide stays either way. */
-export async function setHidden(db: Db, player: PlayerRow, hidden: unknown) {
+/** Cloudflare's Rate Limiting binding (wrangler.jsonc "ratelimits"): approximate, per key and Cloudflare location. */
+export interface RateLimiter {
+  limit(options: { key: string }): Promise<{ success: boolean }>
+}
+
+/**
+ * Shows or hides the player on every board. A moderator's hide stays either
+ * way. The only player write with no natural bound, so it writes only when
+ * something changes, and at most twice a minute per player (`limiter`).
+ */
+export async function setHidden(db: Db, player: PlayerRow, hidden: unknown, limiter?: RateLimiter) {
   if (typeof hidden !== 'boolean') return { ok: false as const, status: 400, error: 'Say whether to hide.' }
+  if ((player.hidden === 1) === hidden) return { ok: true as const }
+  if (limiter && !(await limiter.limit({ key: player.id })).success) {
+    return { ok: false as const, status: 429, error: 'That’s a lot of switching. Try again in a minute.' }
+  }
   await db.prepare('UPDATE players SET hidden = ? WHERE id = ?').bind(hidden ? 1 : 0, player.id).run()
   return { ok: true as const }
 }
@@ -79,16 +92,24 @@ export async function myData(db: Db, player: PlayerRow, now: Date) {
   }
 }
 
-/** The writes that delete a player: logs, bests and reports about them go; reports they made stay, without their name; the moderation log forgets their names. One transaction. */
-const deletion = (db: Db, playerId: string) => [
-  db.prepare('UPDATE reports SET reporter_id = NULL WHERE reporter_id = ?').bind(playerId),
-  // The moderation log keeps what was done, but not their names (a rename's old and new name).
-  db.prepare('UPDATE admin_actions SET detail = NULL WHERE target_player_id = ? AND action = ?').bind(playerId, 'rename'),
-  db.prepare('DELETE FROM reports WHERE target_player_id = ?').bind(playerId),
-  db.prepare('DELETE FROM logs WHERE player_id = ?').bind(playerId),
-  db.prepare('DELETE FROM bests WHERE player_id = ?').bind(playerId),
-  db.prepare('DELETE FROM players WHERE id = ?').bind(playerId),
-]
+/**
+ * The writes that delete players: logs, bests and reports about them go;
+ * reports they made stay, without their name; the moderation log forgets
+ * their names. `who` is a query for their ids, so one batch (one transaction,
+ * and one query against D1's per-invocation limit) deletes any number.
+ */
+const deletion = (db: Db, who: { sql: string; binds: unknown[] }) => {
+  const q = (sql: string) => db.prepare(sql.replace('$WHO', who.sql)).bind(...who.binds)
+  return [
+    q('UPDATE reports SET reporter_id = NULL WHERE reporter_id IN ($WHO)'),
+    // The moderation log keeps what was done, but not their names (a rename's old and new name).
+    q("UPDATE admin_actions SET detail = NULL WHERE action = 'rename' AND target_player_id IN ($WHO)"),
+    q('DELETE FROM reports WHERE target_player_id IN ($WHO)'),
+    q('DELETE FROM logs WHERE player_id IN ($WHO)'),
+    q('DELETE FROM bests WHERE player_id IN ($WHO)'),
+    q('DELETE FROM players WHERE id IN ($WHO)'),
+  ]
+}
 
 /** Deletes the account, once the player has typed their name (or, without one, the suggested name) to confirm. */
 export async function deleteAccount(db: Db, player: PlayerRow, body: unknown) {
@@ -97,15 +118,18 @@ export async function deleteAccount(db: Db, player: PlayerRow, body: unknown) {
   if (typeof typed !== 'string' || typed.trim().toLowerCase() !== expected.toLowerCase()) {
     return { ok: false as const, status: 400, error: `Type ${expected} to confirm.` }
   }
-  await db.batch(deletion(db, player.id))
+  await db.batch(deletion(db, { sql: 'SELECT ?', binds: [player.id] }))
   return { ok: true as const }
 }
 
-/** Deletes accounts nobody has signed in to for two years (the daily scheduled run). */
+/**
+ * Deletes accounts nobody has signed in to for two years (the daily scheduled
+ * run), all in one batch. It reads the players table once a day: cheaper than
+ * an index on last_seen_at, which would add a write to every daily visit.
+ */
 export async function deleteInactive(db: Db, now: Date): Promise<number> {
   const before = new Date(now.getTime())
   before.setUTCFullYear(before.getUTCFullYear() - INACTIVE_YEARS)
-  const { results } = await db.prepare('SELECT id FROM players WHERE last_seen_at < ? LIMIT 200').bind(before.toISOString()).all<{ id: string }>()
-  for (const { id } of results) await db.batch(deletion(db, id))
-  return results.length
+  const results = (await db.batch(deletion(db, { sql: 'SELECT id FROM players WHERE last_seen_at < ?', binds: [before.toISOString()] }))) as { meta: { changes: number } }[]
+  return results.at(-1)!.meta.changes
 }

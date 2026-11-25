@@ -153,14 +153,26 @@ Built in task 6: the tables (`migrations/0001_init.sql`), sign-in and sessions (
 | `players` | player | id, provider, provider user id, display name, name changed at, hidden, created at, last seen at |
 | `bests` | player × snippet version × aid combination (plus one "any aids" row per snippet) | WPM, raw WPM, accuracy, time, aids, finished at |
 | `logs` | stored top-20 run | the best it belongs to, compressed log |
-| `snippet_versions` | snippet text ever played | fingerprint, language, name, length, code, archived at |
+| `snippet_versions` | snippet text ever played | fingerprint, language, name, length, code, first seen (a version is archived when the current snippet files no longer have it) |
 | `reports` | report | reporter (or empty once anonymised), target run or player, reason, note, status, created at |
 | `admin_actions` | moderation action | what was done, to whom, when |
 
 Indexes:
 - `bests` by (snippet version, aid combination, WPM), for boards
-- `bests` by player, for profiles and deletion
-- `reports` by status
+- `bests` by player (its primary key), for profiles, deletion, and finding a run: a run is always looked up through its player, never by run id alone
+- `reports` by status, by target and by reporter
+
+**Why so few indexes** (code review, task 12): in D1 every index adds a written row whenever its columns change, and rows written are the first free limit reached. So an index is added only where reads would otherwise grow with the whole table on a common path. Small or rarely read tables are scanned instead: `logs` is capped at 20 per snippet; `admin_actions` grows only with moderation; the daily clean-up reads `players` once a day, which costs far less than an index on `last_seen_at` that every daily visit would write to. The unused `bests_by_language` index and `snippet_versions.archived_at` column were dropped (migration 0005).
+
+**Costs and limits as built** (task 12):
+- Replays, run removal and the report queue find a run by its player's primary key, never by scanning `bests`. The admin's Remove run sends the player id with the run id.
+- "Your place" counts only the rows at or above your WPM, through the board index.
+- The edge cache key is built only from the parameters a route accepts (`worker/lib/cachekey.ts`), so extra query strings can't miss it.
+- The daily clean-up deletes every inactive account in one batch: one query against D1's 50-per-invocation limit on the free plan.
+- Request bodies are capped while reading (`worker/lib/body.ts`): 256 KB for a run, 8 KB for anything else.
+- Hiding from the boards is the one player write with no natural limit: it writes only on a change, at most twice a minute per player (the `HIDE_LIMITER` Rate Limiting binding). Run submissions need a Turnstile solve each, names change weekly, reports are capped at 10 a day.
+- Anonymous request floods are for a WAF rate-limiting rule on `/api/*` in the Cloudflare dashboard (the free plan allows one rule, counted per IP over 10 seconds; blocked requests never reach the Worker).
+- Keystrokes are kept only for visible players in a board's top 20, and a player keeps at most one log per snippet, cleaned up in the same transaction as the best, so two bests submitted at once can't leave a stray log.
 
 ## Moderation
 

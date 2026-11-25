@@ -128,10 +128,11 @@ export async function myPlace(db: Db, playerId: string, fingerprint: string, aid
   const ahead = await db
     .prepare(
       `SELECT count(*) AS n FROM bests b JOIN players p ON p.id = b.player_id
-       WHERE b.fingerprint = ? AND b.aids = ? AND b.player_id != ? AND ${VISIBLE}
+       WHERE b.fingerprint = ? AND b.aids = ? AND b.wpm >= ? AND b.player_id != ? AND ${VISIBLE}
          AND (b.wpm > ? OR (b.wpm = ? AND (b.accuracy > ? OR (b.accuracy = ? AND b.finished_at < ?))))`,
     )
-    .bind(fingerprint, aids, playerId, mine.wpm, mine.wpm, mine.accuracy, mine.accuracy, mine.finished_at)
+    // wpm >= mine.wpm adds nothing to the condition, but lets the board index read only the rows ahead.
+    .bind(fingerprint, aids, mine.wpm, playerId, mine.wpm, mine.wpm, mine.accuracy, mine.accuracy, mine.finished_at)
     .first<{ n: number }>()
   return toRow(mine, (ahead?.n ?? 0) + 1)
 }
@@ -146,7 +147,8 @@ export async function runForReplay(db: Db, runId: string, opts: { admin: boolean
     .prepare(
       `SELECT l.log, b.player_id, p.name, b.wpm, b.accuracy, b.run_aids, b.finished_at, b.fingerprint, v.language, v.name AS snippet, v.length, v.code
        FROM logs l
-       JOIN bests b ON b.run_id = l.run_id
+       -- By the primary key: a kept log always belongs to its player's overall ('any') best on that snippet.
+       JOIN bests b ON b.player_id = l.player_id AND b.fingerprint = l.fingerprint AND b.aids = 'any' AND b.run_id = l.run_id
        JOIN players p ON p.id = b.player_id
        JOIN snippet_versions v ON v.fingerprint = b.fingerprint
        WHERE l.run_id = ? ${opts.admin ? '' : `AND ${VISIBLE}`}
@@ -181,15 +183,20 @@ export async function runForReplay(db: Db, runId: string, opts: { admin: boolean
 }
 
 /**
- * The writes that take a run off the boards: its best rows and its log go,
- * and if it was the player's overall best, their best with other typing aids
- * takes its place. Null if the run isn't on the boards (or isn't `playerId`'s).
+ * The writes that take one of a player's runs off the boards: its best rows
+ * and its log go, and if it was their overall best, their best with other
+ * typing aids takes its place. Null if it isn't one of their runs on the
+ * boards. Looked up by player (the primary key's first column), so it reads
+ * only that player's rows, never the whole table.
  */
-export async function runRemoval(db: Db, runId: string, playerId?: string) {
-  const rows = (await db.prepare('SELECT player_id, fingerprint, aids FROM bests WHERE run_id = ?').bind(runId).all<{ player_id: string; fingerprint: string; aids: string }>()).results
-  if (!rows.length || (playerId && rows[0].player_id !== playerId)) return null
+export async function runRemoval(db: Db, runId: string, playerId: string) {
+  const rows = (await db.prepare('SELECT player_id, fingerprint, aids FROM bests WHERE player_id = ? AND run_id = ?').bind(playerId, runId).all<{ player_id: string; fingerprint: string; aids: string }>()).results
+  if (!rows.length) return null
   const { player_id: player, fingerprint } = rows[0]
-  const writes = [db.prepare('DELETE FROM bests WHERE run_id = ?').bind(runId), db.prepare('DELETE FROM logs WHERE run_id = ?').bind(runId)]
+  const writes = [
+    db.prepare('DELETE FROM bests WHERE player_id = ? AND fingerprint = ? AND run_id = ?').bind(player, fingerprint, runId),
+    db.prepare('DELETE FROM logs WHERE run_id = ?').bind(runId),
+  ]
   if (rows.some((r) => r.aids === 'any')) {
     writes.push(
       db

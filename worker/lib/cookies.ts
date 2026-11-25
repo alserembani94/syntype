@@ -6,7 +6,13 @@ export function readCookies(header: string | null): Record<string, string> {
     const i = part.indexOf('=')
     if (i < 0) continue
     const name = part.slice(0, i).trim()
-    if (name) out[name] = decodeURIComponent(part.slice(i + 1).trim())
+    if (!name) continue
+    // A malformed value (any cookie on the host, not only ours) is skipped, not an error.
+    try {
+      out[name] = decodeURIComponent(part.slice(i + 1).trim())
+    } catch {
+      /* not ours to read */
+    }
   }
   return out
 }

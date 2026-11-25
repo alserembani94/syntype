@@ -194,7 +194,7 @@ function Reports({ onNotice }: { onNotice: Notify }) {
                 </li>
               ))}
             </ul>
-            {g.run && g.runInfo && status === 'open' && <RunTools runId={g.run} hasLog={g.runInfo.hasLog} onRemoved={load} onNotice={onNotice} />}
+            {g.run && g.runInfo && g.player && status === 'open' && <RunTools runId={g.run} playerId={g.player.id} hasLog={g.runInfo.hasLog} onRemoved={load} onNotice={onNotice} />}
             {g.player && <PlayerTools player={g.player} onChange={updated} onNotice={onNotice} />}
           </article>
         ))
@@ -398,7 +398,7 @@ function RenameDetail({ detail }: { detail: string }) {
 }
 
 /** For a reported run: watch its replay (if its keystrokes are kept), or take it off the boards. */
-function RunTools({ runId, hasLog, onRemoved, onNotice }: { runId: string; hasLog: boolean; onRemoved: () => void; onNotice: Notify }) {
+function RunTools({ runId, playerId, hasLog, onRemoved, onNotice }: { runId: string; playerId: string; hasLog: boolean; onRemoved: () => void; onNotice: Notify }) {
   const [busy, setBusy] = useState(false)
   return (
     <div className="admin-tools">
@@ -417,7 +417,7 @@ function RunTools({ runId, hasLog, onRemoved, onNotice }: { runId: string; hasLo
           if (!confirm('Take this run off the leaderboards? Its keystrokes are deleted too.')) return
           setBusy(true)
           try {
-            await removeRun(runId)
+            await removeRun(runId, playerId)
             onNotice('The run is off the leaderboards. Resolve the reports when you’re done.')
             onRemoved()
           } catch (err) {
@@ -484,7 +484,7 @@ function PlayerRuns({ player, onNotice }: { player: AdminPlayer; onNotice: Notif
           <span className="admin-meta">
             {Math.round(e.wpm)} WPM · {Math.round(e.accuracy)}% · {aidsText(e.aids)} · {when(e.finishedAt)}
           </span>
-          <RunTools runId={e.runId} hasLog={e.hasLog} onRemoved={load} onNotice={onNotice} />
+          <RunTools runId={e.runId} playerId={player.id} hasLog={e.hasLog} onRemoved={load} onNotice={onNotice} />
         </li>
       ))}
     </ul>

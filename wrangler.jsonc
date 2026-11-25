@@ -44,7 +44,11 @@
   "secrets": {
     "required": ["GITHUB_CLIENT_SECRET", "GOOGLE_CLIENT_SECRET", "TURNSTILE_SECRET_KEY", "SESSION_SECRET"]
   },
-  // Daily at 03:41 UTC: delete accounts nobody has signed in to for two years (docs/leaderboard.md, "Privacy").
+  // Cloudflare's Rate Limiting API (approximate, per key and location): hiding from
+  // the leaderboards is the one player write with no natural bound, so it is
+  // limited to 2 changes a minute per player (worker/lib/account.ts).
+  "ratelimits": [{ "name": "HIDE_LIMITER", "namespace_id": "1001", "simple": { "limit": 2, "period": 60 } }],
+    // Daily at 03:41 UTC: delete accounts nobody has signed in to for two years (docs/leaderboard.md, "Privacy").
   "triggers": { "crons": ["41 3 * * *"] },
   "observability": { "enabled": true }
 }

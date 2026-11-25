@@ -180,8 +180,10 @@ export function actOnPlayer(db: Db, admin: string, id: string, action: PlayerAct
  * combination) takes its place, so they stay on the board with a run that
  * still stands.
  */
-export async function removeRun(db: Db, admin: string, runId: string, now: Date): Promise<Result<{ removed: number }>> {
-  const removal = await runRemoval(db, runId)
+export async function removeRun(db: Db, admin: string, runId: string, body: unknown, now: Date): Promise<Result<{ removed: number }>> {
+  const playerId = (body as { player?: unknown } | null)?.player
+  if (typeof playerId !== 'string' || !playerId) return fail(400, 'Say whose run it is.')
+  const removal = await runRemoval(db, runId, playerId)
   if (!removal) return fail(404, 'That run isn’t on the boards.')
   await db.batch([...removal.writes, logAction(db, admin, 'remove-run', removal.player, runId, JSON.stringify({ fingerprint: removal.fingerprint }), now)])
   return { ok: true, removed: removal.rows }
@@ -207,16 +209,18 @@ export interface ReportGroup {
   reports: { id: string; reason: Reason; note: string | null; status: string; createdAt: string; reporter: string | null; automatic: boolean }[]
 }
 
-/** Runs on the boards, by run id, for the report queue. */
-async function runInfos(db: Db, runIds: string[]): Promise<Map<string, RunInfo>> {
-  if (!runIds.length) return new Map()
+/** Runs on the boards, by run id, for the report queue. Looked up through the reported players, so only their rows are read. */
+async function runInfos(db: Db, runs: { player: string; run: string }[]): Promise<Map<string, RunInfo>> {
+  if (!runs.length) return new Map()
+  const players = [...new Set(runs.map((r) => r.player))]
+  const runIds = [...new Set(runs.map((r) => r.run))]
   const { results } = await db
     .prepare(
       `SELECT b.run_id, max(b.wpm) AS wpm, max(b.accuracy) AS accuracy, b.run_aids, b.finished_at, v.language, v.name, max(l.run_id IS NOT NULL) AS has_log
        FROM bests b JOIN snippet_versions v ON v.fingerprint = b.fingerprint LEFT JOIN logs l ON l.run_id = b.run_id
-       WHERE b.run_id IN (${runIds.map(() => '?').join(', ')}) GROUP BY b.run_id`,
+       WHERE b.player_id IN (${players.map(() => '?').join(', ')}) AND b.run_id IN (${runIds.map(() => '?').join(', ')}) GROUP BY b.run_id`,
     )
-    .bind(...runIds)
+    .bind(...players, ...runIds)
     .all<{ run_id: string; wpm: number; accuracy: number; run_aids: string; finished_at: string; language: string; name: string; has_log: number }>()
   return new Map(
     results.map((r) => [r.run_id, { language: r.language, snippet: r.name, wpm: r.wpm, accuracy: r.accuracy, aids: r.run_aids, finishedAt: r.finished_at, hasLog: r.has_log === 1 }]),
@@ -263,7 +267,10 @@ export async function reportQueue(db: Db, status: 'open' | 'closed'): Promise<Re
     db.prepare(`SELECT *, ${OPEN_REPORTS} FROM players WHERE id IN (${marks})`).bind(...ids).all<PlayerRow>(),
   ])
   const byId = new Map(players.map((p) => [p.id, adminPlayer(p)]))
-  const runs = await runInfos(db, [...new Set(groups.map((g) => g.run).filter((r): r is string => !!r))])
+  const runs = await runInfos(
+    db,
+    groups.filter((g): g is typeof g & { run: string } => !!g.run).map((g) => ({ player: g.player, run: g.run })),
+  )
   return groups.map((g) => ({
     player: byId.get(g.player) ?? null,
     run: g.run,

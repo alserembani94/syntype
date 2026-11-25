@@ -17,6 +17,7 @@ import { randomToken, sign, verify } from './crypto'
 import { checkRun, REJECTIONS, type Claim, type Rejection } from './runcheck'
 import type { PlayerRow } from './players'
 import { flagIfUnusual } from './flags'
+import { myPlace } from './boards'
 import { SNIPPET_DATA_PATH, type SnippetFile } from '../../src/lib/snippetfiles'
 import type { LogEntry, TypingAids } from '../../src/lib/runcore'
 
@@ -137,11 +138,6 @@ export async function gunzip(bytes: ArrayBuffer | Uint8Array<ArrayBuffer>): Prom
   return new Response(stream).text()
 }
 
-/** Players who show on boards (and the player asking, wherever they are). */
-const VISIBLE = '(p.hidden = 0 AND p.moderator_hidden = 0 OR p.id = ?)'
-/** Rows ahead of a score on a board: faster, or as fast and more accurate, or the same and earlier. */
-const AHEAD = '(b.wpm > ? OR (b.wpm = ? AND (b.accuracy > ? OR (b.accuracy = ? AND b.finished_at < ?))))'
-
 interface Deps {
   db: Db
   config: RunConfig
@@ -195,8 +191,6 @@ export async function submitRun(deps: Deps, player: PlayerRow, body: unknown, no
          WHERE excluded.wpm > bests.wpm OR (excluded.wpm = bests.wpm AND excluded.accuracy > bests.accuracy)`,
       )
       .bind(player.id, snippet.fingerprint, rowAids, snippet.language, runId, run.wpm, run.rawWpm, run.accuracy, run.seconds, key, at)
-  // The previous best's run, whose log goes if this one replaces it.
-  const previous = await db.prepare("SELECT run_id FROM bests WHERE player_id = ? AND fingerprint = ? AND aids = 'any'").bind(player.id, snippet.fingerprint).first<{ run_id: string }>()
   let results: { meta: { changes: number } }[]
   try {
     results = (await db.batch([
@@ -215,21 +209,14 @@ export async function submitRun(deps: Deps, player: PlayerRow, body: unknown, no
   const bestForAids = results[2].meta.changes > 0
   const best = results[3].meta.changes > 0
 
-  // The player's place, with the best that now stands.
-  const mine = (await db
-    .prepare("SELECT run_id, wpm, accuracy, finished_at FROM bests WHERE player_id = ? AND fingerprint = ? AND aids = 'any'")
-    .bind(player.id, snippet.fingerprint)
-    .first<{ run_id: string; wpm: number; accuracy: number; finished_at: string }>())!
-  const ahead = await db
-    .prepare(`SELECT count(*) AS n FROM bests b JOIN players p ON p.id = b.player_id WHERE b.fingerprint = ? AND b.aids = 'any' AND b.player_id != ? AND ${VISIBLE} AND ${AHEAD}`)
-    .bind(snippet.fingerprint, player.id, player.id, mine.wpm, mine.wpm, mine.accuracy, mine.accuracy, mine.finished_at)
-    .first<{ n: number }>()
-  const rank = (ahead?.n ?? 0) + 1
+  // The player's place, with the best that now stands (the same count the board's "you" row uses).
+  const rank = (await myPlace(db, player.id, snippet.fingerprint, 'any'))!.rank
 
   if (best) {
     const writes = []
-    if (previous && previous.run_id !== runId) writes.push(db.prepare('DELETE FROM logs WHERE run_id = ?').bind(previous.run_id))
-    if (rank <= LOGS_KEPT) {
+    // Keystrokes are kept for the visible top 20 (hidden players are left out of it, so theirs aren't stored at all).
+    const visible = player.hidden === 0 && player.moderator_hidden === 0
+    if (rank <= LOGS_KEPT && visible) {
       writes.push(
         db.prepare('INSERT INTO logs (run_id, player_id, fingerprint, log, created_at) VALUES (?, ?, ?, ?, ?)').bind(runId, player.id, snippet.fingerprint, await gzip(JSON.stringify(b.log as LogEntry[])), at),
         // The run pushed out of the top 20 loses its log.
@@ -243,7 +230,14 @@ export async function submitRun(deps: Deps, player: PlayerRow, body: unknown, no
           .bind(snippet.fingerprint, snippet.fingerprint, LOGS_KEPT),
       )
     }
-    if (writes.length) await db.batch(writes)
+    // The player keeps at most one log per snippet: their current best's. Read in the same transaction,
+    // so two bests submitted at once can't leave the slower one's log behind.
+    writes.push(
+      db
+        .prepare("DELETE FROM logs WHERE fingerprint = ? AND player_id = ? AND run_id NOT IN (SELECT run_id FROM bests WHERE player_id = ? AND fingerprint = ? AND aids = 'any')")
+        .bind(snippet.fingerprint, player.id, player.id, snippet.fingerprint),
+    )
+    await db.batch(writes)
   }
   // A new best far above the player's history goes to the admin to look at (flags.ts). The run stays up.
   if (best) await flagIfUnusual(db, { playerId: player.id, runId, fingerprint: snippet.fingerprint, wpm: run.wpm, rank }, now)

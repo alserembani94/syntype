@@ -41,7 +41,8 @@ import { authorizeUrl, exchange, PROVIDERS, SignInError, type OAuthConfig, type 
 import { accessEmail, type AccessConfig } from './access'
 import { actionLog, actOnPlayer, closeReports, findPlayers, PLAYER_ACTIONS, removeRun, report, reportQueue, type PlayerAction } from './moderation'
 import { board, BOARD_CACHE_SECONDS, languageBoards, myPlace, runForReplay, validAids } from './boards'
-import { deleteAccount, deleteMyRun, myData, myEntries, setHidden } from './account'
+import { deleteAccount, deleteMyRun, myData, myEntries, setHidden, type RateLimiter } from './account'
+import { readJson } from './body'
 import { MAX_BODY, gunzip, rejectionMessage, startRun, submitRun, type Assets } from './runs'
 import { getPlayer, playerFor, publicPlayer, setName, touch, type PlayerRow } from './players'
 
@@ -58,7 +59,16 @@ export interface Deps {
   fetch: (input: string, init?: RequestInit) => Promise<Response>
   /** The site's static files (for the snippet data files). */
   assets: Assets
+  /** Cloudflare Rate Limiting bindings, where configured (wrangler.jsonc "ratelimits"). */
+  limits?: { hide?: RateLimiter }
   now?: () => Date
+}
+
+/** A request's JSON body, capped (body.ts). Too large: a 413 to send back. Missing or not JSON: null, which each route answers itself. */
+async function bodyOf(request: Request, maxBytes?: number): Promise<{ value: unknown } | Response> {
+  const r = await readJson(request, maxBytes)
+  if (r.ok) return { value: r.value }
+  return r.status === 413 ? json({ error: 'That request is too large.' }, 413) : { value: null }
 }
 
 export const SESSION_COOKIE = 'syntype_session'
@@ -190,8 +200,9 @@ export async function handle(request: Request, deps: Deps): Promise<Response> {
     if (!fromOurPages(request, config)) return json({ error: 'Not allowed from here.' }, 403)
     const player = await signedIn(request, deps)
     if (!player) return json({ error: 'Sign in first.' }, 401)
-    const body = (await request.json().catch(() => null)) as { name?: unknown } | null
-    const result = await setName(db, player, body?.name, now)
+    const body = await bodyOf(request)
+    if (body instanceof Response) return body
+    const result = await setName(db, player, (body.value as { name?: unknown } | null)?.name, now)
     return result.ok ? json({ signedIn: true, player: publicPlayer(result.player) }) : json({ error: result.error }, result.status)
   }
 
@@ -204,10 +215,12 @@ export async function handle(request: Request, deps: Deps): Promise<Response> {
     if (post && !fromOurPages(request, config)) return json({ error: 'Not allowed from here.' }, 403)
     const player = await signedIn(request, deps)
     if (!player) return json({ error: 'Sign in first.' }, 401)
-    const body = post ? await request.json().catch(() => null) : null
+    const read = post ? await bodyOf(request) : { value: null }
+    if (read instanceof Response) return read
+    const body = read.value
     switch (action) {
       case 'hide': {
-        const r = await setHidden(db, player, (body as { hidden?: unknown } | null)?.hidden)
+        const r = await setHidden(db, player, (body as { hidden?: unknown } | null)?.hidden, deps.limits?.hide)
         return r.ok ? json({ signedIn: true, player: publicPlayer((await getPlayer(db, player.id))!) }) : json({ error: r.error }, r.status)
       }
       case 'runs':
@@ -230,7 +243,9 @@ export async function handle(request: Request, deps: Deps): Promise<Response> {
     if (!fromOurPages(request, config)) return json({ error: 'Not allowed from here.' }, 403)
     const player = await signedIn(request, deps)
     if (!player) return json({ error: 'Sign in to report.' }, 401)
-    const result = await report(db, player, await request.json().catch(() => null), now)
+    const body = await bodyOf(request)
+    if (body instanceof Response) return body
+    const result = await report(db, player, body.value, now)
     return result.ok ? json({ ok: true }, 201) : json({ error: result.error }, result.status)
   }
 
@@ -239,7 +254,9 @@ export async function handle(request: Request, deps: Deps): Promise<Response> {
     const player = await signedIn(request, deps)
     if (!player) return json({ error: 'Sign in to submit runs.' }, 401)
     if (!player.name) return json({ error: 'Choose your leaderboard name first.' }, 403)
-    const result = await startRun(config, deps.assets, player, await request.json().catch(() => null), now)
+    const body = await bodyOf(request)
+    if (body instanceof Response) return body
+    const result = await startRun(config, deps.assets, player, body.value, now)
     return result.ok ? json({ token: result.token }) : json({ error: result.error }, result.status)
   }
 
@@ -247,14 +264,9 @@ export async function handle(request: Request, deps: Deps): Promise<Response> {
     if (!fromOurPages(request, config)) return json({ error: 'Not allowed from here.' }, 403)
     const player = await signedIn(request, deps)
     if (!player) return json({ error: 'Sign in to submit runs.' }, 401)
-    const text = await request.text()
-    if (text.length > MAX_BODY) return json({ accepted: false, reason: 'too-long', error: rejectionMessage('too-long') }, 413)
-    let body: unknown = null
-    try {
-      body = JSON.parse(text)
-    } catch {
-      return json({ error: 'Send JSON.' }, 400)
-    }
+    const read = await readJson(request, MAX_BODY)
+    if (!read.ok) return read.status === 413 ? json({ accepted: false, reason: 'too-long', error: rejectionMessage('too-long') }, 413) : json({ error: 'Send JSON.' }, 400)
+    const body = read.value
     const result = await submitRun({ db, config, assets: deps.assets, fetch: deps.fetch, ip: request.headers.get('CF-Connecting-IP') }, player, body, now)
     return result.ok ? json({ accepted: true, ...result.run }) : json({ accepted: false, reason: result.reason, error: result.error }, result.status)
   }
@@ -295,7 +307,10 @@ async function admin(request: Request, url: URL, deps: Deps, now: Date): Promise
   const path = url.pathname.slice('/api/admin'.length)
   const method = request.method
   if (method === 'POST' && !fromOurPages(request, config)) return json({ error: 'Not allowed from here.' }, 403)
-  const body = () => request.json().catch(() => null)
+  const body = async () => {
+    const r = await readJson(request)
+    return r.ok ? r.value : null
+  }
   const reply = (result: { ok: true } | { ok: false; status: number; error: string }) =>
     result.ok ? json(result) : json({ error: result.error }, result.status)
 
@@ -318,6 +333,6 @@ async function admin(request: Request, url: URL, deps: Deps, now: Date): Promise
     return run ? json({ ...run, log: JSON.parse(await gunzip(new Uint8Array(run.log))) }) : json({ error: 'That run’s keystrokes aren’t kept.' }, 404)
   }
   const remove = path.match(/^\/runs\/([\w-]{1,64})\/remove$/)
-  if (remove && method === 'POST') return reply(await removeRun(db, email, remove[1], now))
+  if (remove && method === 'POST') return reply(await removeRun(db, email, remove[1], await body(), now))
   return json({ error: 'Not found' }, 404)
 }

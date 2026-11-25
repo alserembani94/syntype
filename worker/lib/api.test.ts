@@ -8,10 +8,11 @@ import { getPlatformProxy } from 'wrangler'
 import { handle, originOf, safeReturn, SESSION_COOKIE, SIGNIN_COOKIE, type ApiConfig, type Deps } from './api'
 import { ACCESS_HEADER, clearAccessKeys } from './access'
 import { sign } from './crypto'
-import type { Db } from './db'
+import type { Db, Statement } from './db'
 import { RENAME_EVERY_MS } from './names'
 import { AUD, fakeAccess, TEAM } from './test-access'
 import { gunzip, LOGS_KEPT } from './runs'
+import { myPlace, runForReplay, runRemoval } from './boards'
 import { deleteInactive } from './account'
 import { LANGUAGES } from '../../src/languages'
 import { snippetFiles, type SnippetFile } from '../../src/lib/snippetfiles'
@@ -658,18 +659,28 @@ describe('submitting runs', () => {
       expect((await get(`/api/replays/${shyRun.body.runId}`)).status).toBe(404)
       clearAccessKeys()
       const access = await fakeAccess()
-      const asAdmin = (path: string, method = 'GET') =>
-        handle(new Request(`${SITE}/api/admin${path}`, { method, headers: { [ACCESS_HEADER]: adminToken, ...(method === 'POST' ? { Origin: SITE } : {}) } }), deps(access.fetchImpl))
+      const asAdmin = (path: string, method = 'GET', body?: unknown) =>
+        handle(
+          new Request(`${SITE}/api/admin${path}`, {
+            method,
+            headers: { [ACCESS_HEADER]: adminToken, ...(method === 'POST' ? { Origin: SITE, 'Content-Type': 'application/json' } : {}) },
+            body: body === undefined ? undefined : JSON.stringify(body),
+          }),
+          deps(access.fetchImpl),
+        )
       const adminToken = await access.token()
       expect((await asAdmin(`/replays/${shyRun.body.runId}`)).status).toBe(200)
 
       // Removing the fastest run: off the board, its log gone, and the action logged.
-      const removed = await asAdmin(`/runs/${fastRun.body.runId}/remove`, 'POST')
+      // The player id is needed: without it the server would have to scan every score to find the run.
+      expect((await asAdmin(`/runs/${fastRun.body.runId}/remove`, 'POST', {})).status).toBe(400)
+      expect((await asAdmin(`/runs/${fastRun.body.runId}/remove`, 'POST', { player: slow.id })).status).toBe(404)
+      const removed = await asAdmin(`/runs/${fastRun.body.runId}/remove`, 'POST', { player: fast.id })
       expect(await removed.json()).toEqual({ ok: true, removed: 2 })
       expect((await get<Board>(`/api/boards/${fp}`)).body.rows.map((r) => r.player.name)).toEqual(['board-slow'])
       expect(await db.prepare('SELECT 1 AS x FROM logs WHERE run_id = ?').bind(fastRun.body.runId).first()).toBeNull()
       expect(await db.prepare("SELECT action FROM admin_actions WHERE target_run_id = ?").bind(fastRun.body.runId).first()).toEqual({ action: 'remove-run' })
-      expect((await asAdmin(`/runs/${fastRun.body.runId}/remove`, 'POST')).status).toBe(404)
+      expect((await asAdmin(`/runs/${fastRun.body.runId}/remove`, 'POST', { player: fast.id })).status).toBe(404)
     } finally {
       ;({ snippet, fp } = saved)
     }
@@ -684,7 +695,11 @@ describe('submitting runs', () => {
     clearAccessKeys()
     const access = await fakeAccess()
     const res = await handle(
-      new Request(`${SITE}/api/admin/runs/${withAids.body.runId}/remove`, { method: 'POST', headers: { [ACCESS_HEADER]: await access.token(), Origin: SITE } }),
+      new Request(`${SITE}/api/admin/runs/${withAids.body.runId}/remove`, {
+        method: 'POST',
+        headers: { [ACCESS_HEADER]: await access.token(), Origin: SITE, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ player: p.id }),
+      }),
       deps(access.fetchImpl),
     )
     expect(res.status).toBe(200)
@@ -767,7 +782,21 @@ describe('submitting runs', () => {
     const now = new Date()
     await db.prepare('UPDATE players SET last_seen_at = ? WHERE id = ?').bind(new Date(now.getTime() - 2.1 * 365 * 86_400_000).toISOString(), old.id).run()
     await db.prepare('UPDATE players SET last_seen_at = ? WHERE id = ?').bind(new Date(now.getTime() - 1.9 * 365 * 86_400_000).toISOString(), recent.id).run()
-    expect(await deleteInactive(db, now)).toBeGreaterThanOrEqual(1)
+    // Many at once: one batch, so it stays within D1's 50 queries per invocation on the free plan.
+    const stale = new Date(now.getTime() - 3 * 365 * 86_400_000).toISOString()
+    for (let i = 0; i < 60; i++) {
+      await db.prepare('INSERT INTO players (id, provider, provider_id, suggested_name, created_at, last_seen_at) VALUES (?, ?, ?, ?, ?, ?)').bind(`stale-${i}`, 'github', `stale-${i}`, 'x', stale, stale).run()
+    }
+    let queries = 0
+    const counting: Db = {
+      prepare: (sql) => db.prepare(sql),
+      batch: (stmts) => {
+        queries++
+        return db.batch(stmts)
+      },
+    }
+    expect(await deleteInactive(counting, now)).toBeGreaterThanOrEqual(61)
+    expect(queries).toBe(1)
     expect(await db.prepare('SELECT id FROM players WHERE id IN (?, ?)').bind(old.id, recent.id).all()).toMatchObject({ results: [{ id: recent.id }] })
   })
 
@@ -795,6 +824,86 @@ describe('submitting runs', () => {
     // The admin sees the player's entries, from the player search.
     const runs = await handle(new Request(`${SITE}/api/admin/players/${p.id}/runs`, { headers: { [ACCESS_HEADER]: await access.token() } }), deps(access.fetchImpl))
     expect(((await runs.json()) as { entries: { runId: string }[] }).entries.map((e) => e.runId)).toContain(run.body.runId)
+  })
+
+  it('looks runs up without scanning the whole scores table (query plans)', async () => {
+    const p = await named('plan-check')
+    const run = await submit(p.session, honestRun(1, 101))
+    const runId = run.body.runId!
+    // Record every statement the functions run, then ask SQLite how it would run each one.
+    const seen: { sql: string; binds: unknown[] }[] = []
+    const recording: Db = {
+      prepare(sql) {
+        const stmt = db.prepare(sql)
+        const wrap = (binds: unknown[]): Statement => {
+          seen.push({ sql, binds })
+          const bound = stmt.bind(...binds)
+          return { bind: (...b) => wrap(b), first: () => bound.first(), all: () => bound.all(), run: () => bound.run() } as Statement
+        }
+        return { bind: (...b: unknown[]) => wrap(b), first: () => stmt.first(), all: () => stmt.all(), run: () => stmt.run() } as Statement
+      },
+      batch: () => Promise.resolve([]),
+    }
+    await runForReplay(recording, runId, { admin: true })
+    await runRemoval(recording, runId, p.id)
+    await myPlace(recording, p.id, fp, 'any')
+    expect(seen.length).toBeGreaterThan(3)
+    for (const { sql, binds } of seen.filter((x) => /^\s*(SELECT|DELETE|INSERT)/i.test(x.sql))) {
+      const plan = (await db.prepare(`EXPLAIN QUERY PLAN ${sql}`).bind(...binds).all<{ detail: string }>()).results.map((r) => r.detail)
+      expect(plan.join(' | '), sql).not.toMatch(/\bSCAN (b|bests)\b/)
+    }
+  })
+
+  it('keeps no keystrokes for hidden players, and never more than one log per player and snippet', async () => {
+    const hidden = await named('hidden-typist')
+    await db.prepare('UPDATE players SET hidden = 1 WHERE id = ?').bind(hidden.id).run()
+    const run = await submit(hidden.session, honestRun(1, 111))
+    expect(run.body).toMatchObject({ accepted: true, best: true })
+    expect(await db.prepare('SELECT count(*) AS n FROM logs WHERE player_id = ?').bind(hidden.id).first()).toEqual({ n: 0 })
+
+    // A stray log for the same snippet (as two bests submitted at once could leave) goes with the next best.
+    const p = await named('two-tabs')
+    const first = await submit(p.session, honestRun(1, 112))
+    await db.prepare('INSERT INTO logs (run_id, player_id, fingerprint, log, created_at) VALUES (?, ?, ?, ?, ?)').bind('stray-run', p.id, fp, new Uint8Array([1]), new Date().toISOString()).run()
+    const second = await submit(p.session, honestRun(1.3, 113))
+    expect(second.body.best).toBe(true)
+    const logs = (await db.prepare('SELECT run_id FROM logs WHERE player_id = ?').bind(p.id).all<{ run_id: string }>()).results.map((r) => r.run_id)
+    expect(logs).toEqual([second.body.runId])
+    expect(logs).not.toContain(first.body.runId)
+  })
+
+  it('hiding writes only when it changes something, and at most as often as the limiter allows', async () => {
+    const p = await named('toggler')
+    let allowed = 1
+    const limiter = { limit: async () => ({ success: allowed-- > 0 }) }
+    const hide = (hidden: boolean) =>
+      handle(
+        new Request(`${SITE}/api/me/hide`, {
+          method: 'POST',
+          headers: { Cookie: `${SESSION_COOKIE}=${p.session}`, Origin: SITE, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ hidden }),
+        }),
+        { ...deps(), limits: { hide: limiter } },
+      )
+    // Already shown: no change, so neither a write nor a use of the limit.
+    expect((await hide(false)).status).toBe(200)
+    expect(allowed).toBe(1)
+    expect((await hide(true)).status).toBe(200)
+    expect((await hide(false)).status).toBe(429)
+    expect(await db.prepare('SELECT hidden FROM players WHERE id = ?').bind(p.id).first()).toEqual({ hidden: 1 })
+  })
+
+  it('a request body over the limit is refused before it is read', async () => {
+    const p = await named('big-body')
+    const res = await handle(
+      new Request(`${SITE}/api/me/name`, {
+        method: 'POST',
+        headers: { Cookie: `${SESSION_COOKIE}=${p.session}`, Origin: SITE, 'Content-Type': 'application/json', 'Content-Length': '100000' },
+        body: JSON.stringify({ name: 'x'.repeat(99_980) }),
+      }),
+      deps(),
+    )
+    expect(res.status).toBe(413)
   })
 
   it('a token is the player’s own', async () => {

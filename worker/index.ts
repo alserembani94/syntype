@@ -6,18 +6,17 @@
  */
 import { handle } from './lib/api'
 import { deleteInactive } from './lib/account'
-
-/** Answers that are the same for everyone (boards and replays), kept at the edge for a minute. */
-const isShared = (request: Request, url: URL) =>
-  request.method === 'GET' && (url.pathname === '/api/boards' || /^\/api\/boards\/[0-9a-f]{64}$/.test(url.pathname) || url.pathname.startsWith('/api/replays/'))
+import { sharedCacheKey } from './lib/cachekey'
 
 export default {
   async fetch(request, env, ctx): Promise<Response> {
     const url = new URL(request.url)
     if (url.pathname.startsWith('/api/')) {
-      // The Cache API: shared answers come from this data centre's cache for 60 seconds.
-      const cache = isShared(request, url) ? caches.default : null
-      const key = cache ? new Request(url.toString()) : null
+      // The Cache API: answers that are the same for everyone come from this data
+      // centre's cache for 60 seconds, keyed only by the parameters routes accept.
+      const shared = sharedCacheKey(request)
+      const cache = shared ? caches.default : null
+      const key = shared ? new Request(shared) : null
       const hit = cache && key ? await cache.match(key) : undefined
       if (hit) return hit
       const response = await handle(request, {
@@ -25,6 +24,7 @@ export default {
         config: env,
         fetch: (input, init) => fetch(input, init),
         assets: (path) => env.ASSETS.fetch(new Request(new URL(path, request.url))),
+        limits: { hide: env.HIDE_LIMITER },
       })
       if (cache && key && response.ok) ctx.waitUntil(cache.put(key, response.clone()))
       return response
