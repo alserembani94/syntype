@@ -140,7 +140,7 @@ export default function App() {
       <header>
         <div className="brand">
           <h1>
-            Keystroke<span>.{language.extension}</span>
+            Syn<span>type</span>
           </h1>
           <small>typing speed, measured in code</small>
         </div>

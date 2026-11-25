@@ -1,4 +1,4 @@
-# Keystroke
+# Syntype
 
 A typing speed test for code, in the spirit of monkeytype. It uses real code snippets, colours them like an editor, and reports how fast and how accurately you type them. JavaScript is the only language so far; the game is built so more can be added.
 

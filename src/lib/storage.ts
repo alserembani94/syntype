@@ -1,5 +1,5 @@
 /** localStorage wrapper that never throws (private windows, blocked storage). */
-const PREFIX = 'code-typing:'
+const PREFIX = 'syntype:'
 
 export function load<T>(key: string, fallback: T): T {
   try {
