@@ -253,4 +253,4 @@ footer { color: var(--muted); font-size: 13px; display: flex; gap: 16px; flex-wr
 @media (max-height: 680px) { .ad-rail { display: none; } }
 
 /* A theme's glow (the retro terminal's): on code and the big numbers. */
-.code, .gutter, .brand h1, .big .v, .r-row dd.num { text-shadow: var(--glow); }
+.code, .gutter, .brand h1, .big .v, .r-row dd.num { text-shadow: var(--glow); transition: text-shadow 0.7s ease; }

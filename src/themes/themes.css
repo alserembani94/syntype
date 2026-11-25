@@ -12,6 +12,35 @@
  * The System defaults use :where() so they weigh nothing and any chosen theme wins.
  */
 
+/*
+ * Theme changes cross-fade instead of switching at once. Registering the
+ * colours as <color> lets the browser animate them; every element inherits the
+ * animated values from the root. Browsers without @property switch instantly.
+ */
+@property --bg { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --surface { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --surface-2 { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --line { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --fg { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --muted { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --accent { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --accent-soft { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --err { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --err-soft { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --ok { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --tok-kw { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --tok-str { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --tok-num { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --tok-fn { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --tok-ty { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --tok-com { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --tok-pun { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --tab-dot { syntax: "<color>"; inherits: true; initial-value: #000; }
+:root {
+  transition: --bg var(--theme-fade), --surface var(--theme-fade), --surface-2 var(--theme-fade), --line var(--theme-fade), --fg var(--theme-fade), --muted var(--theme-fade), --accent var(--theme-fade), --accent-soft var(--theme-fade), --err var(--theme-fade), --err-soft var(--theme-fade), --ok var(--theme-fade), --tok-kw var(--theme-fade), --tok-str var(--theme-fade), --tok-num var(--theme-fade), --tok-fn var(--theme-fade), --tok-ty var(--theme-fade), --tok-com var(--theme-fade), --tok-pun var(--theme-fade), --tab-dot var(--theme-fade);
+  --theme-fade: 0.7s ease;
+}
+
 /* Syntype Light: the default in light mode. */
 :where(:root),
 [data-syntype-theme="light"] {
