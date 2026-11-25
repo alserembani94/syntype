@@ -7,6 +7,8 @@ interface Props {
   /** A dialog or menu is open: the game pauses and ignores keys. */
   onOpenChange: (open: boolean) => void
   onMyRuns: () => void
+  /** The signed-in player as it changes (null when signed out), and Turnstile's sitekey for submitting runs. */
+  onPlayer?: (player: Player | null, turnstileSiteKey: string | null) => void
 }
 
 type Open = null | 'signin' | 'name' | 'menu'
@@ -14,7 +16,7 @@ type Open = null | 'signin' | 'name' | 'menu'
 const PROVIDER_NAMES: Record<Provider, string> = { github: 'GitHub', google: 'Google' }
 
 /** Sign in, the leaderboard name step, and the account menu, in the header. */
-export function Account({ available, onOpenChange, onMyRuns }: Props) {
+export function Account({ available, onOpenChange, onMyRuns, onPlayer }: Props) {
   const [account, setAccount] = useState<AccountState>({ state: 'loading' })
   const [open, setOpenState] = useState<Open>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -43,6 +45,14 @@ export function Account({ available, onOpenChange, onMyRuns }: Props) {
       live = false
     }
   }, [available])
+
+  const onPlayerRef = useRef(onPlayer)
+  useEffect(() => {
+    onPlayerRef.current = onPlayer
+  })
+  const signedInPlayer = account.state === 'signed-in' ? account.player : null
+  const siteKey = account.state === 'signed-in' ? (account.turnstileSiteKey ?? null) : null
+  useEffect(() => onPlayerRef.current?.(signedInPlayer, siteKey), [signedInPlayer, siteKey])
 
   if (!available || account.state === 'loading' || account.state === 'unavailable') return null
 
@@ -83,7 +93,7 @@ export function Account({ available, onOpenChange, onMyRuns }: Props) {
           player={player}
           onClose={() => setOpen(null)}
           onSaved={(p) => {
-            setAccount({ state: 'signed-in', player: p })
+            setAccount((a) => ({ state: 'signed-in', player: p, turnstileSiteKey: a.state === 'signed-in' ? a.turnstileSiteKey : undefined }))
             setOpen(null)
           }}
         />

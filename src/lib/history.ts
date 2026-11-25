@@ -9,6 +9,7 @@
  * disk). openHistory() then resolves to null and the game carries on without it.
  */
 import type { LogEntry, RunRecord } from './runlog'
+import type { Submission } from './submit'
 import { MIN_ACCURACY_FOR_BEST } from './stats'
 
 const DB_NAME = 'syntype'
@@ -23,6 +24,8 @@ export interface StoredRun extends Omit<RunRecord, 'log'> {
   /** "language/snippet/fingerprint": one snippet's exact text. */
   snippetKey: string
   hasLog: boolean
+  /** What happened when it was sent to the leaderboard; missing if it wasn't. */
+  submission?: Submission
 }
 
 export const snippetKey = (r: Pick<RunRecord, 'language' | 'snippet' | 'fingerprint'>) => `${r.language}/${r.snippet}/${r.fingerprint}`
@@ -49,6 +52,8 @@ const done = (tx: IDBTransaction) =>
 export interface History {
   /** Saves a finished run, then drops logs that are no longer among the kept ones. */
   add(record: RunRecord): Promise<void>
+  /** Notes what happened when a run was sent to the leaderboard. */
+  setSubmission(id: string, submission: Submission): Promise<void>
   /** Runs, newest first; optionally one language's or one snippet's. */
   runs(filter?: { language?: string; snippetKey?: string }): Promise<StoredRun[]>
   /** A run's keystroke log, if it was kept. */
@@ -163,6 +168,14 @@ function makeHistory(db: IDBDatabase): History {
       await done(tx)
     },
 
+    async setSubmission(id, submission) {
+      const tx = db.transaction('runs', 'readwrite')
+      const runs = tx.objectStore('runs')
+      const run = (await request(runs.get(id))) as StoredRun | undefined
+      if (run) runs.put({ ...run, submission })
+      await done(tx)
+    },
+
     async runs(filter = {}) {
       const store = db.transaction('runs').objectStore('runs')
       const all = (await request(
@@ -211,7 +224,10 @@ function makeHistory(db: IDBDatabase): History {
           continue
         }
         const log = logs.get(r.id)
-        runs.put({ ...r, snippetKey: snippetKey(r), hasLog: !!log })
+        // A leaderboard status from the file is kept only if it reads as one.
+        const sub = r.submission as Partial<Submission> | undefined
+        const submission = sub && ['accepted', 'rejected', 'failed'].includes(sub.status as string) && typeof sub.at === 'string' ? (sub as Submission) : undefined
+        runs.put({ ...r, snippetKey: snippetKey(r), hasLog: !!log, submission })
         if (log) logStore.put(log, r.id)
         added++
       }

@@ -4,7 +4,7 @@
  * so playback never sits frozen while the player was away.
  */
 import { decodeLog, type LogEntry, type TypingAids } from './runlog'
-import { init, reducer } from '../hooks/useTypingTest'
+import { init, reducer } from './typing'
 import { computePairs } from './pairs'
 import type { Run } from './engine'
 import type { Language, Snippet } from '../languages'

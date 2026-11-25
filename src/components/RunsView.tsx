@@ -508,6 +508,7 @@ function SnippetRuns({ lang, name, length, runs, onBack, onType, onReplay }: Sni
   const shown = runs.filter((r) => matchesAids(aids, r.aids))
   const stats = snippetStats(shown)
   const newestFirst = [...shown].sort((a, b) => b.finishedAt.localeCompare(a.finishedAt))
+  const anySubmitted = newestFirst.some((r) => r.submission)
   return (
     <section className="runs" aria-labelledby="snippet-title">
       <div className="runs-head">
@@ -565,6 +566,7 @@ function SnippetRuns({ lang, name, length, runs, onBack, onType, onReplay }: Sni
                 <th>Accuracy</th>
                 <th>Time</th>
                 <th className="wide">Typing aids</th>
+                {anySubmitted && <th>Leaderboard</th>}
                 <th>Replay</th>
               </tr>
             </thead>
@@ -586,6 +588,7 @@ function SnippetRuns({ lang, name, length, runs, onBack, onType, onReplay }: Sni
                       <i className={r.aids.autocomplete ? '' : 'off'} title="autocomplete">auto</i>
                     </span>
                   </td>
+                  {anySubmitted && <td>{boardCell(r)}</td>}
                   <td>
                     {r.hasLog ? (
                       <button type="button" className="link play" onClick={() => onReplay(r.id)}>
@@ -635,4 +638,30 @@ function RunsChart({ runs, best }: { runs: StoredRun[]; best: StoredRun | null }
       ))}
     </svg>
   )
+}
+
+/** What happened to a run on the leaderboard, for its row in the run list. */
+function boardCell(r: StoredRun) {
+  const sub = r.submission
+  if (!sub) return <span className="runs-muted">–</span>
+  switch (sub.status) {
+    case 'accepted':
+      return (
+        <span className="stat" title={sub.best ? 'A new best on the leaderboard when it was sent' : 'Accepted; an earlier run was your best'}>
+          {sub.best ? `#${sub.rank}` : 'accepted'}
+        </span>
+      )
+    case 'rejected':
+      return (
+        <span className="runs-problem" title={sub.message}>
+          rejected
+        </span>
+      )
+    case 'failed':
+      return (
+        <span className="runs-muted" title={sub.message}>
+          not sent
+        </span>
+      )
+  }
 }

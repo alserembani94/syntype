@@ -11,7 +11,7 @@
     "test": "vitest run",
     "build:page": "npm run build && node scripts/build-page.mjs",
     "deploy": "wrangler d1 migrations apply syntype --remote && wrangler deploy",
-    "dev:api": "npm run build && wrangler d1 migrations apply syntype --local && wrangler dev --var ADMIN_DEV_EMAIL:admin@localhost"
+    "dev:api": "npm run build && wrangler d1 migrations apply syntype --local && wrangler dev --var ADMIN_DEV_EMAIL:admin@localhost --var TURNSTILE_SITE_KEY:1x00000000000000000000BB"
   },
   "dependencies": {
     "react": "^19.3.1",

@@ -10,6 +10,8 @@ import { load, save } from './lib/storage'
 import { migrateBests, savedLength, type Bests } from './lib/settings'
 import { openHistory } from './lib/history'
 import { recordRun } from './lib/runlog'
+import { useSubmission } from './hooks/useSubmission'
+import type { Player } from './lib/account'
 import { CHORD_TIMEOUT_MS, keyLabels, shortcut, shortcutText } from './lib/shortcuts'
 import { CodeView } from './components/CodeView'
 import { ConfigBar } from './components/ConfigBar'
@@ -125,15 +127,24 @@ export default function App() {
   // Every finished run goes into local history with its keystroke log
   // (src/lib/history.ts), once. Where the browser won't store it, nothing happens.
   const [runHistory] = useState(() => openHistory())
+  // The signed-in player (from the header's Account), whose runs go to the leaderboard.
+  const [player, setPlayer] = useState<{ player: Player | null; siteKey: string | null }>({ player: null, siteKey: null })
+  const onPlayer = useCallback((p: Player | null, siteKey: string | null) => setPlayer({ player: p, siteKey }), [])
+  const submission = useSubmission(player.player, player.siteKey, state, runHistory)
+  const submitRun = submission.submit
   const recordedRun = useRef(-1)
   useEffect(() => {
     if (phase !== 'done' || recordedRun.current === state.runId) return
     recordedRun.current = state.runId
     const aids = { autoIndent, autoClose, autocomplete }
+    const runId = state.runId
     recordRun(language, state, aids)
-      .then(async (record) => (await runHistory)?.add(record))
+      .then(async (record) => {
+        await (await runHistory)?.add(record)
+        submitRun(runId, record)
+      })
       .catch((err) => console.warn('This run could not be saved to local history:', err))
-  }, [phase, state, language, autoIndent, autoClose, autocomplete, runHistory])
+  }, [phase, state, language, autoIndent, autoClose, autocomplete, runHistory, submitRun])
 
   const start = useCallback(
     (s: Snippet, changes: Partial<Settings> = {}) => {
@@ -455,7 +466,7 @@ export default function App() {
           </button>
         </nav>
         <div className="top-actions">
-          <Account available={onSite} onOpenChange={setAccountOpen} onMyRuns={() => showView('runs')} />
+          <Account available={onSite} onOpenChange={setAccountOpen} onMyRuns={() => showView('runs')} onPlayer={onPlayer} />
           {aboutSection && (
             <button type="button" className="icon-button" onClick={() => setAboutOpen(true)} aria-haspopup="dialog" aria-label="About Syntype" title="About Syntype">
               <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
@@ -551,6 +562,8 @@ export default function App() {
                 highlight={language.highlight}
                 onNext={next}
                 onRetry={retry}
+                leaderboard={submission.view}
+                onResubmit={submission.retry}
               />
             ) : (
               <CodeView

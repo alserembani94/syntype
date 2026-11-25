@@ -19,14 +19,14 @@ export interface Player {
   renameAfter: string | null
 }
 
-export type Account = { state: 'loading' } | { state: 'unavailable' } | { state: 'signed-out' } | { state: 'signed-in'; player: Player }
+export type Account = { state: 'loading' } | { state: 'unavailable' } | { state: 'signed-out' } | { state: 'signed-in'; player: Player; turnstileSiteKey?: string }
 
 export async function fetchAccount(): Promise<Account> {
   try {
     const res = await fetch('/api/me', { credentials: 'same-origin', headers: { Accept: 'application/json' } })
     if (!res.ok || !res.headers.get('Content-Type')?.includes('application/json')) return { state: 'unavailable' }
-    const body = (await res.json()) as { signedIn: boolean; player?: Player }
-    return body.signedIn && body.player ? { state: 'signed-in', player: body.player } : { state: 'signed-out' }
+    const body = (await res.json()) as { signedIn: boolean; player?: Player; turnstileSiteKey?: string }
+    return body.signedIn && body.player ? { state: 'signed-in', player: body.player, turnstileSiteKey: body.turnstileSiteKey } : { state: 'signed-out' }
   } catch {
     return { state: 'unavailable' }
   }

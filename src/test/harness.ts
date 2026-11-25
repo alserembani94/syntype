@@ -3,7 +3,7 @@
  * A language with a completion service needs a synchronous stand-in for it
  * here (see TEST_COMPLETERS), since the real one runs in a browser worker.
  */
-import { init, reducer, type Action, type TestState } from '../hooks/useTypingTest'
+import { init, reducer, type Action, type TestState } from '../lib/typing'
 import { buildSuggestConfig } from '../lib/suggest'
 import { computePairs } from '../lib/pairs'
 import type { CompletionService } from '../lib/service'

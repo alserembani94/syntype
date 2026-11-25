@@ -32,7 +32,7 @@ Not goals for now: weekly or monthly boards, boards that rank across snippets, l
 
 The site is already a Worker serving static files (`wrangler.jsonc`). The backend joins the same Worker:
 
-- **Worker code** handles `/api/*` only (`assets.run_worker_first`). Every other request is a static file, free and unlimited, so the game never depends on the backend. The admin page (`/admin`) is a static file too, behind Access; its data comes from `/api/admin/*`, which checks Access's token itself.
+- **Worker code** handles `/api/*` only (`assets.run_worker_first`), and reads the snippet data files through the assets binding. Every other request is a static file, free and unlimited, so the game never depends on the backend. The admin page (`/admin`) is a static file too, behind Access; its data comes from `/api/admin/*`, which checks Access's token itself.
 - **D1** (SQLite) stores players, best scores, top-20 logs, reports and snippet versions.
 - **Turnstile** (Cloudflare's CAPTCHA, usually invisible) is checked when a run is submitted.
 - **Cloudflare Access** guards the admin page.
@@ -113,6 +113,17 @@ Built in task 6: the tables (`migrations/0001_init.sql`), sign-in and sessions (
    - accuracy is at least 75%
 4. **If it's the player's best** on that snippet (overall, or for that aid combination), the best is replaced. If it enters the top 20, its log is stored, and the log pushed out of the top 20 is deleted.
 5. The submitter sees their new place at once. Others see it within the board's 60-second cache.
+
+**As built** (task 7):
+- **Snippets on the server:** the build writes each snippet's exact text and auto-close pairs to `dist/data/snippets/<fingerprint>.json`, plus an `index.json` of the current ones (`src/lib/snippetfiles.ts`). The Worker reads them through its static assets, so it never loads the language definitions, and a fingerprint without a file (an edited or removed snippet, or a made-up one) can't get a token or be submitted.
+- **The same code:** the typing reducer is `src/lib/typing.ts` and the log format and replay `src/lib/runcore.ts`, shared by the game and the Worker. `worker/lib/runcheck.ts` holds the checks, tested on every snippet (`runcheck.test.ts`): honest runs with and without every aid pass; forged logs, results and inhuman typing don't.
+- **Routes:** `POST /api/runs/start` (named players; a token signed with the session secret, valid 2 hours) and `POST /api/runs` (`worker/lib/runs.ts`). The game asks for the token at the first key, so the server allows 5 seconds for that request in the "no longer than since the token" check.
+- **Human checks:** 10 keys in a row under 15 ms apart; over 250 WPM across any 100 keys (or the whole run, from 50 keys); key-to-key variation under 8% across 40 or more keys. Pauses split the run. Accepted suggestions must be a single line of at most 80 characters, and only with autocomplete on.
+- **Limits:** a body of at most 256 KB; at most 4 entries per character plus 200, plus one per second; at most 30 minutes of typing.
+- **Order:** the token, then Turnstile, then the replay, so a bot without a Turnstile token costs no replay. A token is marked used only when the run is accepted, in the same transaction as the bests (`used_run_tokens`, pruned after a day), so a failed Turnstile check can be retried.
+- **Places** count only players who show on boards (plus the submitter). Logs are gzipped; the top 20 counts visible players only.
+- **The game** (`src/hooks/useSubmission.ts`): only for signed-in players with a name; runs under 75% aren't sent. The results screen says what happened (new best and place, best unchanged, rejected and why, or couldn't send, with Try again), and My runs shows it per run, kept with the run on the device. Turnstile (`src/lib/turnstile.ts`) loads at the first submission and stays invisible unless it needs the player.
+- **Locally:** `npm run dev:api` uses Turnstile's always-pass test sitekey; `.dev.vars` needs its test secret.
 
 ## Leaderboards
 

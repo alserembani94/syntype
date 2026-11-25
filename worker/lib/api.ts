@@ -9,6 +9,8 @@
  *   GET  /api/me                          the signed-in player, or { signedIn: false }
  *   POST /api/me/name                     set or change the leaderboard name
  *   POST /api/reports                     report a player or one of their runs
+ *   POST /api/runs/start                  a run token, when a signed-in player starts a snippet
+ *   POST /api/runs                        submit a finished run (runs.ts)
  *
  * The admin page's API, behind Cloudflare Access (access.ts checks its token
  * on every request):
@@ -26,17 +28,22 @@ import { randomToken, sha256, sign, verify } from './crypto'
 import { authorizeUrl, exchange, PROVIDERS, SignInError, type OAuthConfig, type Provider } from './oauth'
 import { accessEmail, type AccessConfig } from './access'
 import { actionLog, actOnPlayer, closeReports, findPlayers, PLAYER_ACTIONS, report, reportQueue, type PlayerAction } from './moderation'
+import { MAX_BODY, rejectionMessage, startRun, submitRun, type Assets } from './runs'
 import { getPlayer, playerFor, publicPlayer, setName, touch, type PlayerRow } from './players'
 
 export interface ApiConfig extends OAuthConfig, AccessConfig {
   SITE_URL: string
   SESSION_SECRET: string
+  TURNSTILE_SITE_KEY: string
+  TURNSTILE_SECRET_KEY: string
 }
 
 export interface Deps {
   db: Db
   config: ApiConfig
   fetch: (input: string, init?: RequestInit) => Promise<Response>
+  /** The site's static files (for the snippet data files). */
+  assets: Assets
   now?: () => Date
 }
 
@@ -162,7 +169,7 @@ export async function handle(request: Request, deps: Deps): Promise<Response> {
     const player = await signedIn(request, deps)
     if (!player) return json({ signedIn: false })
     await touch(db, player, now)
-    return json({ signedIn: true, player: publicPlayer(player) })
+    return json({ signedIn: true, player: publicPlayer(player), turnstileSiteKey: config.TURNSTILE_SITE_KEY })
   }
 
   if (url.pathname === '/api/me/name' && method === 'POST') {
@@ -180,6 +187,31 @@ export async function handle(request: Request, deps: Deps): Promise<Response> {
     if (!player) return json({ error: 'Sign in to report.' }, 401)
     const result = await report(db, player, await request.json().catch(() => null), now)
     return result.ok ? json({ ok: true }, 201) : json({ error: result.error }, result.status)
+  }
+
+  if (url.pathname === '/api/runs/start' && method === 'POST') {
+    if (!fromOurPages(request, config)) return json({ error: 'Not allowed from here.' }, 403)
+    const player = await signedIn(request, deps)
+    if (!player) return json({ error: 'Sign in to submit runs.' }, 401)
+    if (!player.name) return json({ error: 'Choose your leaderboard name first.' }, 403)
+    const result = await startRun(config, deps.assets, player, await request.json().catch(() => null), now)
+    return result.ok ? json({ token: result.token }) : json({ error: result.error }, result.status)
+  }
+
+  if (url.pathname === '/api/runs' && method === 'POST') {
+    if (!fromOurPages(request, config)) return json({ error: 'Not allowed from here.' }, 403)
+    const player = await signedIn(request, deps)
+    if (!player) return json({ error: 'Sign in to submit runs.' }, 401)
+    const text = await request.text()
+    if (text.length > MAX_BODY) return json({ accepted: false, reason: 'too-long', error: rejectionMessage('too-long') }, 413)
+    let body: unknown = null
+    try {
+      body = JSON.parse(text)
+    } catch {
+      return json({ error: 'Send JSON.' }, 400)
+    }
+    const result = await submitRun({ db, config, assets: deps.assets, fetch: deps.fetch, ip: request.headers.get('CF-Connecting-IP') }, player, body, now)
+    return result.ok ? json({ accepted: true, ...result.run }) : json({ accepted: false, reason: result.reason, error: result.error }, result.status)
   }
 
   if (url.pathname.startsWith('/api/admin/')) return admin(request, url, deps, now)

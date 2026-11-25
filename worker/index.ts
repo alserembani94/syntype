@@ -9,7 +9,12 @@ import { handle } from './lib/api'
 export default {
   async fetch(request, env): Promise<Response> {
     if (new URL(request.url).pathname.startsWith('/api/')) {
-      return handle(request, { db: env.DB, config: env, fetch: (input, init) => fetch(input, init) })
+      return handle(request, {
+        db: env.DB,
+        config: env,
+        fetch: (input, init) => fetch(input, init),
+        assets: (path) => env.ASSETS.fetch(new Request(new URL(path, request.url))),
+      })
     }
     // Anything else that reaches the Worker is a file request.
     return env.ASSETS.fetch(request)

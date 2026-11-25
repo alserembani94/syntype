@@ -1,3 +1,4 @@
+import type { SubmitView } from '../hooks/useSubmission'
 import { useEffect, useRef, useState } from 'react'
 import type { Result } from '../lib/stats'
 import type { Run } from '../lib/engine'
@@ -21,6 +22,9 @@ interface Props {
   highlight: HighlightRules
   onNext: () => void
   onRetry: () => void
+  /** What happened on the leaderboard, for signed-in players. */
+  leaderboard?: SubmitView | null
+  onResubmit?: () => void
 }
 
 const keyLabel = (c: string) => (c === '\n' ? 'enter' : c === ' ' ? 'space' : c)
@@ -37,7 +41,7 @@ const ICONS = {
   review: 'M4 6h16M4 12h16M4 18h10',
 }
 
-export function Results({ result: r, isBest, info, run, highlight, onNext, onRetry }: Props) {
+export function Results({ result: r, isBest, info, run, highlight, onNext, onRetry, leaderboard, onResubmit }: Props) {
   const nextRef = useRef<HTMLButtonElement>(null)
   const [reviewing, setReviewing] = useState(false)
   useEffect(() => nextRef.current?.focus({ preventScroll: true }), [])
@@ -87,6 +91,8 @@ export function Results({ result: r, isBest, info, run, highlight, onNext, onRet
           </div>
         </div>
       </div>
+
+      {leaderboard && <LeaderboardLine view={leaderboard} onResubmit={onResubmit} />}
 
       <dl className="r-row">
         <div className="test">
@@ -190,5 +196,35 @@ export function Results({ result: r, isBest, info, run, highlight, onNext, onRet
       {/* Below the actions, so the stats and buttons never move when it fills. */}
       <AdSlot slot="results" />
     </div>
+  )
+}
+
+/** One line on what the leaderboard made of the run. */
+function LeaderboardLine({ view, onResubmit }: { view: SubmitView; onResubmit?: () => void }) {
+  const [text, tone] = ((): [string, 'ok' | 'muted' | 'problem'] => {
+    switch (view.status) {
+      case 'sending':
+        return ['Sending to the leaderboard…', 'muted']
+      case 'unnamed':
+        return ['Choose your leaderboard name (top right) to put your runs on the leaderboard.', 'muted']
+      case 'not-counted':
+        return ['Runs under 75% accuracy don’t go on the leaderboard.', 'muted']
+      case 'accepted':
+        return view.best ? [`New best on this snippet’s leaderboard: #${view.rank}`, 'ok'] : [`Your best on this snippet stays at #${view.rank} on the leaderboard.`, 'muted']
+      case 'rejected':
+        return [`Not on the leaderboard: ${view.message}`, 'problem']
+      case 'failed':
+        return [`Couldn’t send to the leaderboard. ${view.message}`, 'problem']
+    }
+  })()
+  return (
+    <p className={`r-board ${tone}`} role="status">
+      {text}
+      {(view.status === 'failed' || (view.status === 'rejected' && view.reason === 'turnstile')) && onResubmit && (
+        <button type="button" className="link" onClick={onResubmit}>
+          Try again
+        </button>
+      )}
+    </p>
   )
 }

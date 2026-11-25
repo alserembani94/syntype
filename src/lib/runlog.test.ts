@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest'
 import { LANGUAGES } from '../languages'
 import { hasService, play, type Aids } from '../test/harness'
 import { decodeLog, encodeLog, fingerprint, recordRun, replay, resultOf } from './runlog'
-import type { TestState } from '../hooks/useTypingTest'
+import type { TestState } from './typing'
 
 const snippets = LANGUAGES.flatMap((lang) => lang.snippets.map((s) => [`${lang.id}/${s.name}`, lang, s] as const))
 

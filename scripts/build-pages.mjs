@@ -2,7 +2,8 @@
 // language (dist/python.html, served at /python), each with its own title,
 // description, canonical URL, link preview tags and structured data, and an
 // intro, FAQ and language list in the HTML itself, readable before any script
-// runs. Also writes dist/sitemap.xml and dist/robots.txt. Everything comes from
+// runs. Also writes dist/sitemap.xml and dist/robots.txt, and the snippet data
+// files the server replays submitted runs against (src/lib/snippetfiles.ts). Everything comes from
 // src/seo/site.ts and the language list, loaded through Vite (the languages
 // import their snippets with ?raw, which only Vite understands).
 import fs from 'node:fs'
@@ -11,10 +12,11 @@ import { createServer } from 'vite'
 
 const dist = 'dist'
 const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom', logLevel: 'error' })
-let seo, LANGUAGES
+let seo, LANGUAGES, snippetData
 try {
   seo = await server.ssrLoadModule('/src/seo/site.ts')
   ;({ LANGUAGES } = await server.ssrLoadModule('/src/languages/index.ts'))
+  snippetData = await server.ssrLoadModule('/src/lib/snippetfiles.ts')
 } finally {
   await server.close()
 }
@@ -113,5 +115,11 @@ for (const page of pages) {
   fs.writeFileSync(path.join(dist, runs.file), html)
 }
 fs.writeFileSync(path.join(dist, 'sitemap.xml'), seo.sitemapXml(pages))
+// One file per snippet, and an index of the current ones.
+const files = await snippetData.snippetFiles(LANGUAGES)
+const dataDir = path.join(dist, snippetData.SNIPPET_DATA_PATH)
+fs.mkdirSync(dataDir, { recursive: true })
+for (const f of files) fs.writeFileSync(path.join(dataDir, `${f.fingerprint}.json`), JSON.stringify(f))
+fs.writeFileSync(path.join(dataDir, 'index.json'), JSON.stringify(files.map(({ fingerprint, language, name, length }) => ({ fingerprint, language, name, length }))))
 fs.writeFileSync(path.join(dist, 'robots.txt'), seo.robotsTxt())
-console.log(`${dist}/: ${pages.length} pages, ${seo.RUNS_PAGE.file}, sitemap.xml, robots.txt`)
+console.log(`${dist}/: ${pages.length} pages, ${seo.RUNS_PAGE.file}, sitemap.xml, robots.txt, ${files.length} snippet data files`)
