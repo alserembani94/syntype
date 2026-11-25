@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { readJson } from './body'
 import { readCookies } from './cookies'
-import { sharedCacheKey } from './cachekey'
+import { fromCache, sharedCacheKey } from './cachekey'
 
 const post = (body: BodyInit, headers: Record<string, string> = {}) => new Request('https://syntype.vercel.my/api/x', { method: 'POST', body, headers })
 /** A body with no Content-Length: streamed in chunks, as a client may send it. */
@@ -57,5 +57,15 @@ describe('the edge cache key', () => {
     expect(key('/api/admin/reports')).toBeNull()
     expect(key('/api/boards?lang=python', 'POST')).toBeNull()
     expect(key('/api/boards?lang=../x')).toBeNull()
+  })
+})
+
+describe('answers served from the edge cache', () => {
+  it('keep the 60-second browser cache, whatever the zone rewrote it to', async () => {
+    const stored = new Response('{"rows":[]}', { status: 200, headers: { 'Cache-Control': 'public, max-age=14400', 'Content-Type': 'application/json' } })
+    const sent = fromCache(stored)
+    expect(sent.headers.get('Cache-Control')).toBe('public, max-age=60')
+    expect(sent.headers.get('Content-Type')).toBe('application/json')
+    expect(await sent.text()).toBe('{"rows":[]}')
   })
 })

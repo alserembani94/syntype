@@ -167,7 +167,7 @@ Indexes:
 **Costs and limits as built** (task 12):
 - Replays, run removal and the report queue find a run by its player's primary key, never by scanning `bests`. The admin's Remove run sends the player id with the run id.
 - "Your place" counts only the rows at or above your WPM, through the board index.
-- The edge cache key is built only from the parameters a route accepts (`worker/lib/cachekey.ts`), so extra query strings can't miss it.
+- The edge cache key is built only from the parameters a route accepts (`worker/lib/cachekey.ts`), so extra query strings can't miss it. Answers served from that cache get `Cache-Control: public, max-age=60` set again, because the zone's Browser Cache TTL (4 hours by default) rewrites it on cached objects.
 - The daily clean-up deletes every inactive account in one batch: one query against D1's 50-per-invocation limit on the free plan.
 - Request bodies are capped while reading (`worker/lib/body.ts`): 256 KB for a run, 8 KB for anything else.
 - Hiding from the boards is the one player write with no natural limit: it writes only on a change, at most twice a minute per player (the `HIDE_LIMITER` Rate Limiting binding). Run submissions need a Turnstile solve each, names change weekly, reports are capped at 10 a day.

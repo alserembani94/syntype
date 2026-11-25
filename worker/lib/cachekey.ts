@@ -4,7 +4,7 @@
  * parameters the routes accept, so extra or reordered query strings can't
  * miss the cache and reach the database.
  */
-import { validAids } from './boards'
+import { BOARD_CACHE_SECONDS, validAids } from './boards'
 
 export function sharedCacheKey(request: Request): string | null {
   if (request.method !== 'GET') return null
@@ -17,4 +17,16 @@ export function sharedCacheKey(request: Request): string | null {
   if (/^\/api\/boards\/[0-9a-f]{64}$/.test(url.pathname)) return `${base}?aids=${validAids(url.searchParams.get('aids'))}`
   if (/^\/api\/replays\/[\w-]{1,64}$/.test(url.pathname)) return base
   return null
+}
+
+/**
+ * A cached answer, ready to send. Cloudflare's zone-wide "Browser Cache TTL"
+ * (4 hours by default) rewrites the Cache-Control of answers kept with the
+ * Cache API, which would let browsers keep a board, or a removed run, for
+ * hours. So the header is set back to what the routes send.
+ */
+export function fromCache(hit: Response): Response {
+  const res = new Response(hit.body, hit)
+  res.headers.set('Cache-Control', `public, max-age=${BOARD_CACHE_SECONDS}`)
+  return res
 }

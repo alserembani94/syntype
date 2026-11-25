@@ -6,7 +6,7 @@
  */
 import { handle } from './lib/api'
 import { deleteInactive } from './lib/account'
-import { sharedCacheKey } from './lib/cachekey'
+import { fromCache, sharedCacheKey } from './lib/cachekey'
 
 export default {
   async fetch(request, env, ctx): Promise<Response> {
@@ -18,7 +18,7 @@ export default {
       const cache = shared ? caches.default : null
       const key = shared ? new Request(shared) : null
       const hit = cache && key ? await cache.match(key) : undefined
-      if (hit) return hit
+      if (hit) return fromCache(hit)
       const response = await handle(request, {
         db: env.DB,
         config: env,
