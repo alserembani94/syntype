@@ -220,3 +220,19 @@ describe("PHP auto-close, from VS Code's PHP configuration", () => {
     expect(pendingText(run)).toBe(']')
   })
 })
+
+describe("YAML auto-close, from VS Code's YAML configuration", () => {
+  const yml = getLanguage('yaml')
+  const startYml = (code: string) =>
+    createRun(code, { autoIndent: true, autoClose: true, pairs: computePairs(code, yml) })
+
+  it('auto-closes quotes and flow collections', () => {
+    expect(pendingText(typeAll(startYml('tags: ["v*"]'), 'tags: ['))).toBe(']')
+    expect(pendingText(typeAll(startYml('tags: ["v*"]'), 'tags: ["'))).toBe('"]')
+  })
+
+  it('nests the braces of a ${{ }} expression', () => {
+    const run = typeAll(startYml('os: ${{ matrix.os }}'), 'os: ${{')
+    expect(pendingText(run)).toBe('}}')
+  })
+})

@@ -1,0 +1,236 @@
+=== person.yaml
+name: Ada Lovelace
+born: 1815
+languages:
+  - English
+  - French
+active: false
+=== prettier.yaml
+semi: false
+singleQuote: true
+trailingComma: all
+printWidth: 100
+=== flags.yaml
+flags:
+  new_checkout: true
+  dark_mode: false
+  beta_banner: null
+=== codecov.yaml
+coverage:
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 1%
+=== dependabot.yaml
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+=== ci.yaml
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm test
+=== app_config.yaml
+server:
+  host: 0.0.0.0
+  port: 8080
+  timeout_seconds: 30
+database:
+  url: postgres://localhost:5432/app
+  pool_size: 10
+logging:
+  level: info
+  json: true
+=== user_schema.yaml
+components:
+  schemas:
+    User:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+          nullable: true
+=== playbook.yaml
+- name: Install nginx
+  hosts: web
+  become: true
+  tasks:
+    - name: Install package
+      apt:
+        name: nginx
+        state: present
+    - name: Start service
+      service:
+        name: nginx
+        state: started
+        enabled: true
+=== docker-compose.yaml
+services:
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://app:secret@db:5432/app
+    depends_on:
+      - db
+    restart: unless-stopped
+  db:
+    image: postgres:16
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+volumes:
+  db-data:
+=== deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  labels:
+    app: web
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+        - name: web
+          image: ghcr.io/example/web:1.4.2
+          ports:
+            - containerPort: 8080
+          env:
+            - name: LOG_LEVEL
+              value: info
+          resources:
+            limits:
+              cpu: 500m
+              memory: 256Mi
+=== release.yaml
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+      - run: go build -o dist/ ./...
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.os }}
+          path: dist/
+=== ingress.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+spec:
+  type: ClusterIP
+  selector:
+    app: web
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web
+spec:
+  rules:
+    - host: example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 80
+=== gitlab-ci.yaml
+stages:
+  - test
+  - deploy
+
+variables:
+  NODE_VERSION: "22"
+
+test:
+  stage: test
+  image: node:${NODE_VERSION}
+  script:
+    - npm ci
+    - npm test
+  cache:
+    paths:
+      - node_modules/
+
+deploy:
+  stage: deploy
+  script:
+    - ./scripts/deploy.sh
+  only:
+    - main
+  when: manual
+=== users_api.yaml
+openapi: 3.1.0
+info:
+  title: Users API
+  version: 1.0.0
+paths:
+  /users/{id}:
+    get:
+      summary: Get a user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Not found

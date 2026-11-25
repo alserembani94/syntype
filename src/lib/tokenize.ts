@@ -65,5 +65,14 @@ export function tokens(code: string, rules: HighlightRules): Token[] {
 export function tokenize(code: string, rules: HighlightRules): TokenClass[] {
   const classes: TokenClass[] = new Array(code.length).fill('')
   for (const t of tokens(code, rules)) classes.fill(t.cls, t.start, t.end)
+  if (rules.keyPattern) {
+    for (const m of code.matchAll(rules.keyPattern)) {
+      if (m[1] === undefined || m.index === undefined) continue
+      const start = m.index + m[0].indexOf(m[1])
+      // Keys inside comments and strings stay as they are.
+      if (classes[start] === 'com' || classes[start] === 'str') continue
+      classes.fill('fn', start, start + m[1].length)
+    }
+  }
   return classes
 }

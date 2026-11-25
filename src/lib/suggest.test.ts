@@ -327,3 +327,33 @@ describe('PHP suggestions', () => {
     expect(labels(typeAll(run, '$n = cou'), cfg)).toContain('count')
   })
 })
+
+describe('YAML', () => {
+  const yml = getLanguage('yaml')
+  const ymlSetup = (code: string) => ({
+    run: createRun(code, { autoIndent: true, autoClose: false }),
+    cfg: buildSuggestConfig(code, yml, false),
+  })
+
+  it('colours mapping keys, including list-item keys, but not text in comments or strings', () => {
+    const code = 'runs-on: ubuntu-latest\n- name: web # note: here\nmsg: "a: b"'
+    const cls = tokenize(code, yml.highlight)
+    expect(cls[0]).toBe('fn')
+    expect(cls[code.indexOf('runs-on') + 6]).toBe('fn')
+    expect(cls[code.indexOf('name')]).toBe('fn')
+    expect(cls[code.indexOf('note')]).toBe('com')
+    expect(cls[code.indexOf('a: b')]).toBe('str')
+  })
+
+  it("recognises a file's format and offers its keys: Kubernetes from apiVersion", () => {
+    const code = 'apiVersion: v1\nkind: Service\nspec:\n  selector: {}'
+    const { run, cfg } = ymlSetup(code)
+    expect(labels(typeAll(run, 'apiVersion: v1\nkind: Service\nspec:\nsel'), cfg)).toContain('selector')
+    expect(ymlSetup('name: x').cfg.globals.some((g) => g.label === 'matchLabels')).toBe(false)
+  })
+
+  it('never opens member lists: YAML has no member access', () => {
+    const { run, cfg } = ymlSetup('host: 0.0.0.0')
+    expect(suggestContext(typeAll(run, 'host: 0.'), cfg)).toBeNull()
+  })
+})

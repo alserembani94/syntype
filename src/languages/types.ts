@@ -19,6 +19,11 @@ export interface HighlightRules {
   strings?: string[]
   /** Quote delimiters that may span lines, e.g. ["`"] or ['"""']. */
   multilineStrings?: string[]
+  /**
+   * Coloured as keys: the first capture group of each match, e.g. YAML's
+   * `runs-on` in `runs-on: ubuntu-latest`. Must be a global, multiline RegExp.
+   */
+  keyPattern?: RegExp
 }
 
 /** Same shape as VS Code's language-configuration `autoClosingPairs`. */
