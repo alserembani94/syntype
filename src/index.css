@@ -115,7 +115,7 @@ kbd { font: 600 11px var(--f-code); border: 1px solid var(--line); border-bottom
 .big .v { font-family: var(--f-display); font-weight: 700; font-size: 64px; line-height: 1; color: var(--accent); font-variant-numeric: tabular-nums; }
 .big.sm .v { font-size: 40px; color: var(--fg); }
 .pb { align-self: center; font-size: 13px; font-weight: 600; color: var(--ok); border: 1px solid currentColor; padding: 4px 10px; border-radius: 99px; }
-.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 .stat { background: var(--surface); padding: 12px 14px; display: grid; gap: 2px; }
 .stat .k { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
 .stat .v { font: 600 18px var(--f-code); font-variant-numeric: tabular-nums; }
@@ -155,3 +155,18 @@ footer { color: var(--muted); font-size: 13px; display: flex; gap: 16px; flex-wr
   .results { padding: 20px 16px; }
 }
 @media (prefers-reduced-motion: reduce) { .c.cur { animation: none; } .c { transition: none; } }
+
+/* suggestion list, styled after VS Code's suggest widget */
+.suggest {
+  position: absolute; z-index: 5; margin: 0; padding: 0; list-style: none; overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.14); font: 14px var(--f-code); color: var(--fg);
+}
+.suggest li { display: flex; align-items: center; gap: 8px; padding: 0 8px; cursor: pointer; white-space: nowrap; }
+.suggest li.selected { background: var(--accent-soft); }
+.suggest .icon { flex: none; width: 26px; text-align: center; font-size: 10px; font-weight: 600; border-radius: 3px; padding: 1px 0; }
+.suggest .icon.keyword { color: var(--tok-kw); }
+.suggest .icon.word { color: var(--muted); }
+.suggest .label { overflow: hidden; text-overflow: ellipsis; font-variant-ligatures: none; }
+.suggest .label b { color: var(--accent); font-weight: 600; }
+.suggest .detail { margin-left: auto; color: var(--muted); font: 12px var(--f-ui); }

@@ -35,6 +35,13 @@ export function Results({ result: r, isBest, onNext, onRetry }: Props) {
           <span className="v">{Math.round(r.rawWpm)}</span>
         </div>
         <div className="stat">
+          <span className="k">code speed</span>
+          <span className="v" title="Every right character on screen, including suggested and auto-inserted ones">
+            {Math.round(r.codeWpm)}
+            <small> wpm</small>
+          </span>
+        </div>
+        <div className="stat">
           <span className="k">time</span>
           <span className="v">{r.seconds.toFixed(1)}s</span>
         </div>
@@ -57,6 +64,12 @@ export function Results({ result: r, isBest, onNext, onRetry }: Props) {
                 {Math.round(r.symbolAccuracy)}%<small> of {r.symbolTotal}</small>
               </>
             )}
+          </span>
+        </div>
+        <div className="stat">
+          <span className="k">keys saved</span>
+          <span className="v" title="Keystrokes saved by accepting suggestions">
+            {r.keysSaved}
           </span>
         </div>
       </div>

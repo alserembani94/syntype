@@ -59,7 +59,7 @@ describe('auto-close like VS Code', () => {
   it('typing the closer overtypes it and counts as typed', () => {
     const run = typeAll(start('foo(a);'), 'foo(a);')
     expect(isFinished(run)).toBe(true)
-    expect(counts(run)).toEqual({ correct: 7, incorrect: 0 })
+    expect(counts(run)).toMatchObject({ correct: 7, incorrect: 0 })
   })
 
   it('→ and End move past auto-inserted closers without counting them', () => {

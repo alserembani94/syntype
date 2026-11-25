@@ -12,7 +12,12 @@ export interface Sample {
 }
 
 export interface Result {
+  /** Typing speed: only characters the user typed. */
   wpm: number
+  /** Code speed: every right character on screen, including suggested and auto-inserted ones. */
+  codeWpm: number
+  /** Keystrokes saved by accepting suggestions. */
+  keysSaved: number
   rawWpm: number
   accuracy: number
   seconds: number
@@ -31,9 +36,11 @@ export const accuracy = (run: Run) =>
   run.keystrokes ? (run.correctKeystrokes / run.keystrokes) * 100 : 100
 
 export function summarize(run: Run, seconds: number, samples: Sample[]): Result {
-  const { correct, incorrect } = counts(run)
+  const { correct, incorrect, code, suggested } = counts(run)
   return {
     wpm: wpm(correct, seconds),
+    codeWpm: wpm(code, seconds),
+    keysSaved: Math.max(0, suggested - run.completions),
     rawWpm: wpm(correct + incorrect, seconds),
     accuracy: accuracy(run),
     seconds,

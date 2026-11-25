@@ -22,8 +22,14 @@ Other scripts: `npm test` (engine tests, Vitest), `npm run build`, `npm run lint
   - Backspace on an opener also removes the closer it inserted.
   - The one difference from VS Code: a mistyped opener doesn't auto-close anything.
   - Closers you move past with `→`, `End` or `↓` don't count toward WPM. Personal bests are kept separately with auto-close on and off.
+- **IntelliSense** (on by default) is a constrained version of VS Code's suggestion list:
+  - It suggests the language's keywords and words you've already typed in the snippet. Built-ins, members after a dot and library packs such as React are planned next.
+  - The list opens as you type a word, but not inside strings or comments (VS Code's `quickSuggestions` defaults). Matching is fuzzy, so `uC` finds `useCallback`.
+  - `Tab` or `Enter` accepts, `↑`/`↓` choose and `Esc` closes. Clicking or tapping a row also accepts. As in VS Code (`acceptSuggestionOnEnter: "on"`), Enter accepts even when the word is already complete. Press `Esc` first if you want a new line.
+  - Accepting a wrong suggestion inserts it anyway, and its letters are checked like typed ones.
+- **Scoring with assists:** WPM counts only characters you typed. **Code speed** counts every right character on screen, including suggested and auto-inserted text, and **keys saved** shows what suggestions saved you. Personal bests are kept separately for each combination of assists.
 - `Ctrl+Backspace` deletes a word.
-- WPM is correct characters ÷ 5 per minute. Accuracy counts every keystroke, so fixed mistakes still cost you.
+- WPM is correct typed characters ÷ 5 per minute. Accuracy counts every keystroke, so fixed mistakes still cost you.
 - Results show raw WPM, symbol accuracy (brackets, `=>`, `;` and so on), a speed-over-time chart, and the keys you missed most.
 - Personal bests are kept per language and length in `localStorage`. Runs under 75% accuracy don't count.
 
@@ -39,18 +45,19 @@ src/
       index.ts          name, extension and highlighting rules
       snippets.txt      the snippets: "=== name.js" header, then the code
   lib/engine.ts         pure typing engine (type, backspace, auto-indent, auto-close, →/End/↓)
+  lib/suggest.ts        constrained IntelliSense: word detection, candidates, fuzzy matching
   lib/pairs.ts          matches brackets and quotes per snippet, with VS Code's auto-close rules
   lib/stats.ts          WPM, accuracy and the results summary
   lib/tokenize.ts       highlighter driven by a language's HighlightRules
   hooks/useTypingTest.ts  engine + clock as a React reducer
-  components/           CodeView, ConfigBar, Results, SpeedChart
+  components/           CodeView, ConfigBar, Results, SpeedChart, SuggestBox
   App.tsx               layout, keyboard handling, settings, personal bests
 ```
 
 ## Adding a language
 
 1. Create `src/languages/<id>/snippets.txt` with snippets in the format below. Name each file with the language's extension.
-2. Create `src/languages/<id>/index.ts`, copying `javascript/index.ts` and changing `id`, `name`, `extension`, `highlight` (keywords, comment and string syntax) and `autoClosingPairs`. Copy `autoClosingPairs` from the language's VS Code `language-configuration.json` so auto-close matches the editor.
+2. Create `src/languages/<id>/index.ts`, copying `javascript/index.ts` and changing `id`, `name`, `extension`, `highlight` (keywords, comment and string syntax), `autoClosingPairs` and `completion.wordChar` (what counts as a word character). Copy `autoClosingPairs` from the language's VS Code `language-configuration.json` so auto-close matches the editor.
 3. Add it to `LANGUAGES` in `src/languages/index.ts`.
 
 It then appears in the language picker. `npm test` checks every registered language's snippets.

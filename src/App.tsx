@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { getLanguage, LANGUAGES, pickSnippet, type LengthFilter, type Snippet } from './languages'
-import { useTypingTest } from './hooks/useTypingTest'
+import { useTypingTest, type TestOptions } from './hooks/useTypingTest'
 import { accuracy, MIN_ACCURACY_FOR_BEST, summarize, wpm } from './lib/stats'
-import { atPending, caretPosition, counts, type RunOptions } from './lib/engine'
+import { atPending, caretPosition, counts } from './lib/engine'
+import { buildSuggestConfig } from './lib/suggest'
 import { computePairs } from './lib/pairs'
 import { load, save } from './lib/storage'
 import { CodeView } from './components/CodeView'
@@ -14,17 +15,23 @@ interface Settings {
   length: LengthFilter
   autoIndent: boolean
   autoClose: boolean
+  intellisense: boolean
 }
 
-/** Personal bests keyed by "languageId:length", plus ":autoclose" when it was on. */
+/** Personal bests keyed by "languageId:length", plus a suffix for each assist that was on. */
 type Bests = Record<string, number>
-const bestKey = (s: Settings) => `${s.languageId}:${s.length}${s.autoClose ? ':autoclose' : ''}`
+const bestKey = (s: Settings) =>
+  `${s.languageId}:${s.length}${s.autoClose ? ':autoclose' : ''}${s.intellisense ? ':intellisense' : ''}`
 
-const runOptions = (snippet: Snippet, s: Settings): RunOptions => ({
-  autoIndent: s.autoIndent,
-  autoClose: s.autoClose,
-  pairs: s.autoClose ? computePairs(snippet.code, getLanguage(s.languageId)) : undefined,
-})
+const runOptions = (snippet: Snippet, s: Settings): TestOptions => {
+  const lang = getLanguage(s.languageId)
+  return {
+    autoIndent: s.autoIndent,
+    autoClose: s.autoClose,
+    pairs: s.autoClose ? computePairs(snippet.code, lang) : undefined,
+    suggest: s.intellisense ? buildSuggestConfig(snippet.code, lang) : null,
+  }
+}
 
 const NAV_KEYS: Record<string, 'right' | 'end' | 'down'> = { ArrowRight: 'right', End: 'end', ArrowDown: 'down' }
 
@@ -34,7 +41,8 @@ export default function App() {
   const [length, setLength] = useState<LengthFilter>(() => load('length', 'medium'))
   const [autoIndent, setAutoIndent] = useState(() => load('autoIndent', true))
   const [autoClose, setAutoClose] = useState(() => load('autoClose', true))
-  const settings: Settings = { languageId, length, autoIndent, autoClose }
+  const [intellisense, setIntellisense] = useState(() => load('intellisense', true))
+  const settings: Settings = { languageId, length, autoIndent, autoClose, intellisense }
   const [bests, setBests] = useState<Bests>(() => load('bests', {}))
   const [firstSnippet] = useState(() => pickSnippet(language.snippets, length))
   const {
@@ -44,6 +52,9 @@ export default function App() {
     type,
     back,
     move,
+    suggestNav,
+    accept,
+    dismiss,
   } = useTypingTest(firstSnippet, runOptions(firstSnippet, settings))
   const [bestAtStart, setBestAtStart] = useState(() => bests[bestKey(settings)] ?? 0)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -67,13 +78,13 @@ export default function App() {
 
   const start = useCallback(
     (s: Snippet, changes: Partial<Settings> = {}) => {
-      const upcoming: Settings = { languageId, length, autoIndent, autoClose, ...changes }
+      const upcoming: Settings = { languageId, length, autoIndent, autoClose, intellisense, ...changes }
       setBests(currentBests)
       setBestAtStart(currentBests[bestKey(upcoming)] ?? 0)
       loadSnippet(s, runOptions(s, upcoming))
       inputRef.current?.focus({ preventScroll: true })
     },
-    [languageId, length, autoIndent, autoClose, currentBests, loadSnippet, setBests],
+    [languageId, length, autoIndent, autoClose, intellisense, currentBests, loadSnippet, setBests],
   )
   const next = useCallback(
     () => start(pickSnippet(language.snippets, length, snippet.name)),
@@ -82,9 +93,11 @@ export default function App() {
   const retry = useCallback(() => start(snippet), [start, snippet])
 
   // Keyboard: the whole page listens, so typing works without clicking first.
-  const latest = useRef({ phase, autoIndent, next, retry, type, back, move })
+  const suggestOpen = !!state.suggest
+  const keyState = { phase, autoIndent, suggestOpen, next, retry, type, back, move, suggestNav, accept, dismiss }
+  const latest = useRef(keyState)
   useLayoutEffect(() => {
-    latest.current = { phase, autoIndent, next, retry, type, back, move }
+    latest.current = keyState
   })
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -101,6 +114,22 @@ export default function App() {
           s.retry()
         }
         return
+      }
+
+      // While the suggestion list is open it gets the keys VS Code gives it.
+      if (s.suggestOpen && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const handled: Record<string, () => void> = {
+          ArrowDown: () => s.suggestNav(1),
+          ArrowUp: () => s.suggestNav(-1),
+          Tab: () => s.accept(),
+          Enter: () => s.accept(),
+          Escape: () => s.dismiss(),
+        }
+        if (handled[e.key]) {
+          e.preventDefault()
+          handled[e.key]()
+          return
+        }
       }
 
       if (e.key === 'Escape') {
@@ -165,6 +194,12 @@ export default function App() {
     save('autoClose', v)
     start(snippet, { autoClose: v })
   }
+  const toggleIntellisense = () => {
+    const v = !intellisense
+    setIntellisense(v)
+    save('intellisense', v)
+    start(snippet, { intellisense: v })
+  }
 
   const liveWpm = Math.round(wpm(counts(run).correct, elapsed))
   const { line, col } = caretPosition(run)
@@ -189,6 +224,8 @@ export default function App() {
           onLength={changeLength}
           onToggleIndent={toggleIndent}
           onToggleClose={toggleClose}
+          intellisense={intellisense}
+          onToggleIntellisense={toggleIntellisense}
         />
       </header>
 
@@ -202,8 +239,12 @@ export default function App() {
         <span>
           <b>{Math.round(accuracy(run))}</b> %
         </span>
-        <span className={`hint${atPending(run) ? ' attention' : ''}`}>
-          {!atPending(run) ? (
+        <span className={`hint${atPending(run) || suggestOpen ? ' attention' : ''}`}>
+          {suggestOpen ? (
+            <>
+              <kbd>tab</kbd> <kbd>enter</kbd> accept · <kbd>↑</kbd> <kbd>↓</kbd> choose · <kbd>esc</kbd> close
+            </>
+          ) : !atPending(run) ? (
             <>
               <kbd>esc</kbd> new snippet · timer starts on your first key
             </>
@@ -238,6 +279,8 @@ export default function App() {
             typing={phase === 'running'}
             inputRef={inputRef}
             onMobileInput={onMobileInput}
+            suggest={state.suggest}
+            onAccept={accept}
           />
         )}
 
@@ -249,7 +292,7 @@ export default function App() {
             {run.pos} / {run.chars.length} chars
           </span>
           <span className="push">
-            best ({language.name}, {length}{autoClose ? ', auto-close' : ''}): {best ? `${Math.round(best)} wpm` : '—'}
+            best ({[language.name, length, autoClose && 'auto-close', intellisense && 'intellisense'].filter(Boolean).join(', ')}): {best ? `${Math.round(best)} wpm` : '—'}
           </span>
           <span>Spaces: 2</span>
           <span>UTF-8</span>
@@ -257,7 +300,7 @@ export default function App() {
       </section>
 
       <footer>
-        <span>WPM counts correct characters ÷ 5 per minute. Auto-skipped indentation is not counted.</span>
+        <span>WPM counts only correct characters you typed, ÷ 5 per minute. Code speed also counts suggested and auto-inserted text.</span>
         <span>
           <kbd>ctrl</kbd>+<kbd>⌫</kbd> deletes a word
         </span>

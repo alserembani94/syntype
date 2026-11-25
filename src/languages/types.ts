@@ -28,6 +28,16 @@ export interface AutoClosingPair {
   notIn?: ('string' | 'comment')[]
 }
 
+/**
+ * Constrained IntelliSense for a language. Keywords come from `highlight`;
+ * words the user has typed are added automatically. Built-ins, members and
+ * library packs (e.g. React) will live here too.
+ */
+export interface CompletionConfig {
+  /** A single word character, e.g. /[\w$]/ for JavaScript or /[\w-]/ for CSS. Defaults to /[\w$]/. */
+  wordChar?: RegExp
+}
+
 export interface Language {
   /** Stable id, used in storage keys. */
   id: string
@@ -40,5 +50,6 @@ export interface Language {
   autoClosingPairs?: AutoClosingPair[]
   /** Characters after the caret that allow auto-closing. Defaults to VS Code's. */
   autoCloseBefore?: string
+  completion?: CompletionConfig
   snippets: Snippet[]
 }

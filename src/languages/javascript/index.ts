@@ -25,5 +25,8 @@ export const javascript: Language = {
     { open: '"', close: '"', notIn: ['string'] },
     { open: '`', close: '`', notIn: ['string', 'comment'] },
   ],
+  completion: {
+    wordChar: /[\w$]/,
+  },
   snippets: parseSnippets(raw),
 }

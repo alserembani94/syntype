@@ -27,6 +27,12 @@ export interface RunOptions {
 export interface Run {
   chars: string[]
   states: CharState[]
+  /** What the user actually typed at each position (differs from chars where state is bad). */
+  typed: (string | undefined)[]
+  /** Positions filled in by an accepted suggestion rather than typed. */
+  completed: boolean[]
+  /** How many suggestions were accepted. */
+  completions: number
   pos: number
   autoIndent: boolean
   /** Null when auto-close is off. */
@@ -47,6 +53,9 @@ export function createRun(code: string, options: RunOptions): Run {
   const run: Run = {
     chars,
     states: new Array(chars.length).fill(undefined),
+    typed: new Array(chars.length).fill(undefined),
+    completed: new Array(chars.length).fill(false),
+    completions: 0,
     pos: 0,
     autoIndent: options.autoIndent,
     pairs: options.autoClose && options.pairs ? options.pairs : null,
@@ -65,7 +74,13 @@ export const isFinished = (run: Run) => run.pos >= run.chars.length
 /** True when the caret sits on auto-inserted text it can move past. */
 export const atPending = (run: Run) => run.states[run.pos] === 'pending'
 
-const copy = (run: Run): Run => ({ ...run, states: run.states.slice(), missed: { ...run.missed } })
+const copy = (run: Run): Run => ({
+  ...run,
+  states: run.states.slice(),
+  typed: run.typed.slice(),
+  completed: run.completed.slice(),
+  missed: { ...run.missed },
+})
 
 const lineStart = (chars: string[], i: number) => {
   while (i > 0 && chars[i - 1] !== '\n') i--
@@ -132,6 +147,7 @@ export function typeChar(prev: Run, ch: string): Run {
     if (good) run.symbolCorrect++
   }
   run.states[at] = good ? 'ok' : 'bad'
+  run.typed[at] = ch
   run.pos++
   if (good) autoClose(run, at)
   if (expected === '\n') {
@@ -144,6 +160,8 @@ export function typeChar(prev: Run, ch: string): Run {
 /** Clears position i; deleting an opener also removes what it auto-inserted (VS Code's autoClosingDelete). */
 function clearAt(run: Run, i: number) {
   run.states[i] = undefined
+  run.typed[i] = undefined
+  run.completed[i] = false
   const c = run.pairs?.closeOf[i] ?? -1
   if (c < 0) return
   for (let j = i + 1; j <= c; j++) if (run.states[j] === 'pending') run.states[j] = undefined
@@ -190,14 +208,60 @@ export function move(prev: Run, dir: Move): Run {
   return run
 }
 
+/**
+ * Accepts a suggestion: replaces the word typed so far (from `start` to the
+ * caret) with `text`, as VS Code does. Each inserted character is checked
+ * against the snippet like a typed one. Accepting costs one keystroke.
+ */
+export function acceptCompletion(prev: Run, start: number, text: string): Run {
+  const run = copy(prev)
+  const typedUpTo = run.pos
+  let allRight = true
+  let p = start
+  for (const ch of text) {
+    // Never run past the end of the line; VS Code would push the rest along.
+    if (p >= run.chars.length || run.chars[p] === '\n') {
+      allRight = false
+      break
+    }
+    const expected = run.chars[p]
+    const good = ch === expected
+    if (!good) {
+      allRight = false
+      run.missed[expected] = (run.missed[expected] ?? 0) + 1
+    }
+    // Letters the user already typed stay theirs if the suggestion kept them.
+    run.completed[p] = !(p < typedUpTo && run.typed[p] === ch)
+    run.states[p] = good ? 'ok' : 'bad'
+    run.typed[p] = ch
+    p++
+  }
+  // A suggestion shorter than what was typed leaves those positions untyped.
+  for (let i = p; i < typedUpTo; i++) clearAt(run, i)
+  run.pos = p
+  run.keystrokes++
+  if (allRight) run.correctKeystrokes++
+  run.completions++
+  return run
+}
+
 export function counts(run: Run) {
+  /** Typed by the user and right. */
   let correct = 0
   let incorrect = 0
-  for (const s of run.states) {
-    if (s === 'ok') correct++
-    else if (s === 'bad') incorrect++
-  }
-  return { correct, incorrect }
+  /** Right characters on screen however they got there: typed, suggested, or auto-inserted. */
+  let code = 0
+  /** Right characters that came from suggestions. */
+  let suggested = 0
+  run.states.forEach((s, i) => {
+    if (s === 'ok') {
+      code++
+      if (run.completed[i]) suggested++
+      else correct++
+    } else if (s === 'bad') incorrect++
+    else if (s === 'auto' || s === 'skipped') code++
+  })
+  return { correct, incorrect, code, suggested }
 }
 
 /** Line (1-based) and column (1-based) of the caret. */

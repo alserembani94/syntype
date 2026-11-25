@@ -25,7 +25,7 @@ describe('engine', () => {
   it('finishes a clean run with 100% accuracy and no auto chars counted', () => {
     const run = typeAll(createRun(code, { autoIndent: true, autoClose: false }), 'if (a) {\ngo();\n}')
     expect(isFinished(run)).toBe(true)
-    expect(counts(run)).toEqual({ correct: code.length - 2, incorrect: 0 })
+    expect(counts(run)).toMatchObject({ correct: code.length - 2, incorrect: 0 })
     const r = summarize(run, 6, [])
     expect(r.accuracy).toBe(100)
     expect(r.wpm).toBeCloseTo((code.length - 2) / 5 / 0.1)
@@ -50,7 +50,7 @@ describe('engine', () => {
     let run = typeAll(createRun('ab', { autoIndent: true, autoClose: false }), 'x')
     run = backspace(run)
     run = typeAll(run, 'ab')
-    expect(counts(run)).toEqual({ correct: 2, incorrect: 0 })
+    expect(counts(run)).toMatchObject({ correct: 2, incorrect: 0 })
     expect(run.keystrokes).toBe(3)
   })
 

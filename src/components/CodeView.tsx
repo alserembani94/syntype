@@ -2,6 +2,8 @@ import { useLayoutEffect, useMemo, useRef } from 'react'
 import { tokenize } from '../lib/tokenize'
 import type { Run } from '../lib/engine'
 import type { HighlightRules } from '../languages'
+import type { SuggestState } from '../hooks/useTypingTest'
+import { SuggestBox } from './SuggestBox'
 
 interface Props {
   code: string
@@ -10,15 +12,19 @@ interface Props {
   typing: boolean
   inputRef: React.RefObject<HTMLTextAreaElement | null>
   onMobileInput: (text: string, deleted: boolean) => void
+  suggest: SuggestState | null
+  onAccept: (index: number) => void
 }
 
 /** Kept in the hidden textarea so a mobile Backspace still fires an input event. */
 const SENTINEL = ' '
 
-export function CodeView({ code, highlight, run, typing, inputRef, onMobileInput }: Props) {
+export function CodeView({ code, highlight, run, typing, inputRef, onMobileInput, suggest, onAccept }: Props) {
   const classes = useMemo(() => tokenize(code, highlight), [code, highlight])
   const lineCount = useMemo(() => code.split('\n').length, [code])
   const scrollerRef = useRef<HTMLDivElement>(null)
+  const editorRef = useRef<HTMLDivElement>(null)
+  const codeRef = useRef<HTMLPreElement>(null)
   const caretRef = useRef<HTMLSpanElement>(null)
 
   // Keep the caret's line in view.
@@ -44,7 +50,7 @@ export function CodeView({ code, highlight, run, typing, inputRef, onMobileInput
   }
 
   return (
-    <div className={`editor${typing ? ' typing' : ''}`} onClick={() => inputRef.current?.focus({ preventScroll: true })}>
+    <div ref={editorRef} className={`editor${typing ? ' typing' : ''}`} onClick={() => inputRef.current?.focus({ preventScroll: true })}>
       <textarea
         ref={inputRef}
         id="type-input"
@@ -61,7 +67,7 @@ export function CodeView({ code, highlight, run, typing, inputRef, onMobileInput
         <pre className="gutter" aria-hidden="true">
           {Array.from({ length: lineCount }, (_, i) => i + 1).join('\n')}
         </pre>
-        <pre className="code" key={code}>
+        <pre className="code" key={code} ref={codeRef}>
           {run.chars.map((ch, i) => {
             const state = run.states[i]
             const cur = i === run.pos
@@ -81,6 +87,15 @@ export function CodeView({ code, highlight, run, typing, inputRef, onMobileInput
           })}
         </pre>
       </div>
+      {suggest && (
+        <SuggestBox
+          suggest={suggest}
+          editorRef={editorRef}
+          scrollerRef={scrollerRef}
+          codeRef={codeRef}
+          onAccept={onAccept}
+        />
+      )}
     </div>
   )
 }
