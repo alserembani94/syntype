@@ -1,0 +1,276 @@
+=== exit.asm
+    mov rax, 60
+    xor edi, edi
+    syscall
+=== max.asm
+global max
+max:
+    mov rax, rdi
+    cmp rdi, rsi
+    cmovl rax, rsi
+    ret
+=== abs_value.asm
+global abs_value
+abs_value:
+    mov rax, rdi
+    neg rax
+    cmovl rax, rdi
+    ret
+=== swap.asm
+global swap
+swap:
+    mov rax, [rdi]
+    xchg rax, [rsi]
+    mov [rdi], rax
+    ret
+=== is_even.asm
+global is_even
+is_even:
+    xor eax, eax
+    test dil, 1
+    sete al
+    ret
+=== sum_to.asm
+global sum_to
+sum_to:
+    xor eax, eax
+.loop:
+    add rax, rdi
+    dec rdi
+    jnz .loop
+    ret
+=== hello.asm
+section .data
+    msg db "Hello, world!", 10
+    len equ $ - msg
+
+section .text
+    global _start
+
+_start:
+    mov rax, 1
+    mov rdi, 1
+    mov rsi, msg
+    mov rdx, len
+    syscall
+
+    mov rax, 60
+    xor edi, edi
+    syscall
+=== str_length.asm
+; long str_length(const char *text)
+global str_length
+str_length:
+    xor eax, eax
+.next:
+    cmp byte [rdi + rax], 0
+    je .done
+    inc rax
+    jmp .next
+.done:
+    ret
+=== factorial.asm
+; long factorial(long n)
+global factorial
+factorial:
+    mov rax, 1
+    test rdi, rdi
+    jz .done
+.loop:
+    imul rax, rdi
+    dec rdi
+    jnz .loop
+.done:
+    ret
+=== sum_array.asm
+; long sum_array(const long *values, long count)
+global sum_array
+sum_array:
+    xor eax, eax
+    test rsi, rsi
+    jz .done
+.loop:
+    add rax, [rdi]
+    add rdi, 8
+    dec rsi
+    jnz .loop
+.done:
+    ret
+=== gcd.asm
+; long gcd(long a, long b)
+global gcd
+gcd:
+    mov rax, rdi
+.loop:
+    test rsi, rsi
+    jz .done
+    cqo
+    idiv rsi
+    mov rax, rsi
+    mov rsi, rdx
+    jmp .loop
+.done:
+    ret
+=== fibonacci.asm
+; long fibonacci(long n): the nth Fibonacci number
+global fibonacci
+fibonacci:
+    xor eax, eax
+    mov edx, 1
+    test rdi, rdi
+    jz .done
+.loop:
+    lea rcx, [rax + rdx]
+    mov rax, rdx
+    mov rdx, rcx
+    dec rdi
+    jnz .loop
+.done:
+    ret
+=== echo.asm
+section .bss
+    buffer resb 64
+
+section .text
+    global _start
+
+_start:
+    ; read up to 64 bytes from standard input
+    xor eax, eax
+    xor edi, edi
+    mov rsi, buffer
+    mov rdx, 64
+    syscall
+    test rax, rax
+    jle .exit
+
+    ; write them back to standard output
+    mov rdx, rax
+    mov rax, 1
+    mov rdi, 1
+    mov rsi, buffer
+    syscall
+    jmp _start
+
+.exit:
+    mov rax, 60
+    xor edi, edi
+    syscall
+=== to_upper.asm
+; void to_upper(char *text): uppercases ASCII letters in place
+global to_upper
+to_upper:
+    mov al, [rdi]
+    test al, al
+    jz .done
+    cmp al, 'a'
+    jb .next
+    cmp al, 'z'
+    ja .next
+    sub al, 32
+    mov [rdi], al
+.next:
+    inc rdi
+    jmp to_upper
+.done:
+    ret
+=== reverse.asm
+; void reverse(char *text, long length): reverses text in place
+global reverse
+reverse:
+    lea rsi, [rdi + rsi - 1]
+.swap:
+    cmp rdi, rsi
+    jae .done
+    mov al, [rdi]
+    mov dl, [rsi]
+    mov [rdi], dl
+    mov [rsi], al
+    inc rdi
+    dec rsi
+    jmp .swap
+.done:
+    ret
+=== print_number.asm
+section .bss
+    digits resb 21
+
+section .text
+    global _start
+
+_start:
+    mov rax, 2026
+    call print_number
+    mov rax, 60
+    xor edi, edi
+    syscall
+
+; print_number: writes rax in decimal, then a newline
+print_number:
+    lea rsi, [digits + 20]
+    mov byte [rsi], 10
+    mov rcx, 10
+.next:
+    xor edx, edx
+    div rcx
+    add dl, '0'
+    dec rsi
+    mov [rsi], dl
+    test rax, rax
+    jnz .next
+
+    mov rax, 1
+    mov rdi, 1
+    lea rdx, [digits + 21]
+    sub rdx, rsi
+    syscall
+    ret
+=== bubble_sort.asm
+; void bubble_sort(long *values, long count)
+global bubble_sort
+bubble_sort:
+    dec rsi
+    jle .done
+.pass:
+    xor ecx, ecx
+    xor r8d, r8d
+.compare:
+    mov rax, [rdi + rcx * 8]
+    mov rdx, [rdi + rcx * 8 + 8]
+    cmp rax, rdx
+    jle .ordered
+    mov [rdi + rcx * 8], rdx
+    mov [rdi + rcx * 8 + 8], rax
+    mov r8d, 1
+.ordered:
+    inc rcx
+    cmp rcx, rsi
+    jl .compare
+    test r8d, r8d
+    jnz .pass
+.done:
+    ret
+=== countdown.asm
+section .data
+    line db "3", 10
+
+section .text
+    global _start
+
+_start:
+    mov rbx, 3
+.print:
+    ; write the digit in rbx, then a newline
+    lea eax, [rbx + '0']
+    mov [line], al
+    mov rax, 1
+    mov rdi, 1
+    mov rsi, line
+    mov rdx, 2
+    syscall
+    dec rbx
+    jnz .print
+
+    mov rax, 60
+    xor edi, edi
+    syscall

@@ -31,7 +31,8 @@ function buildRegex(rules: HighlightRules): RegExp {
     [
       group(comments),
       group(strings),
-      '(\\b\\d+(?:\\.\\d+)?\\b)',
+      // Decimal, or hexadecimal like 0xff.
+      '(\\b(?:0[xX][0-9a-fA-F]+|\\d+(?:\\.\\d+)?)\\b)',
       `(${rules.identifier ?? '[A-Za-z_$][\\w$]*'})`,
       '([^\\sA-Za-z0-9_$])',
     ].join('|'),
