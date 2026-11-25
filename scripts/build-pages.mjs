@@ -78,7 +78,7 @@ function about(page) {
     return `          <li><a href="/${l.id}"${here}>${esc(l.name)} typing test</a></li>`
   }).join('\n')
   const qa = faq.map(([q, a]) => `          <dt>${esc(q)}</dt>\n          <dd>${esc(a)}</dd>`).join('\n')
-  return `    <section class="about" aria-labelledby="about-heading">
+  return `    <section class="about" id="about" aria-labelledby="about-heading">
       <h2 id="about-heading">${esc(page.heading)}</h2>
       <p>${esc(page.intro)}</p>
       <div class="about-columns">

@@ -186,8 +186,9 @@ footer { color: var(--muted); font-size: 13px; display: flex; gap: 16px; flex-wr
 }
 .new-snippet:hover, .new-snippet:focus-visible { color: var(--fg); border-color: var(--line); background: var(--surface); }
 .new-snippet svg { color: var(--accent); }
+.footer-actions { margin-left: auto; display: inline-flex; gap: 4px; flex-wrap: wrap; }
 .theme-button {
-  margin-left: auto; display: inline-flex; align-items: center; gap: 7px; padding: 3px 10px 3px 8px;
+  display: inline-flex; align-items: center; gap: 7px; padding: 3px 10px 3px 8px;
   font: 13px var(--f-ui); color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 999px; cursor: pointer;
 }
 .theme-button:hover, .theme-button:focus-visible { color: var(--fg); border-color: var(--line); background: var(--surface); }
@@ -279,3 +280,19 @@ footer { color: var(--muted); font-size: 13px; display: flex; gap: 16px; flex-wr
   .about { margin-top: 40px; }
   .about-columns { grid-template-columns: minmax(0, 1fr); gap: 20px; }
 }
+
+/* Once the app runs, the about section leaves the page and opens as a dialog (AboutDialog). */
+.app-ready .about:not(.open) { display: none; }
+.about.open {
+  position: fixed; z-index: 21; left: 50%; top: max(6vh, env(safe-area-inset-top, 0px)); transform: translateX(-50%);
+  width: min(820px, calc(100vw - 32px)); max-height: min(86vh, 760px); overflow-y: auto; margin: 0;
+  padding: 28px 32px 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.28); outline: none;
+}
+.about-backdrop { position: fixed; inset: 0; z-index: 20; background: rgb(10 12 18 / 0.45); backdrop-filter: blur(3px); }
+.about-close { position: absolute; top: 18px; right: 18px; padding: 4px; border: 0; background: transparent; cursor: pointer; }
+.about-close:hover kbd, .about-close:focus-visible kbd { border-color: var(--accent); color: var(--accent); }
+.about.open h2 { padding-right: 56px; }
+.about.open .about-columns { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+@media (max-width: 640px) { .about.open .about-columns { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) { .about.open { padding: 22px 18px 18px; top: max(16px, env(safe-area-inset-top, 0px)); max-height: calc(100vh - 32px); } }

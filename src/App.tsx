@@ -13,6 +13,7 @@ import { ConfigBar } from './components/ConfigBar'
 import { AdSlot } from './components/AdSlot'
 import { LanguagePicker } from './components/LanguagePicker'
 import { ThemePicker } from './components/ThemePicker'
+import { AboutDialog } from './components/AboutDialog'
 import { applyTheme, getTheme, loadTheme, saveTheme } from './themes'
 import { isSitePath, languageFromPath, languagePage } from './seo/site'
 import { Results } from './components/Results'
@@ -236,11 +237,32 @@ export default function App() {
   const focused = usePageFocus()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [themeOpen, setThemeOpen] = useState(false)
+  const [aboutOpen, setAboutOpen] = useState(false)
   useEffect(() => {
-    // The clock also stops while the language or theme picker is open.
-    if (focused && !pickerOpen && !themeOpen) resume()
+    // The clock also stops while a picker or the about dialog is open.
+    if (focused && !pickerOpen && !themeOpen && !aboutOpen) resume()
     else pause()
-  }, [focused, pickerOpen, themeOpen, pause, resume])
+  }, [focused, pickerOpen, themeOpen, aboutOpen, pause, resume])
+
+  // The site's pages carry an about section in their HTML, for search engines
+  // and link previews. Once the app runs, it opens as a dialog from the footer
+  // instead of sitting below the editor. (The single-file artifact has none.)
+  const [aboutSection] = useState(() => (typeof document !== 'undefined' ? document.getElementById('about') : null))
+  useEffect(() => {
+    document.documentElement.classList.add('app-ready')
+  }, [])
+  const closeAbout = () => {
+    setAboutOpen(false)
+    inputRef.current?.focus({ preventScroll: true })
+  }
+  /** A language link in the about dialog: switch here instead of loading the page again. */
+  const aboutLanguage = (path: string) => {
+    const id = languageFromPath(path, LANGUAGES)
+    if (!id) return false
+    closeAbout()
+    if (id !== languageId) changeLanguage(id)
+    return true
+  }
   const overlay = phase === 'done' || focused ? null : phase === 'running' ? 'paused' : 'start'
 
   // Language service status, shown in the status bar like VS Code's.
@@ -330,6 +352,7 @@ export default function App() {
       {pickerOpen && (
         <LanguagePicker languages={LANGUAGES} currentId={languageId} onSelect={pickLanguage} onClose={closePicker} />
       )}
+      {aboutOpen && aboutSection && <AboutDialog section={aboutSection} onLanguage={aboutLanguage} onClose={closeAbout} />}
       {themeOpen && <ThemePicker currentId={themeId} onPreview={applyTheme} onSelect={pickTheme} onClose={closeTheme} />}
       <header>
         <div className="brand">
@@ -494,6 +517,16 @@ export default function App() {
         <span>
           <kbd>ctrl</kbd>+<kbd>⌫</kbd> deletes a word
         </span>
+        <span className="footer-actions">
+        {aboutSection && (
+          <button type="button" className="theme-button" onClick={() => setAboutOpen(true)} aria-haspopup="dialog" title="About Syntype">
+            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+              <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="2" />
+              <path d="M12 11v5.5M12 7.6v.4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+            </svg>
+            About
+          </button>
+        )}
         <button
           type="button"
           className="theme-button"
@@ -507,6 +540,7 @@ export default function App() {
           </svg>
           {getTheme(themeId).name}
         </button>
+        </span>
       </footer>
     </div>
   )

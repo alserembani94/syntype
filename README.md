@@ -61,7 +61,7 @@ The site deploys to Cloudflare as a Worker with static assets (`wrangler.jsonc`)
 
 ## Pages and SEO
 
-The site lives at https://syntype.vercel.my. Every language has its own page (`/python`, `/rust`, `/cobol` …) that opens with that language selected; choosing another language moves to its page, so the address can be shared. The build writes these pages from `src/seo/site.ts`, each with its own title, description, canonical URL, link preview (Open Graph and Twitter tags with `public/og.png`), structured data, and an intro, FAQ and language list in the HTML itself, so search engines and link previews can read them without running any script. `sitemap.xml` and `robots.txt` are generated from the same list.
+The site lives at https://syntype.vercel.my. Every language has its own page (`/python`, `/rust`, `/cobol` …) that opens with that language selected; choosing another language moves to its page, so the address can be shared. The build writes these pages from `src/seo/site.ts`, each with its own title, description, canonical URL, link preview (Open Graph and Twitter tags with `public/og.png`), structured data, and an intro, FAQ and language list in the HTML itself, so search engines and link previews can read them without running any script. Once the app runs, that intro moves out of the page into an **About** dialog, opened from the footer; its language links switch language without reloading. `sitemap.xml` and `robots.txt` are generated from the same list.
 
 `node scripts/og-image.mjs` re-renders the preview image (from `scripts/og/og.html`, in Syntype Light) and the home screen icon; run it after adding a language, since the image counts them.
 
@@ -113,7 +113,7 @@ src/
   lib/storage.ts        localStorage wrapper for settings and personal bests
   hooks/useTypingTest.ts  engine, clock and suggestion requests as a React reducer
   hooks/usePageFocus.ts whether keys can reach the game (drives the focus overlay and pausing)
-  components/           AdSlot, CodeView, ConfigBar, LanguagePicker, Picker (shared by both pickers),
+  components/           AboutDialog, AdSlot, CodeView, ConfigBar, LanguagePicker, Picker (shared by both pickers),
                         Results, Review, SpeedChart, SuggestBox, ThemePicker
   seo/                  site.ts: the site's address, every page's title, description and intro, the sitemap
   themes/               themes.css (every theme's colours), index.ts (the list), themes.test.ts (rules T1–T4)
