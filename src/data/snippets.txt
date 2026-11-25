@@ -1,0 +1,184 @@
+=== debounce.js
+function debounce(fn, wait = 200) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), wait);
+  };
+}
+=== total.js
+const total = items.reduce((sum, item) => sum + item.price, 0);
+=== fetchJson.js
+async function fetchJson(url, options = {}) {
+  const res = await fetch(url, options);
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status}`);
+  }
+  return res.json();
+}
+=== groupBy.js
+const groupBy = (list, key) =>
+  list.reduce((acc, item) => {
+    (acc[item[key]] ??= []).push(item);
+    return acc;
+  }, {});
+=== EventEmitter.js
+class EventEmitter {
+  #handlers = new Map();
+
+  on(event, handler) {
+    const list = this.#handlers.get(event) ?? [];
+    this.#handlers.set(event, [...list, handler]);
+    return () => this.off(event, handler);
+  }
+
+  off(event, handler) {
+    const list = this.#handlers.get(event) ?? [];
+    this.#handlers.set(event, list.filter((h) => h !== handler));
+  }
+
+  emit(event, ...args) {
+    for (const handler of this.#handlers.get(event) ?? []) {
+      handler(...args);
+    }
+  }
+}
+=== sleep.js
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+=== unique.js
+const unique = [...new Set(tags.map((tag) => tag.toLowerCase()))];
+=== clamp.js
+export const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+=== memoize.js
+function memoize(fn) {
+  const cache = new Map();
+  return function (arg) {
+    if (cache.has(arg)) return cache.get(arg);
+    const result = fn.call(this, arg);
+    cache.set(arg, result);
+    return result;
+  };
+}
+=== chunk.js
+function chunk(array, size) {
+  const out = [];
+  for (let i = 0; i < array.length; i += size) {
+    out.push(array.slice(i, i + size));
+  }
+  return out;
+}
+=== retry.js
+async function retry(task, { attempts = 3, delay = 500 } = {}) {
+  let lastError;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await task();
+    } catch (err) {
+      lastError = err;
+      await new Promise((r) => setTimeout(r, delay * 2 ** i));
+    }
+  }
+  throw lastError;
+}
+=== openTitles.js
+const openTitles = todos
+  .filter((todo) => !todo.done)
+  .sort((a, b) => a.priority - b.priority)
+  .map(({ title }) => title.trim());
+=== flatten.js
+const flatten = (arr) =>
+  arr.reduce((flat, x) => flat.concat(Array.isArray(x) ? flatten(x) : x), []);
+=== useCounter.js
+import { useState, useCallback } from "react";
+
+export function useCounter(initial = 0) {
+  const [count, setCount] = useState(initial);
+  const increment = useCallback(() => setCount((c) => c + 1), []);
+  const reset = useCallback(() => setCount(initial), [initial]);
+  return { count, increment, reset };
+}
+=== server.js
+import express from "express";
+
+const app = express();
+app.use(express.json());
+
+app.get("/api/users/:id", async (req, res) => {
+  const user = await db.users.find(req.params.id);
+  if (!user) return res.status(404).json({ error: "Not found" });
+  res.json(user);
+});
+
+app.listen(3000, () => console.log("Listening on :3000"));
+=== throttle.js
+function throttle(fn, limit) {
+  let last = 0;
+  return (...args) => {
+    const now = Date.now();
+    if (now - last >= limit) {
+      last = now;
+      fn(...args);
+    }
+  };
+}
+=== parseQuery.js
+const parseQuery = (search) =>
+  Object.fromEntries(
+    search
+      .replace(/^\?/, "")
+      .split("&")
+      .filter(Boolean)
+      .map((pair) => pair.split("=").map(decodeURIComponent))
+  );
+=== Stack.js
+class Stack {
+  #items = [];
+
+  push(item) {
+    this.#items.push(item);
+    return this;
+  }
+
+  pop() {
+    return this.#items.pop();
+  }
+
+  get size() {
+    return this.#items.length;
+  }
+}
+=== formatPrice.js
+const formatPrice = (cents) => `$${(cents / 100).toFixed(2)}`;
+=== user.js
+const { name, age = 18, ...rest } = user;
+=== reducer.js
+function reducer(state, action) {
+  switch (action.type) {
+    case "add":
+      return [...state, action.item];
+    case "remove":
+      return state.filter((item) => item.id !== action.id);
+    case "toggle":
+      return state.map((item) =>
+        item.id === action.id ? { ...item, done: !item.done } : item
+      );
+    default:
+      return state;
+  }
+}
+=== isPalindrome.js
+const isPalindrome = (s) => {
+  const clean = s.toLowerCase().replace(/[^a-z0-9]/g, "");
+  return clean === [...clean].reverse().join("");
+};
+=== pick.js
+const pick = (obj, keys) =>
+  Object.fromEntries(keys.filter((k) => k in obj).map((k) => [k, obj[k]]));
+=== timeout.js
+const withTimeout = (promise, ms) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Timed out")), ms)
+    ),
+  ]);
