@@ -13,6 +13,13 @@ Other scripts: `npm test` (unit and playthrough tests, Vitest), `npm run build`,
 
 `npm run build:page` builds `dist-page/index.html`: the whole app as one self-contained page, for hosts that serve a single HTML file (such as a claude.ai artifact). The TypeScript worker is embedded in the page and started from a `blob:` URL as a classic worker, so it runs even where the page has no address of its own or sits in a sandboxed frame. The regular `npm run build` keeps the worker as a separate file.
 
+## Deploy
+
+The site deploys to Cloudflare as a Worker with static assets (`wrangler.jsonc`): `npm run build` produces `dist/`, and Cloudflare serves those files as they are. There is no server code. `public/_headers` caches the hashed files in `/assets/` for a year and keeps `index.html` fresh, so a new deploy shows up at once.
+
+- **From GitHub (recommended):** in the Cloudflare dashboard, Workers & Pages → Create → import this repository. Build command `npm run build`, deploy command `npx wrangler deploy`. Every push to `main` then deploys.
+- **From your computer:** `npx wrangler login` once, then `npm run build && npx wrangler deploy`.
+
 ## How it plays
 
 - Nothing is scored on screen while you type: no clock, no WPM, no accuracy, no personal best. Timing starts quietly on your first key, and everything appears on the results screen when you finish. The status bar does show your line, column and how many characters are done. The **new snippet** button next to the language button, or `Ctrl+Enter` (`⌘+Enter` on a Mac), loads a different snippet. `Esc` only ever closes things (the suggestion list, a picker), so it can't throw a run away.
