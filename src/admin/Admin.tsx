@@ -82,6 +82,12 @@ export function Admin() {
           <a className="btn" href="/">
             Back to Syntype
           </a>
+          {email && (
+            // Cloudflare Access's own logout: ends the Access session, so the next visit asks for a login again.
+            <a className="btn" href="/cdn-cgi/access/logout">
+              Sign out
+            </a>
+          )}
         </div>
       </header>
 
