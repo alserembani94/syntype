@@ -11,6 +11,8 @@ import { CodeView } from './components/CodeView'
 import { ConfigBar } from './components/ConfigBar'
 import { AdSlot } from './components/AdSlot'
 import { LanguagePicker } from './components/LanguagePicker'
+import { ThemePicker } from './components/ThemePicker'
+import { applyTheme, getTheme, loadTheme, saveTheme } from './themes'
 import { Results } from './components/Results'
 
 interface Settings {
@@ -181,11 +183,12 @@ export default function App() {
   // The clock only counts while keys can reach the game; time away isn't typing time.
   const focused = usePageFocus()
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [themeOpen, setThemeOpen] = useState(false)
   useEffect(() => {
-    // The clock also stops while the language picker is open.
-    if (focused && !pickerOpen) resume()
+    // The clock also stops while the language or theme picker is open.
+    if (focused && !pickerOpen && !themeOpen) resume()
     else pause()
-  }, [focused, pickerOpen, pause, resume])
+  }, [focused, pickerOpen, themeOpen, pause, resume])
   const overlay = phase === 'done' || focused ? null : phase === 'running' ? 'paused' : 'start'
 
   // Language service status, shown in the status bar like VS Code's.
@@ -206,6 +209,22 @@ export default function App() {
   const onMobileInput = (text: string, deleted: boolean) => {
     if (deleted) back(false)
     for (const ch of text) type(ch)
+  }
+
+  // The theme: index.html shows the saved one before the first paint; the picker previews others.
+  const [themeId, setThemeId] = useState(loadTheme)
+  useEffect(() => applyTheme(themeId), [themeId])
+  const closeTheme = () => {
+    applyTheme(themeId)
+    setThemeOpen(false)
+    inputRef.current?.focus({ preventScroll: true })
+  }
+  const pickTheme = (id: string) => {
+    setThemeId(id)
+    saveTheme(id)
+    applyTheme(id)
+    setThemeOpen(false)
+    inputRef.current?.focus({ preventScroll: true })
   }
 
   const closePicker = () => {
@@ -257,6 +276,7 @@ export default function App() {
       {pickerOpen && (
         <LanguagePicker languages={LANGUAGES} currentId={languageId} onSelect={pickLanguage} onClose={closePicker} />
       )}
+      {themeOpen && <ThemePicker currentId={themeId} onPreview={applyTheme} onSelect={pickTheme} onClose={closeTheme} />}
       <header>
         <div className="brand">
           <h1>
@@ -397,6 +417,19 @@ export default function App() {
         <span>
           <kbd>ctrl</kbd>+<kbd>⌫</kbd> deletes a word
         </span>
+        <button
+          type="button"
+          className="theme-button"
+          onClick={() => setThemeOpen(true)}
+          aria-haspopup="dialog"
+          title="Change theme"
+        >
+          <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+            <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="2" />
+            <path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor" />
+          </svg>
+          {getTheme(themeId).name}
+        </button>
       </footer>
     </div>
   )

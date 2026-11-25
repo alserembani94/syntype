@@ -17,6 +17,7 @@ Other scripts: `npm test` (unit and playthrough tests, Vitest), `npm run build`,
 
 - Nothing is scored on screen while you type: no clock, no WPM, no accuracy, no personal best. Timing starts quietly on your first key, and everything appears on the results screen when you finish. The status bar does show your line, column and how many characters are done. `Esc` loads a new snippet (or first closes an open suggestion list).
 - **Language:** the button above the editor (`</> JavaScript`) opens a searchable list of languages, grouped into sections (Web, Systems, Scripting, Data & config, Testing & QA, Mainframe, Esoteric). Type to filter by name, extension, alias (`golang`, `sql`, `yml`) or section (`web` lists every web language), `↑`/`↓` and `Enter` to choose, `Esc` or a click outside to close. While it's open, keys go to the search and a run in progress is paused.
+- **Theme:** the button at the bottom right opens the theme list. **System** (the default) uses Syntype Light or Syntype Dark to match your computer; the others are Syntype Light and Dark themselves, **Dark High Contrast** (VS Code's pure-black theme), **One Dark Pro**, **GitHub Light** and **Green Phosphor**, a retro terminal with a soft glow. Moving through the list previews each theme; `Enter` or a click keeps it, `Esc` puts the previous one back. The choice is saved and applied before the page first draws, so it never flashes the default colours.
 - When the page can't receive keys (on first load in a frame, after clicking elsewhere, or when switching tab or window), the code blurs and asks you to click, or tap on phones. Mid-run, this **pauses the clock**. Time away isn't counted, and results show how long you were paused.
 - **Results:** WPM and accuracy beside a per-second chart (wpm, raw, and errors as ✕ with their own axis). Below that: test details, raw WPM, characters (right / wrong / suggested / auto-inserted), **consistency** (100% minus the variation in your per-second speed, shown for runs of 3 seconds or more) and time. A second row has code speed, keys saved, symbol accuracy and the keys you missed most. **Review** (`v`) shows the snippet with your mistakes, suggested text and auto-inserted text marked.
 - **Ad spaces:** placeholders only for now, at fixed sizes so nothing shifts once they're filled: a 728×90 banner on the results screen, below the buttons (it narrows on small screens), and a 160×600 column either side of the app on screens at least 1360px wide and 680px tall, which fades back while you type. Sizes are in `src/lib/ads.ts`, the placeholder in `src/components/AdSlot.tsx`.
@@ -86,7 +87,9 @@ src/
   lib/storage.ts        localStorage wrapper for settings and personal bests
   hooks/useTypingTest.ts  engine, clock and suggestion requests as a React reducer
   hooks/usePageFocus.ts whether keys can reach the game (drives the focus overlay and pausing)
-  components/           AdSlot, CodeView, ConfigBar, Results, Review, SpeedChart, SuggestBox
+  components/           AdSlot, CodeView, ConfigBar, LanguagePicker, Picker (shared by both pickers),
+                        Results, Review, SpeedChart, SuggestBox, ThemePicker
+  themes/               themes.css (every theme's colours), index.ts (the list), themes.test.ts (rules T1–T3)
   App.tsx               layout, keyboard handling, settings, personal bests
 ```
 
@@ -103,6 +106,12 @@ It then appears in the language picker, and `npm test` holds it to every languag
 A language can have a **completion service** (`completion.service`, see `src/lib/service.ts`) that understands the code, like TypeScript's in `src/lib/ts/`. Services run asynchronously, usually in a worker, and are asked for suggestions at the start of a word or after a trigger character (`completion.triggerCharacters`). The list is then filtered locally as you type, as VS Code does. Languages without a service get keywords and words already typed, plus optional vocabulary packs: `completion.packs`, with `wordChar` for what makes a word and `memberTriggers` (e.g. `["."]` or `["::", "->"]`) for what opens member lists. A pack without `detect` is always on (built-ins); one with `detect` switches on when the snippet matches it, usually an import. Each pack has `globals`, and `members` keyed by receiver, with `"*"` for receivers whose type is unknown. The test language in `src/lib/suggest.test.ts` shows the shape. JavaScript and TypeScript don't use packs, because the service covers them.
 
 `npm test` reports how many keystrokes suggestions save for each language, and fails if typing any snippet literally lets a commit character insert a wrong word.
+
+## Adding a theme
+
+1. Add a block to `src/themes/themes.css`: `[data-syntype-theme="<id>"] { … }`, setting every variable the others set (backgrounds, text, accent, errors, the seven code colours, `--glow`, `--tab-dot`) and `color-scheme`. For a theme borrowed from an editor, take the colours from the theme's own source files and say which in a comment above the block.
+2. List it in `THEMES` in `src/themes/index.ts` with a name and a section.
+3. Run `npm test`: `src/themes/themes.test.ts` checks the rules in CLAUDE.md (every colour set, readable contrast).
 
 ## Adding snippets
 

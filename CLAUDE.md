@@ -32,6 +32,16 @@ Beyond the automated rules, a new language also needs:
 - **Framework tracks** (Playwright, Selenium, pytest) are entries built on a language Syntype already has: spread the base language (`...typescript`), set `basedOn`, and add only what's new: snippets, plus a vocabulary pack (`seleniumPack`) or, for a language with a service, a type stub in `src/lib/ts/stubs.ts` (`@playwright/test`) loaded by both the worker and `src/test/tsCompleter.ts`. A track on a service language also needs an entry in `TEST_COMPLETERS` (R7). Tracks meet every rule like any language; their snippets must be self-contained, since R8 catches fragments that use names like `page` without declaring them.
 - **Don't copy JavaScript's service settings** (`completion.service`, `serviceMode`, `triggerCharacters`) into a language that doesn't use TypeScript's service.
 
+## Theme rules
+
+Every theme in `THEMES` (`src/themes/index.ts`) must meet these; `src/themes/themes.test.ts` checks them. Colours live only in `src/themes/themes.css`, one `[data-syntype-theme="<id>"]` block per theme.
+
+- **T1 · Complete.** A unique id, a picker section (`THEME_SECTIONS`), and one block setting every variable (`--bg` … `--tok-pun`, `--glow`, `--tab-dot`) and `color-scheme`. Syntype Dark's block and the System dark-mode block stay identical.
+- **T2 · Swatches.** A theme's `swatches` name themes that exist.
+- **T3 · Readable.** Contrast against the backgrounds of at least 4.5:1 for text (`--fg`, `--muted`), 4:1 for code colours, 2.5:1 for comments, and 3:1 for `--accent`, `--err` and `--ok`. When a borrowed palette falls short, use another colour from the same theme (One Dark Pro's status bar text for `--muted`) rather than inventing one.
+
+A theme borrowed from an editor takes its colours from that theme's source files, not memory, with the file named in a comment above its block.
+
 ## Working in this repo
 
 - Commits are authored as Atif <alserembani94@gmail.com> (set in the repo's git config).

@@ -21,11 +21,15 @@ const safe = (js) => js.replace(/<\/script/gi, '<\\/script')
 const css = read((f) => f.endsWith('.css'))
 const app = safe(read((f) => f.startsWith('index-') && f.endsWith('.js')))
 const worker = safe(read((f) => f.startsWith('worker-') && f.endsWith('.js')))
+// index.html's theme script, which applies the saved theme before the first paint.
+const themeBoot = fs.readFileSync('index.html', 'utf8').match(/<script id="theme-boot">[\s\S]*?<\/script>/)?.[0]
+if (!themeBoot) throw new Error('index.html has no <script id="theme-boot">')
 const fonts =
   'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap'
 
 const html = `<title>Syntype</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+${themeBoot}
 <link rel="stylesheet" href="${fonts}">
 <style>${css}</style>
 <div id="root"></div>

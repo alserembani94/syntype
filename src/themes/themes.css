@@ -1,0 +1,113 @@
+/*
+ * Colour themes. Each theme is one block of the variables below, applied to
+ * <html data-syntype-theme="…"> (or to any element, which is how the picker's
+ * swatches show a theme without switching to it). With no data-syntype-theme,
+ * "System" follows the computer's light or dark setting, and the host's
+ * data-theme="light|dark" when it sets one.
+ *
+ * Every theme defines every variable; src/themes/themes.test.ts checks that
+ * and the contrast rules in CLAUDE.md. Optional: --glow (a text-shadow for
+ * code and big numbers) and --tab-dot (the file tab's marker).
+ *
+ * The System defaults use :where() so they weigh nothing and any chosen theme wins.
+ */
+
+/* Syntype Light: the default in light mode. */
+:where(:root),
+[data-syntype-theme="light"] {
+  --bg: #eef0f4; --surface: #ffffff; --surface-2: #f6f7fa; --line: #dde1ea;
+  --fg: #1c2232; --muted: #646b82; --accent: #c25a08; --accent-soft: #fbe9d8;
+  --err: #d0303f; --err-soft: #fbdfe2; --ok: #1d8a55;
+  --tok-kw: #7a3fc4; --tok-str: #18805c; --tok-num: #b8520c; --tok-fn: #1f62c9;
+  --tok-ty: #a0277a; --tok-com: #8b92a6; --tok-pun: #4a5268;
+  --glow: none; --tab-dot: #e8c547;
+  color-scheme: light;
+}
+
+/* Syntype Dark: the default in dark mode. */
+@media (prefers-color-scheme: dark) {
+  :where(:root:not([data-theme="light"])) {
+    --bg: #12151c; --surface: #1a1e28; --surface-2: #161a23; --line: #2a3040;
+    --fg: #dfe3ee; --muted: #7d859b; --accent: #f2a04b; --accent-soft: #3a2a1a;
+    --err: #ff6b78; --err-soft: #4a1f27; --ok: #4fd08f;
+    --tok-kw: #c49bff; --tok-str: #7fd6a8; --tok-num: #f7b46f; --tok-fn: #7fb3ff;
+    --tok-ty: #f08ccf; --tok-com: #687088; --tok-pun: #aab2c6;
+    color-scheme: dark;
+  }
+}
+:where(:root[data-theme="dark"]),
+[data-syntype-theme="dark"] {
+  --bg: #12151c; --surface: #1a1e28; --surface-2: #161a23; --line: #2a3040;
+  --fg: #dfe3ee; --muted: #7d859b; --accent: #f2a04b; --accent-soft: #3a2a1a;
+  --err: #ff6b78; --err-soft: #4a1f27; --ok: #4fd08f;
+  --tok-kw: #c49bff; --tok-str: #7fd6a8; --tok-num: #f7b46f; --tok-fn: #7fb3ff;
+  --tok-ty: #f08ccf; --tok-com: #687088; --tok-pun: #aab2c6;
+  --glow: none; --tab-dot: #e8c547;
+  color-scheme: dark;
+}
+
+/*
+ * Dark High Contrast, VS Code's built-in black theme (MIT): hc_black.json in
+ * microsoft/vscode extensions/theme-defaults, with its defaults from
+ * baseColors.ts: borders #6FC3DF (contrastBorder), focus #F38518, text #FFFFFF
+ * and descriptions at 70% (#b3b3b3), errors #F48771. Code colours are Dark+'s:
+ * keyword #569cd6, string #ce9178, number #b5cea8, function #DCDCAA,
+ * type #4EC9B0, comment #7ca668.
+ */
+[data-syntype-theme="hc-black"] {
+  --bg: #000000; --surface: #000000; --surface-2: #000000; --line: #6fc3df;
+  --fg: #ffffff; --muted: #b3b3b3; --accent: #f38518; --accent-soft: #3d2105;
+  --err: #f48771; --err-soft: #4a1a12; --ok: #89d185;
+  --tok-kw: #569cd6; --tok-str: #ce9178; --tok-num: #b5cea8; --tok-fn: #dcdcaa;
+  --tok-ty: #4ec9b0; --tok-com: #7ca668; --tok-pun: #ffffff;
+  --glow: none; --tab-dot: #f38518;
+  color-scheme: dark;
+}
+
+/*
+ * One Dark Pro (MIT), themes/OneDark-Pro.json in Binaryify/OneDark-Pro: editor
+ * #282c34, side bar #21252b, borders #3e4452, text #abb2bf, status bar text
+ * #9da5b4; keyword #c678dd, string #98c379, number #d19a66, function #61afef,
+ * type #e5c07b, comment #7f848e, red #e06c75.
+ */
+[data-syntype-theme="one-dark-pro"] {
+  --bg: #21252b; --surface: #282c34; --surface-2: #21252b; --line: #3e4452;
+  --fg: #abb2bf; --muted: #9da5b4; --accent: #61afef; --accent-soft: #2c3a4f;
+  --err: #e06c75; --err-soft: #4a2a2f; --ok: #98c379;
+  --tok-kw: #c678dd; --tok-str: #98c379; --tok-num: #d19a66; --tok-fn: #61afef;
+  --tok-ty: #e5c07b; --tok-com: #7f848e; --tok-pun: #abb2bf;
+  --glow: none; --tab-dot: #e5c07b;
+  color-scheme: dark;
+}
+
+/*
+ * GitHub Light Default (MIT), src/theme.js in primer/github-vscode-theme with
+ * @primer/primitives 7.10.0 light colours: canvas #ffffff / #f6f8fa, border
+ * #d0d7de, text #1f2328 / #656d76, accent #0969da, danger #cf222e, success
+ * #1a7f37; keyword red.5 #cf222e, string blue.8 #0a3069, constant blue.6
+ * #0550ae, function purple.5 #8250df, entity orange.6 #953800, comment gray.5 #6e7781.
+ */
+[data-syntype-theme="github-light"] {
+  --bg: #f6f8fa; --surface: #ffffff; --surface-2: #f6f8fa; --line: #d0d7de;
+  --fg: #1f2328; --muted: #656d76; --accent: #0969da; --accent-soft: #ddf4ff;
+  --err: #cf222e; --err-soft: #ffebe9; --ok: #1a7f37;
+  --tok-kw: #cf222e; --tok-str: #0a3069; --tok-num: #0550ae; --tok-fn: #8250df;
+  --tok-ty: #953800; --tok-com: #6e7781; --tok-pun: #1f2328;
+  --glow: none; --tab-dot: #bf8700;
+  color-scheme: light;
+}
+
+/*
+ * Green phosphor, Syntype's own: a monochrome terminal. Code is told apart by
+ * shades of green, from yellow-green strings to mint functions, with a soft
+ * glow. Mistakes stay red-orange so they can't be missed.
+ */
+[data-syntype-theme="phosphor"] {
+  --bg: #000a02; --surface: #021204; --surface-2: #031806; --line: #0f4d1c;
+  --fg: #33ff66; --muted: #20b049; --accent: #7dff9c; --accent-soft: #0b3315;
+  --err: #ff6b4a; --err-soft: #3a1208; --ok: #33ff66;
+  --tok-kw: #8cffaa; --tok-str: #c6ff7a; --tok-num: #e8ff9e; --tok-fn: #4dffd2;
+  --tok-ty: #a6ffc4; --tok-com: #1f9e45; --tok-pun: #2ad75a;
+  --glow: 0 0 6px rgb(51 255 102 / 0.45); --tab-dot: #33ff66;
+  color-scheme: dark;
+}
