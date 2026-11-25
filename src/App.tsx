@@ -17,8 +17,9 @@ import { AdSlot } from './components/AdSlot'
 import { LanguagePicker } from './components/LanguagePicker'
 import { ThemePicker } from './components/ThemePicker'
 import { AboutDialog } from './components/AboutDialog'
+import { RunsView } from './components/RunsView'
 import { applyTheme, getTheme, loadTheme, saveTheme } from './themes'
-import { isSitePath, languageFromPath, languagePage } from './seo/site'
+import { isRunsPath, isSitePath, languageFromPath, languagePage, RUNS_PAGE } from './seo/site'
 import { Results } from './components/Results'
 
 interface Settings {
@@ -51,8 +52,12 @@ const runOptions = (snippet: Snippet, s: Settings): TestOptions => {
 const onSite = typeof location !== 'undefined' && /^https?:$/.test(location.protocol) && isSitePath(location.pathname, LANGUAGES)
 const languageInAddress = onSite ? languageFromPath(location.pathname, LANGUAGES) : null
 
+/** Typing, or the personal board (My runs, at /runs). */
+type View = 'type' | 'runs'
+const viewInAddress = (): View => (onSite && isRunsPath(location.pathname) ? 'runs' : 'type')
+
 function showLanguageInAddress(id: string) {
-  if (!onSite) return
+  if (!onSite || isRunsPath(location.pathname)) return
   const page = languagePage(getLanguage(id))
   document.title = page.title
   try {
@@ -69,6 +74,7 @@ export default function App() {
   const [languageId, setLanguageId] = useState(() => getLanguage(languageInAddress ?? load('language', '')).id)
   const language = getLanguage(languageId)
   const [length, setLength] = useState<SnippetLength>(() => savedLength(load('length', 'medium')))
+  const [view, setView] = useState<View>(viewInAddress)
   const [autoIndent, setAutoIndent] = useState(() => load('autoIndent', true))
   const [autoClose, setAutoClose] = useState(() => load('autoClose', true))
   // Saved as "intellisense" before the feature was renamed; carried over once.
@@ -111,16 +117,16 @@ export default function App() {
 
   // Every finished run goes into local history with its keystroke log
   // (src/lib/history.ts), once. Where the browser won't store it, nothing happens.
-  const [history] = useState(() => openHistory())
+  const [runHistory] = useState(() => openHistory())
   const recordedRun = useRef(-1)
   useEffect(() => {
     if (phase !== 'done' || recordedRun.current === state.runId) return
     recordedRun.current = state.runId
     const aids = { autoIndent, autoClose, autocomplete }
     recordRun(language, state, aids)
-      .then(async (record) => (await history)?.add(record))
+      .then(async (record) => (await runHistory)?.add(record))
       .catch((err) => console.warn('This run could not be saved to local history:', err))
-  }, [phase, state, language, autoIndent, autoClose, autocomplete, history])
+  }, [phase, state, language, autoIndent, autoClose, autocomplete, runHistory])
 
   const start = useCallback(
     (s: Snippet, changes: Partial<Settings> = {}) => {
@@ -157,7 +163,7 @@ export default function App() {
 
   // Keyboard: the whole page listens, so typing works without clicking first.
   const suggestOpen = !!state.suggest
-  const keyState = { openLanguage: () => setPickerOpen(true), openTheme: () => setThemeOpen(true), setChord, phase, autoIndent, indentSize: language.indentSize ?? 2, indentWithTabs: !!language.indentWithTabs, suggestOpen, next, retry, type, back, move, suggestNav, accept, dismiss }
+  const keyState = { view, toType: () => showView('type'), openLanguage: () => setPickerOpen(true), openTheme: () => setThemeOpen(true), setChord, phase, autoIndent, indentSize: language.indentSize ?? 2, indentWithTabs: !!language.indentWithTabs, suggestOpen, next, retry, type, back, move, suggestNav, accept, dismiss }
   const latest = useRef(keyState)
   useLayoutEffect(() => {
     latest.current = keyState
@@ -174,6 +180,8 @@ export default function App() {
         e.preventDefault()
         if (command === 'chordStart') return s.setChord(true)
         s.setChord(false)
+        // From My runs, typing shortcuts go back to typing first.
+        if ((command === 'newSnippet' || command === 'language') && s.view !== 'type') s.toType()
         if (command === 'newSnippet') s.next()
         else if (command === 'language') s.openLanguage()
         else if (command === 'theme') s.openTheme()
@@ -181,6 +189,8 @@ export default function App() {
         return
       }
       if (chordRef.current) return // a modifier, pressed on the way to the second key
+      // My runs has its own controls; keys don't type there.
+      if (s.view !== 'type') return
 
       const onButton = e.target instanceof Element && e.target.closest('button')
       if (onButton && (e.key === 'Enter' || e.key === ' ')) return
@@ -249,10 +259,35 @@ export default function App() {
   const [themeOpen, setThemeOpen] = useState(false)
   const [aboutOpen, setAboutOpen] = useState(false)
   useEffect(() => {
-    // The clock also stops while a picker or the about dialog is open.
-    if (focused && !pickerOpen && !themeOpen && !aboutOpen) resume()
+    // The clock also stops while a picker, the about dialog or My runs is open.
+    if (focused && !pickerOpen && !themeOpen && !aboutOpen && view === 'type') resume()
     else pause()
-  }, [focused, pickerOpen, themeOpen, aboutOpen, pause, resume])
+  }, [focused, pickerOpen, themeOpen, aboutOpen, view, pause, resume])
+
+  // Switching between typing and My runs; on the site it's a real address, so Back works.
+  const showView = (v: View) => {
+    if (v === view) return
+    setView(v)
+    if (onSite) {
+      const page = v === 'runs' ? RUNS_PAGE : languagePage(language)
+      history.pushState(null, '', page.path)
+      document.title = page.title
+    }
+    if (v === 'type') requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }))
+  }
+  useEffect(() => {
+    if (!onSite) return
+    const onPop = () => {
+      const v = viewInAddress()
+      setView(v)
+      document.title = v === 'runs' ? RUNS_PAGE.title : languagePage(getLanguage(languageId)).title
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [languageId])
+  useEffect(() => {
+    if (view === 'runs' && onSite) document.title = RUNS_PAGE.title
+  }, [view])
 
   // The site's pages carry an about section in their HTML, for search engines
   // and link previews. Once the app runs, it opens as a dialog from the footer
@@ -315,6 +350,24 @@ export default function App() {
     setPickerOpen(false)
     inputRef.current?.focus({ preventScroll: true })
   }
+  /** From My runs: type exactly this snippet, switching language and length to match it. */
+  const typeSnippet = (id: string, name: string) => {
+    const lang = getLanguage(id)
+    const target = lang.snippets.find((x) => x.name === name)
+    if (!target) return
+    setLanguageId(lang.id)
+    save('language', lang.id)
+    setLength(target.length)
+    save('length', target.length)
+    start(target, { languageId: lang.id, length: target.length })
+    setView('type')
+    if (onSite) {
+      const page = languagePage(lang)
+      history.pushState(null, '', page.path)
+      document.title = page.title
+    }
+    requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }))
+  }
   const pickLanguage = (id: string) => {
     closePicker()
     if (id !== languageId) changeLanguage(id)
@@ -364,194 +417,206 @@ export default function App() {
       )}
       {aboutOpen && aboutSection && <AboutDialog section={aboutSection} onLanguage={aboutLanguage} onClose={closeAbout} />}
       {themeOpen && <ThemePicker currentId={themeId} onPreview={applyTheme} onSelect={pickTheme} onClose={closeTheme} />}
-      <header>
+      <header className="top">
         <div className="brand">
           <h1>
             Syn<span>type</span>
           </h1>
-          <small>typing speed, measured in code</small>
         </div>
-        <ConfigBar
-          length={length}
-          autoIndent={autoIndent}
-          autoClose={autoClose}
-          onLength={changeLength}
-          onToggleIndent={toggleIndent}
-          onToggleClose={toggleClose}
-          autocomplete={autocomplete}
-          onToggleAutocomplete={toggleAutocomplete}
-        />
+        <nav className="tabs" aria-label="Sections">
+          <button type="button" aria-current={view === 'type' ? 'page' : undefined} onClick={() => showView('type')}>
+            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+              <path d="M8 7l-5 5 5 5M16 7l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span>Type</span>
+          </button>
+          <button type="button" aria-current={view === 'runs' ? 'page' : undefined} onClick={() => showView('runs')}>
+            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+              <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <span>My runs</span>
+          </button>
+        </nav>
+        <div className="top-actions">
+          {aboutSection && (
+            <button type="button" className="icon-button" onClick={() => setAboutOpen(true)} aria-haspopup="dialog" aria-label="About Syntype" title="About Syntype">
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="2" />
+                <path d="M12 11v5.5M12 7.6v.4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+              </svg>
+            </button>
+          )}
+          <button
+            type="button"
+            className="icon-button theme-button"
+            onClick={() => setThemeOpen(true)}
+            aria-haspopup="dialog"
+            aria-label={`Theme: ${getTheme(themeId).name}. Change theme`}
+            title={`Theme: ${getTheme(themeId).name} (${shortcutText('theme')})`}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="2" />
+              <path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor" />
+            </svg>
+          </button>
+        </div>
       </header>
 
-      {/* No clock or score while typing: results appear only when the snippet is done. */}
-      <div className="live">
-        <button
-          type="button"
-          id="language-button"
-          className="lang-button"
-          onClick={() => setPickerOpen(true)}
-          aria-haspopup="dialog"
-          title={`Change language (${shortcutText('language')})`}
-        >
-          <span className="lang-icon" aria-hidden="true">
-            {'</>'}
-          </span>
-          {language.name}
-        </button>
-        <button
-          type="button"
-          className="new-snippet"
-          onClick={() => {
-            next()
-            inputRef.current?.focus({ preventScroll: true })
-          }}
-          title={`New snippet (${shortcutText('newSnippet')})`}
-        >
-          <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
-            <path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          new snippet
-        </button>
-        <span
-          className={`hint${chord || atPending(run) || suggestOpen ? ' attention' : ''}`}
-          style={{ visibility: phase === 'done' && !chord ? 'hidden' : undefined }}
-        >
-          {chord ? (
-            <>
-              <kbd>{keys.mod}</kbd>+
-              <kbd>K</kbd> pressed · <kbd>T</kbd> theme · any other key cancels
-            </>
-          ) : suggestOpen ? (
-            <>
-              <kbd>tab</kbd> <kbd>enter</kbd> accept · <kbd>↑</kbd> <kbd>↓</kbd> choose · <kbd>esc</kbd> close
-            </>
-          ) : !atPending(run) ? (
-            phase === 'ready' ? (
+      {view === 'runs' ? (
+        <RunsView languages={LANGUAGES} history={runHistory} language={languageId} length={length} inAddress={onSite} onType={typeSnippet} />
+      ) : (
+        <>
+          {/* Everything that changes the run, next to the code it changes. No clock or score while typing. */}
+          <div className="settings">
+            <button
+              type="button"
+              id="language-button"
+              className="lang-button"
+              onClick={() => setPickerOpen(true)}
+              aria-haspopup="dialog"
+              title={`Change language (${shortcutText('language')})`}
+            >
+              <span className="lang-icon" aria-hidden="true">
+                {'</>'}
+              </span>
+              {language.name}
+            </button>
+            <ConfigBar
+              length={length}
+              autoIndent={autoIndent}
+              autoClose={autoClose}
+              onLength={changeLength}
+              onToggleIndent={toggleIndent}
+              onToggleClose={toggleClose}
+              autocomplete={autocomplete}
+              onToggleAutocomplete={toggleAutocomplete}
+            />
+            <button
+              type="button"
+              className="new-snippet"
+              onClick={() => {
+                next()
+                inputRef.current?.focus({ preventScroll: true })
+              }}
+              title={`New snippet (${shortcutText('newSnippet')})`}
+            >
+              <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+                <path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              new snippet
+            </button>
+          </div>
+
+          <section className="pane">
+            <div className="tabbar">
+              <div className="tab">
+                <span className="dot" />
+                <span>{snippet.name}</span>
+              </div>
+              <span className="lang">{language.name}</span>
+            </div>
+
+            {result ? (
+              <Results
+                key={state.runId}
+                result={result}
+                isBest={isBest}
+                info={{
+                  language: language.name,
+                  length,
+                  snippet: snippet.name,
+                  assists: [autoIndent && 'auto-indent', autoClose && 'auto-close', autocomplete && 'autocomplete'].filter(
+                    (a): a is string => !!a,
+                  ),
+                }}
+                run={run}
+                highlight={language.highlight}
+                onNext={next}
+                onRetry={retry}
+              />
+            ) : (
+              <CodeView
+                code={snippet.code}
+                highlight={language.highlight}
+                run={run}
+                typing={phase === 'running'}
+                inputRef={inputRef}
+                onMobileInput={onMobileInput}
+                suggest={state.suggest}
+                onAccept={accept}
+                overlay={overlay}
+                touch={isTouch()}
+              />
+            )}
+
+            <div className="statusbar">
+              <span>
+                Ln {line}, Col {col}
+              </span>
+              <span>
+                {run.pos} / {run.chars.length} chars
+              </span>
+              {/* Personal best is a score too, so it waits for the results screen. */}
+              <span className="push">
+                {phase === 'done' &&
+                  `best (${[language.name, length, autoClose && 'auto-close', autocomplete && 'autocomplete'].filter(Boolean).join(', ')}): ${best ? `${Math.round(best)} wpm` : '—'}`}
+              </span>
+              {serviceLabel && (
+                <span
+                  className={`service ${serviceStatus}`}
+                  title={
+                    serviceStatus === 'failed'
+                      ? `Couldn't start: ${service?.failure?.() ?? 'unknown reason'}`
+                      : "Type-aware suggestions from the language's own service"
+                  }
+                >
+                  {serviceLabel}
+                </span>
+              )}
+              <span>{language.indentWithTabs ? 'Tab Size' : 'Spaces'}: {language.indentSize ?? 2}</span>
+              <span>UTF-8</span>
+            </div>
+          </section>
+
+          <p
+            className={`hint${chord || atPending(run) || suggestOpen ? ' attention' : ''}`}
+            style={{ visibility: phase === 'done' && !chord ? 'hidden' : undefined }}
+          >
+            {chord ? (
               <>
-                start typing when you're ready · <kbd>{keys.mod}</kbd>+
-                <kbd>enter</kbd> new snippet · <kbd>{keys.mod}</kbd>+
-                <kbd>{keys.shift}</kbd>+
-                <kbd>L</kbd> language
+                <kbd>{keys.mod}</kbd>+
+                <kbd>K</kbd> pressed · <kbd>T</kbd> theme · any other key cancels
+              </>
+            ) : suggestOpen ? (
+              <>
+                <kbd>tab</kbd> <kbd>enter</kbd> accept · <kbd>↑</kbd> <kbd>↓</kbd> choose · <kbd>esc</kbd> close
+              </>
+            ) : !atPending(run) ? (
+              phase === 'ready' ? (
+                <>
+                  start typing when you're ready · <kbd>{keys.mod}</kbd>+
+                  <kbd>enter</kbd> new snippet · <kbd>{keys.mod}</kbd>+
+                  <kbd>{keys.shift}</kbd>+
+                  <kbd>L</kbd> language · <kbd>{keys.mod}</kbd>+<kbd>⌫</kbd> deletes a word
+                </>
+              ) : (
+                <>
+                  <kbd>{keys.mod}</kbd>+
+                  <kbd>enter</kbd> new snippet · <kbd>{keys.mod}</kbd>+<kbd>⌫</kbd> deletes a word · results appear when you finish
+                </>
+              )
+            ) : run.chars[run.pos] === '\n' ? (
+              <>
+                auto-closed below · <kbd>↓</kbd> to move past it
               </>
             ) : (
               <>
-                <kbd>{keys.mod}</kbd>+
-                <kbd>enter</kbd> new snippet · results appear when you finish
+                auto-closed · type it, or <kbd>→</kbd> <kbd>end</kbd> to move past
               </>
-            )
-          ) : run.chars[run.pos] === '\n' ? (
-            <>
-              auto-closed below · <kbd>↓</kbd> to move past it
-            </>
-          ) : (
-            <>
-              auto-closed · type it, or <kbd>→</kbd> <kbd>end</kbd> to move past
-            </>
-          )}
-        </span>
-      </div>
-
-      <section className="pane">
-        <div className="tabbar">
-          <div className="tab">
-            <span className="dot" />
-            <span>{snippet.name}</span>
-          </div>
-          <span className="lang">{language.name}</span>
-        </div>
-
-        {result ? (
-          <Results
-            key={state.runId}
-            result={result}
-            isBest={isBest}
-            info={{
-              language: language.name,
-              length,
-              snippet: snippet.name,
-              assists: [autoIndent && 'auto-indent', autoClose && 'auto-close', autocomplete && 'autocomplete'].filter(
-                (a): a is string => !!a,
-              ),
-            }}
-            run={run}
-            highlight={language.highlight}
-            onNext={next}
-            onRetry={retry}
-          />
-        ) : (
-          <CodeView
-            code={snippet.code}
-            highlight={language.highlight}
-            run={run}
-            typing={phase === 'running'}
-            inputRef={inputRef}
-            onMobileInput={onMobileInput}
-            suggest={state.suggest}
-            onAccept={accept}
-            overlay={overlay}
-            touch={isTouch()}
-          />
-        )}
-
-        <div className="statusbar">
-          <span>
-            Ln {line}, Col {col}
-          </span>
-          <span>
-            {run.pos} / {run.chars.length} chars
-          </span>
-          {/* Personal best is a score too, so it waits for the results screen. */}
-          <span className="push">
-            {phase === 'done' &&
-              `best (${[language.name, length, autoClose && 'auto-close', autocomplete && 'autocomplete'].filter(Boolean).join(', ')}): ${best ? `${Math.round(best)} wpm` : '—'}`}
-          </span>
-          {serviceLabel && (
-            <span
-              className={`service ${serviceStatus}`}
-              title={
-                serviceStatus === 'failed'
-                  ? `Couldn't start: ${service?.failure?.() ?? 'unknown reason'}`
-                  : "Type-aware suggestions from the language's own service"
-              }
-            >
-              {serviceLabel}
-            </span>
-          )}
-          <span>{language.indentWithTabs ? 'Tab Size' : 'Spaces'}: {language.indentSize ?? 2}</span>
-          <span>UTF-8</span>
-        </div>
-      </section>
-
-      <footer>
-        <span>WPM counts only correct characters you typed, ÷ 5 per minute. Code speed also counts suggested and auto-inserted text.</span>
-        <span>
-          <kbd>ctrl</kbd>+<kbd>⌫</kbd> deletes a word
-        </span>
-        <span className="footer-actions">
-        {aboutSection && (
-          <button type="button" className="theme-button" onClick={() => setAboutOpen(true)} aria-haspopup="dialog" title="About Syntype">
-            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
-              <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="2" />
-              <path d="M12 11v5.5M12 7.6v.4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-            </svg>
-            About
-          </button>
-        )}
-        <button
-          type="button"
-          className="theme-button"
-          onClick={() => setThemeOpen(true)}
-          aria-haspopup="dialog"
-          title={`Change theme (${shortcutText('theme')})`}
-        >
-          <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
-            <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="2" />
-            <path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor" />
-          </svg>
-          {getTheme(themeId).name}
-        </button>
-        </span>
-      </footer>
+            )}
+          </p>
+        </>
+      )}
     </div>
   )
 }

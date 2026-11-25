@@ -26,15 +26,14 @@ export function ConfigBar({
 }: Props) {
   return (
     <div className="config" role="toolbar" aria-label="Test settings">
-      <div className="group">
-        <span className="label">length</span>
+      <div className="group" role="group" aria-label="Length">
         {LENGTHS.map((l) => (
           <button key={l} id={`len-${l}`} className="chip" aria-pressed={length === l} onClick={() => onLength(l)}>
             {l}
           </button>
         ))}
       </div>
-      <div className="group">
+      <div className="group" role="group" aria-label="Typing aids">
         <button
           id="opt-indent"
           className="chip"

@@ -82,9 +82,18 @@ export function languageFromPath(pathname: string, languages: Language[]): strin
   return languages.some((l) => l.id === slug) ? slug : null
 }
 
-/** Whether this page is the site itself (home or a language page), so it can keep the address in step with the language. */
+/**
+ * The personal board, at /runs. Its content is personal and lives on the
+ * device, so search engines are told not to index it, and it's left out of
+ * the sitemap.
+ */
+export const RUNS_PAGE = { path: '/runs', file: 'runs.html', title: 'My runs | Syntype' }
+
+export const isRunsPath = (pathname: string) => /^\/runs(\.html)?\/?$/.test(pathname)
+
+/** Whether this page is the site itself (home, a language page or /runs), so it can keep the address in step with what's shown. */
 export function isSitePath(pathname: string, languages: Language[]): boolean {
-  return /^\/(index\.html)?$/.test(pathname) || languageFromPath(pathname, languages) !== null
+  return /^\/(index\.html)?$/.test(pathname) || languageFromPath(pathname, languages) !== null || isRunsPath(pathname)
 }
 
 export function sitemapXml(pages: Page[]): string {

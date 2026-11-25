@@ -104,6 +104,14 @@ for (const page of pages) {
   html = between(html, 'about', about(page))
   fs.writeFileSync(path.join(dist, page.file), html)
 }
+// The personal board: personal content kept on the device, so not indexed and not in the sitemap.
+{
+  const runs = seo.RUNS_PAGE
+  const home = pages[0]
+  let html = between(template, 'seo', [`    <title>${esc(runs.title)}</title>`, `    <meta name="robots" content="noindex" />`].join('\n'))
+  html = between(html, 'about', about(home))
+  fs.writeFileSync(path.join(dist, runs.file), html)
+}
 fs.writeFileSync(path.join(dist, 'sitemap.xml'), seo.sitemapXml(pages))
 fs.writeFileSync(path.join(dist, 'robots.txt'), seo.robotsTxt())
-console.log(`${dist}/: ${pages.length} pages, sitemap.xml, robots.txt`)
+console.log(`${dist}/: ${pages.length} pages, ${seo.RUNS_PAGE.file}, sitemap.xml, robots.txt`)

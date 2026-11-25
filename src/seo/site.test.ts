@@ -5,7 +5,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { LANGUAGES } from '../languages'
-import { allPages, BLURBS, isSitePath, languageFromPath, robotsTxt, SITE_URL, sitemapXml } from './site'
+import { allPages, BLURBS, isRunsPath, isSitePath, languageFromPath, robotsTxt, SITE_URL, sitemapXml } from './site'
 
 /** Longest title and description search results show without cutting them off. */
 export const MAX_TITLE = 60
@@ -46,6 +46,17 @@ describe('SEO pages', () => {
     expect(isSitePath('/index.html', LANGUAGES)).toBe(true)
     expect(isSitePath('/rust', LANGUAGES)).toBe(true)
     expect(isSitePath('/code/artifact/abc', LANGUAGES)).toBe(false)
+  })
+
+  it('/runs is the personal board: part of the site, never a language, never in the sitemap', () => {
+    for (const p of ['/runs', '/runs/', '/runs.html']) {
+      expect(isRunsPath(p)).toBe(true)
+      expect(isSitePath(p, LANGUAGES)).toBe(true)
+      expect(languageFromPath(p, LANGUAGES)).toBeNull()
+    }
+    expect(isRunsPath('/runsx')).toBe(false)
+    expect(LANGUAGES.some((l) => l.id === 'runs')).toBe(false)
+    expect(sitemapXml(pages)).not.toContain('/runs')
   })
 
   it('the sitemap lists every page, and robots.txt points to it', () => {

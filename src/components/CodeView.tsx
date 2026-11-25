@@ -10,13 +10,14 @@ interface Props {
   highlight: HighlightRules
   run: Run
   typing: boolean
-  inputRef: React.RefObject<HTMLTextAreaElement | null>
-  onMobileInput: (text: string, deleted: boolean) => void
-  suggest: SuggestState | null
-  onAccept: (index: number) => void
+  /** Omitted for a read-only view (a replay): no input, no focus overlay. */
+  inputRef?: React.RefObject<HTMLTextAreaElement | null>
+  onMobileInput?: (text: string, deleted: boolean) => void
+  suggest?: SuggestState | null
+  onAccept?: (index: number) => void
   /** Shown over the code when keys can't reach the game. */
-  overlay: 'start' | 'paused' | null
-  touch: boolean
+  overlay?: 'start' | 'paused' | null
+  touch?: boolean
 }
 
 /** Kept in the hidden textarea so a mobile Backspace still fires an input event. */
@@ -29,11 +30,12 @@ export function CodeView({
   typing,
   inputRef,
   onMobileInput,
-  suggest,
-  onAccept,
-  overlay,
-  touch,
+  suggest = null,
+  onAccept = () => {},
+  overlay = null,
+  touch = false,
 }: Props) {
+  const readOnly = !inputRef
   const classes = useMemo(() => tokenize(code, highlight), [code, highlight])
   const lineCount = useMemo(() => code.split('\n').length, [code])
   const scrollerRef = useRef<HTMLDivElement>(null)
@@ -58,7 +60,7 @@ export function CodeView({
   const handleInput = (e: React.FormEvent<HTMLTextAreaElement>) => {
     const ta = e.currentTarget
     const v = ta.value
-    onMobileInput(v.slice(SENTINEL.length).replace(/\r/g, '\n'), v.length < SENTINEL.length)
+    onMobileInput?.(v.slice(SENTINEL.length).replace(/\r/g, '\n'), v.length < SENTINEL.length)
     ta.value = SENTINEL
     ta.setSelectionRange(1, 1)
   }
@@ -67,19 +69,21 @@ export function CodeView({
     <div
       ref={editorRef}
       className={`editor${typing ? ' typing' : ''}${overlay ? ' unfocused' : ''}`}
-      onClick={() => inputRef.current?.focus({ preventScroll: true })}>
-      <textarea
-        ref={inputRef}
-        id="type-input"
-        className="hidden-input"
-        defaultValue={SENTINEL}
-        onInput={handleInput}
-        autoCapitalize="off"
-        autoComplete="off"
-        autoCorrect="off"
-        spellCheck={false}
-        aria-label="Type the code here"
-      />
+      onClick={() => inputRef?.current?.focus({ preventScroll: true })}>
+      {!readOnly && (
+        <textarea
+          ref={inputRef}
+          id="type-input"
+          className="hidden-input"
+          defaultValue={SENTINEL}
+          onInput={handleInput}
+          autoCapitalize="off"
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          aria-label="Type the code here"
+        />
+      )}
       <div className="scroller" ref={scrollerRef}>
         <pre className="gutter" aria-hidden="true">
           {Array.from({ length: lineCount }, (_, i) => i + 1).join('\n')}
@@ -105,7 +109,7 @@ export function CodeView({
         </pre>
       </div>
       {overlay && (
-        <button type="button" className="focus-overlay" onClick={() => inputRef.current?.focus({ preventScroll: true })}>
+        <button type="button" className="focus-overlay" onClick={() => inputRef?.current?.focus({ preventScroll: true })}>
           <strong>{overlay === 'paused' ? 'Paused' : touch ? 'Tap to start typing' : 'Click here to start typing'}</strong>
           <span>
             {overlay === 'paused'

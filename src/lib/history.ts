@@ -53,7 +53,53 @@ export interface History {
   runs(filter?: { language?: string; snippetKey?: string }): Promise<StoredRun[]>
   /** A run's keystroke log, if it was kept. */
   log(id: string): Promise<LogEntry[] | undefined>
+  /** Everything, as a file's contents, to keep or move to another device. */
+  exportAll(): Promise<HistoryFile>
+  /** Adds the runs from an exported file (runs already here are kept), then applies the log rules. */
+  importAll(file: unknown): Promise<{ added: number; skipped: number }>
+  /** Deletes every run and log, or one language's. */
+  clear(language?: string): Promise<void>
   close(): void
+}
+
+/** An exported history file. */
+export interface HistoryFile {
+  format: 'syntype-history'
+  version: 1
+  exportedAt: string
+  runs: StoredRun[]
+  logs: { id: string; log: LogEntry[] }[]
+}
+
+/** Checks a run read from a file has the shape the board relies on. */
+function validRun(r: unknown): r is StoredRun {
+  const x = r as StoredRun
+  return (
+    !!x &&
+    typeof x.id === 'string' &&
+    typeof x.language === 'string' &&
+    typeof x.snippet === 'string' &&
+    typeof x.fingerprint === 'string' &&
+    ['short', 'medium', 'long'].includes(x.length) &&
+    typeof x.wpm === 'number' &&
+    Number.isFinite(x.wpm) &&
+    typeof x.accuracy === 'number' &&
+    typeof x.seconds === 'number' &&
+    typeof x.finishedAt === 'string' &&
+    !Number.isNaN(Date.parse(x.finishedAt)) &&
+    !!x.aids &&
+    ['autoIndent', 'autoClose', 'autocomplete'].every((k) => typeof x.aids[k as keyof typeof x.aids] === 'boolean')
+  )
+}
+
+/** Run ids whose logs are kept: each snippet's best few, and the most recent few overall. */
+function logsToKeep(all: StoredRun[]): Set<string> {
+  const keep = new Set<string>()
+  const bySnippet = new Map<string, StoredRun[]>()
+  for (const r of all) bySnippet.set(r.snippetKey, [...(bySnippet.get(r.snippetKey) ?? []), r])
+  for (const runs of bySnippet.values()) runs.sort(byBest).slice(0, BEST_LOGS_PER_SNIPPET).forEach((r) => keep.add(r.id))
+  ;[...all].sort((a, b) => b.finishedAt.localeCompare(a.finishedAt)).slice(0, RECENT_LOGS).forEach((r) => keep.add(r.id))
+  return keep
 }
 
 /** Opens local history, or resolves to null where the browser won't store it. */
@@ -133,6 +179,93 @@ function makeHistory(db: IDBDatabase): History {
       return (await request(db.transaction('logs').objectStore('logs').get(id))) as LogEntry[] | undefined
     },
 
+    async exportAll() {
+      const tx = db.transaction(['runs', 'logs'])
+      const runs = (await request(tx.objectStore('runs').getAll())) as StoredRun[]
+      const ids = (await request(tx.objectStore('logs').getAllKeys())) as string[]
+      const logs = (await request(tx.objectStore('logs').getAll())) as LogEntry[][]
+      return {
+        format: 'syntype-history',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        runs: runs.sort((a, b) => a.finishedAt.localeCompare(b.finishedAt)),
+        logs: ids.map((id, i) => ({ id, log: logs[i] })),
+      }
+    },
+
+    async importAll(file) {
+      const f = file as Partial<HistoryFile>
+      if (!f || f.format !== 'syntype-history' || f.version !== 1 || !Array.isArray(f.runs)) {
+        throw new Error('This is not a Syntype history file.')
+      }
+      const logs = new Map((Array.isArray(f.logs) ? f.logs : []).filter((l) => l && typeof l.id === 'string' && Array.isArray(l.log)).map((l) => [l.id, l.log]))
+      const tx = db.transaction(['runs', 'logs'], 'readwrite')
+      const runs = tx.objectStore('runs')
+      const logStore = tx.objectStore('logs')
+      const existing = new Set((await request(runs.getAllKeys())) as string[])
+      let added = 0
+      let skipped = 0
+      for (const r of f.runs) {
+        if (!validRun(r) || existing.has(r.id)) {
+          skipped++
+          continue
+        }
+        const log = logs.get(r.id)
+        runs.put({ ...r, snippetKey: snippetKey(r), hasLog: !!log })
+        if (log) logStore.put(log, r.id)
+        added++
+      }
+      // The same log rules as for runs typed here.
+      const all = (await request(runs.getAll())) as StoredRun[]
+      const keep = logsToKeep(all)
+      for (const r of all) {
+        if (r.hasLog && !keep.has(r.id)) {
+          logStore.delete(r.id)
+          runs.put({ ...r, hasLog: false })
+        }
+      }
+      await done(tx)
+      return { added, skipped }
+    },
+
+    async clear(language) {
+      const tx = db.transaction(['runs', 'logs'], 'readwrite')
+      if (!language) {
+        tx.objectStore('runs').clear()
+        tx.objectStore('logs').clear()
+      } else {
+        const ids = (await request(tx.objectStore('runs').index('language').getAllKeys(language))) as string[]
+        for (const id of ids) {
+          tx.objectStore('runs').delete(id)
+          tx.objectStore('logs').delete(id)
+        }
+      }
+      await done(tx)
+    },
+
     close: () => db.close(),
+  }
+}
+
+/** How much this site stores on the device, and whether the browser has promised to keep it. */
+export async function storageInfo(): Promise<{ bytes: number | null; persisted: boolean }> {
+  try {
+    const [estimate, persisted] = await Promise.all([navigator.storage.estimate(), navigator.storage.persisted()])
+    return { bytes: estimate.usage ?? null, persisted }
+  } catch {
+    return { bytes: null, persisted: false }
+  }
+}
+
+/**
+ * Asks the browser to keep this site's data even when the disk fills up
+ * (navigator.storage.persist()). Some browsers ask the player; some decide
+ * themselves. Resolves to whether it's now kept.
+ */
+export async function keepSafe(): Promise<boolean> {
+  try {
+    return await navigator.storage.persist()
+  } catch {
+    return false
   }
 }

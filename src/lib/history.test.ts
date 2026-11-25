@@ -111,4 +111,56 @@ describe('local history', () => {
       else delete (globalThis as { indexedDB?: unknown }).indexedDB
     }
   })
+
+  it('exports everything and imports it into another browser', async () => {
+    const a = await fresh()
+    const runs = [run(), run({ language: 'go', snippet: 'add.go' }), run({ wpm: 70 })]
+    for (const r of runs) await a.add(r)
+    const file = JSON.parse(JSON.stringify(await a.exportAll()))
+    expect(file).toMatchObject({ format: 'syntype-history', version: 1 })
+    expect(file.runs.length).toBe(3)
+
+    const b = await fresh()
+    expect(await b.importAll(file)).toEqual({ added: 3, skipped: 0 })
+    expect((await b.runs()).map((r) => r.id).sort()).toEqual(runs.map((r) => r.id).sort())
+    expect(await b.log(runs[2].id)).toEqual(runs[2].log)
+    // Importing the same file again adds nothing.
+    expect(await b.importAll(file)).toEqual({ added: 0, skipped: 3 })
+  })
+
+  it('refuses a file that is not a history export, and skips runs that are malformed', async () => {
+    const h = await fresh()
+    await expect(h.importAll({ hello: 'world' })).rejects.toThrow('not a Syntype history file')
+    const file = { format: 'syntype-history', version: 1, exportedAt: '', runs: [{ id: 'x', wpm: 'fast' }, { ...run(), log: undefined }], logs: [] }
+    expect(await h.importAll(file)).toEqual({ added: 1, skipped: 1 })
+    // An imported run without a log is stored without one.
+    expect((await h.runs())[0].hasLog).toBe(false)
+  })
+
+  it('applies the log rules to imported runs', async () => {
+    const source = await fresh()
+    // Logs are only pruned per snippet as runs are added, so put many runs of one snippet in a file by hand.
+    const many = Array.from({ length: 20 }, (_, i) => run({ wpm: 40 + i }))
+    const file = { format: 'syntype-history', version: 1, exportedAt: '', runs: many.map((r) => ({ ...r, log: undefined })), logs: many.map((r) => ({ id: r.id, log: r.log })) }
+    source.close()
+    const h = await fresh()
+    await h.importAll(file)
+    const kept = await withLogs(h)
+    expect(kept.length).toBeLessThanOrEqual(BEST_LOGS_PER_SNIPPET + RECENT_LOGS)
+    expect(kept).toContain(many[19].id) // the fastest, and the newest
+  })
+
+  it('clears one language, or everything', async () => {
+    const h = await fresh()
+    const py = run()
+    const go = run({ language: 'go', snippet: 'add.go' })
+    await h.add(py)
+    await h.add(go)
+    await h.clear('python')
+    expect((await h.runs()).map((r) => r.id)).toEqual([go.id])
+    expect(await h.log(py.id)).toBeUndefined()
+    await h.clear()
+    expect(await h.runs()).toEqual([])
+    expect(await h.log(go.id)).toBeUndefined()
+  })
 })

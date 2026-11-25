@@ -60,6 +60,7 @@ Works for everyone, costs nothing on the server, and never leaves the device unl
 - **Kept:**
   - every run's **result** (about 0.2 KB; under 1 MB a year at 10 runs a day)
   - **logs** for each snippet's best 3 runs (at most ~1.4 MB for today's 241 snippets) and for the last 10 runs, for replaying a run just played
+- **Built (task 4):** `src/components/RunsView.tsx` and `ReplayView.tsx`, at `/runs` (`dist/runs.html`, not indexed, not in the sitemap), with the board's numbers in `src/lib/board.ts` and the replay timeline in `src/lib/replay.ts`. The header now has **Type** and **My runs** tabs, with About and the theme as icon buttons; Leaderboard and Sign in join it later.
 - **Shows:**
   - the player's own matrix, language by length by snippet: best, average, number of runs, trend
   - every run on a snippet, filterable by typing aids
