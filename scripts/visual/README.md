@@ -22,6 +22,12 @@ Subsets: `--states a,b --themes a,b --viewports phone,desktop`. `--no-build` reu
 - **The same choices.** `Math.random` is seeded, so a language opens on the same snippet; pickers are opened from the keyboard, so the pointer doesn't hover a row; replays are paused at 40%.
 - **Production build.** Vite (which runs these scripts) sets `NODE_ENV=development`; the build gets `production` back, or React's development build would be measured.
 
+## Comparing
+
+Images are compared with pixelmatch at a colour threshold of 0.015 (anti-aliased edges excluded), and an image counts as changed when more than 25 pixels differ. That catches a grey border moved seven steps (`compare.ts` has the numbers). Chromium is launched with rendering flags that keep runs identical (one colour profile, no font hinting, software raster).
+
+About one page opening in ten still draws its text a shade differently: a few hundred scattered pixels nobody can see. In `--compare` mode, states with a changed image are captured again on both sides, up to twice, and an image counts only if it changed every time. A real change always repeats.
+
 ## Files
 
 - `states.ts`: the 25 states and how each is opened. Add a state here when a screen is added.

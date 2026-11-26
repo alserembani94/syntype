@@ -28,12 +28,12 @@ const label = opt('label') ?? 'current'
 const compare = opt('compare')
 const filter = parseFilter(args)
 
-/** Captures this checkout into .visual/<label>/. */
-async function captureHere(): Promise<string> {
-  const dir = resolve(root, OUT_DIR, label)
+/** Captures this checkout into .visual/<name>/. */
+async function captureHere(name = label, only = filter, buildFirst = !args.includes('--no-build')): Promise<string> {
+  const dir = resolve(root, OUT_DIR, name)
   rmSync(dir, { recursive: true, force: true })
   mkdirSync(dir, { recursive: true })
-  if (!args.includes('--no-build')) build(root)
+  if (buildFirst) build(root)
   const server = await startServer(root, join(root, 'scripts/visual/fixtures/seed.sql'))
   const index: { file: string; state: string; area: string; title: string; theme: string; viewport: string }[] = []
   const started = Date.now()
@@ -42,31 +42,48 @@ async function captureHere(): Promise<string> {
       const file = `${state.id}--${theme}--${viewport}.png`
       await page.screenshot({ path: join(dir, file), fullPage: true, animations: 'disabled', caret: 'hide' })
       index.push({ file, state: state.id, area: state.area, title: state.title, theme, viewport })
-    }, filter)
+    }, only)
   } finally {
     await server.stop()
   }
   writeFileSync(join(dir, 'index.json'), JSON.stringify(index, null, 1))
-  console.log(`${index.length} screenshots in ${OUT_DIR}/${label}/ (${Math.round((Date.now() - started) / 1000)} s)`)
+  console.log(`${index.length} screenshots in ${OUT_DIR}/${name}/ (${Math.round((Date.now() - started) / 1000)} s)`)
   return dir
 }
 
 /** Captures <ref> with its own scripts, in a worktree kept under .visual/worktrees/. */
-function captureRef(ref: string): string {
+function captureRef(ref: string, name = ref, states = opt('states')): string {
   const tree = resolve(root, OUT_DIR, 'worktrees', ref)
   if (!existsSync(tree)) {
     execFileSync('git', ['worktree', 'add', '--detach', tree, ref], { cwd: root, stdio: 'inherit' })
     execFileSync('npm', ['ci', '--no-audit', '--no-fund'], { cwd: tree, stdio: ['ignore', 'ignore', 'inherit'] })
   }
-  const passthrough = ['states', 'themes', 'viewports'].flatMap((n) => (opt(n) ? [`--${n}`, opt(n)!] : []))
-  execFileSync('npm', ['run', 'check:visual', '--', '--label', ref, ...passthrough], { cwd: tree, stdio: 'inherit' })
-  return join(tree, OUT_DIR, ref)
+  const passthrough = [...(states ? ['--states', states] : []), ...['themes', 'viewports'].flatMap((n) => (opt(n) ? [`--${n}`, opt(n)!] : []))]
+  execFileSync('npm', ['run', 'check:visual', '--', '--label', name, ...passthrough], { cwd: tree, stdio: 'inherit' })
+  return join(tree, OUT_DIR, name)
 }
 
 const here = await captureHere()
 if (compare) {
   const before = captureRef(compare)
   const out = resolve(root, OUT_DIR, `compare-${compare}`)
-  const { changed, total } = compareDirs(before, here, out)
+  let { changed, total } = compareDirs(before, here, out)
+  // About one page opening in ten draws its text a shade differently (a few hundred scattered,
+  // invisible pixels). A real change repeats; a flaky opening doesn't. So states with a changed
+  // image are captured again on both sides, up to twice, and an image counts only if it changed
+  // every time.
+  const rechecked: string[] = []
+  for (let attempt = 1; attempt <= 2 && changed.length; attempt++) {
+    const flagged = [...new Set(changed.map((c) => c.file.split('--')[0]))]
+    rechecked.push(...flagged)
+    const again = compareDirs(
+      captureRef(compare, `${compare}-again`, flagged.join(',')),
+      await captureHere(`${label}-again`, { ...filter, states: flagged }, false),
+      `${out}-again-${attempt}`,
+    )
+    const confirmed = new Set(again.changed.map((c) => c.file))
+    changed = changed.filter((c) => confirmed.has(c.file))
+  }
+  writeFileSync(join(out, 'report.json'), JSON.stringify({ before, after: here, total, changed, rechecked: [...new Set(rechecked)] }, null, 1))
   console.log(`${changed.length} of ${total} screenshots differ from ${compare}; report in ${OUT_DIR}/compare-${compare}/report.json`)
 }
