@@ -15,8 +15,17 @@
 @import "../themes/themes.css" layer(theme);
 @import "tailwindcss/preflight.css" layer(base);
 @import "./legacy-reset.css" layer(base);
-@import "tailwindcss/utilities.css" layer(utilities);
+@import "./shadcn-base.css" layer(base);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
 @import "./tailwind-theme.css";
+/* shadcn: the open/close animations, and its data-open, data-checked… variants and keyframes (definitions only). */
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-/* Tailwind scans the app's source for classes; nothing else (not tests, scripts or fixtures). */
+/*
+ * Tailwind scans only the app's source for classes: not tests, scripts, fixtures
+ * or the agent skills in .claude (whose examples would add unused utilities).
+ */
+@source "../";
+@source "../../*.html";
 @source not "../**/*.test.ts";

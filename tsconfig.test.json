@@ -5,6 +5,6 @@
     "types": ["vite/client", "node"]
   },
   // The Worker's modules are tested too, under the browser's types: they only use standard web APIs.
-  "include": ["src", "worker/lib", "scripts/visual"],
+  "include": ["src", "worker/lib", "scripts/visual", "scripts/design/palette.ts", "scripts/ui-add.ts"],
   "exclude": []
 }

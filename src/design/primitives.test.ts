@@ -136,7 +136,7 @@ describe('primitives', () => {
     const scales = [
       'font-sans', 'font-mono', 'font-display',
       ...['xs', 'sm', 'base', 'lg', 'xl', '2xl', '3xl', '4xl', 'display'].map((s) => `text-${s}`),
-      'radius', ...['sm', 'md', 'lg', 'xl', '2xl', 'full'].map((s) => `radius-${s}`),
+      'radius', ...['sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', 'full'].map((s) => `radius-${s}`),
       ...['sm', 'md', 'lg', 'xl'].map((s) => `shadow-${s}`),
       'duration-fast', 'duration-normal', 'duration-slow', 'duration-theme', 'ease-out', 'spacing',
     ]
