@@ -77,11 +77,15 @@
 
 /*
  * Dark High Contrast, VS Code's built-in black theme (MIT): hc_black.json in
- * microsoft/vscode extensions/theme-defaults, with its defaults from
- * baseColors.ts: borders #6FC3DF (contrastBorder), focus #F38518, text #FFFFFF
- * and descriptions at 70% (#b3b3b3), errors #F48771. Code colours are Dark+'s:
- * keyword #569cd6, string #ce9178, number #b5cea8, function #DCDCAA,
- * type #4EC9B0, comment #7ca668.
+ * microsoft/vscode extensions/theme-defaults, with the colour registry's
+ * high contrast defaults (baseColors.ts, chartsColors.ts): borders #6FC3DF
+ * (contrastBorder), focus #F38518 (focusBorder), text #FFFFFF, muted text
+ * #b3b3b3 (descriptionForeground: text at 70% over black), errors #F48771
+ * (errorForeground), success #89d185 (charts.green). Code colours are
+ * hc_black's own token colours: keyword #569cd6, string #ce9178, number
+ * #b5cea8, function #DCDCAA, type #4EC9B0, comment #7ca668.
+ * The tinted backgrounds (#3d2105, #4a1a12) are Syntype's, listed as
+ * exceptions in src/design/primitives.css until an outline replaces them.
  */
 [data-syntype-theme="hc-black"] {
   --bg: #000000; --surface: #000000; --surface-2: #000000; --line: #6fc3df;
@@ -112,9 +116,11 @@
 /*
  * GitHub Light Default (MIT), src/theme.js in primer/github-vscode-theme with
  * @primer/primitives 7.10.0 light colours: canvas #ffffff / #f6f8fa, border
- * #d0d7de, text #1f2328 / #656d76, accent #0969da, danger #cf222e, success
- * #1a7f37; keyword red.5 #cf222e, string blue.8 #0a3069, constant blue.6
- * #0550ae, function purple.5 #8250df, entity orange.6 #953800, comment gray.5 #6e7781.
+ * #d0d7de, accent #0969da, danger #cf222e, success #1a7f37; syntax
+ * (prettylights) keyword #cf222e, string #0a3069, constant #0550ae, entity
+ * #8250df, variable #953800, comment #6e7781. Text #1f2328 / #656d76 comes from
+ * the theme's own overrides in src/colors.js, which replace Primer's
+ * fg.default and fg.muted.
  */
 [data-syntype-theme="github-light"] {
   --bg: #f6f8fa; --surface: #ffffff; --surface-2: #f6f8fa; --line: #d0d7de;
