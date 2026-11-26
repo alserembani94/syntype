@@ -85,21 +85,25 @@ describe('shadcn components in the site\'s CSS', () => {
   /** Every source file of the site: not admin, tests, or the components themselves. */
   const siteFiles = (path: string): string[] =>
     statSync(path).isDirectory()
-      ? readdirSync(path).flatMap((f) => (['admin', 'ui', 'test'].includes(f) ? [] : siteFiles(join(path, f))))
+      ? readdirSync(path).flatMap((f) => (['admin', 'ui', 'composites', 'test'].includes(f) ? [] : siteFiles(join(path, f))))
       : /\.tsx?$/.test(path) && !/\.test\.tsx?$/.test(path)
         ? [path]
         : []
 
-  it('app.css lists exactly the shadcn components the site imports', () => {
+  it('app.css lists exactly the shadcn components and composites the site uses', () => {
     const src = fileURLToPath(new URL('../', import.meta.url))
-    const imported = new Set<string>()
-    for (const file of siteFiles(src))
-      for (const m of readFileSync(file, 'utf8').matchAll(/from ['"](?:@\/components\/ui|\.{1,2}(?:\/\.\.)*\/components\/ui|\.\/ui)\/([\w-]+)['"]/g)) imported.add(m[1])
-    // A component's own imports of other components (dialog uses button) count too.
-    const ui = fileURLToPath(new URL('../components/ui/', import.meta.url))
-    for (const name of [...imported])
-      for (const m of readFileSync(join(ui, `${name}.tsx`), 'utf8').matchAll(/from ['"]@\/components\/ui\/([\w-]+)['"]/g)) imported.add(m[1])
-    const listed = [...read('./app.css').matchAll(/@source "\.\.\/components\/ui\/([\w-]+)\.tsx"/g)].map((m) => m[1])
-    expect(listed.sort()).toEqual([...imported].sort())
+    const IMPORT = /from ['"](?:@\/components|(?:\.{1,2}\/)+(?:components\/)?)(ui|composites)\/([\w-]+)['"]/g
+    const used = new Set<string>()
+    const add = (text: string) => {
+      for (const m of text.matchAll(IMPORT)) used.add(`${m[1]}/${m[2]}`)
+    }
+    for (const file of siteFiles(src)) add(readFileSync(file, 'utf8'))
+    // What those import in turn (a composite uses components; dialog uses button).
+    for (let size = -1; size !== used.size; ) {
+      size = used.size
+      for (const name of [...used]) add(readFileSync(join(src, 'components', `${name}.tsx`), 'utf8'))
+    }
+    const listed = [...read('./app.css').matchAll(/@source "\.\.\/components\/((?:ui|composites)\/[\w-]+)\.tsx"/g)].map((m) => m[1])
+    expect(listed.sort()).toEqual([...used].sort())
   })
 })

@@ -8,7 +8,12 @@ import { describe, expect, it } from 'vitest'
 import { missingColours, rewrite } from '../../../scripts/design/palette.ts'
 
 const dir = new URL('./', import.meta.url)
-const components = readdirSync(dir).filter((f) => f.endsWith('.tsx'))
+const composites = new URL('../composites/', import.meta.url)
+/** The shadcn components, and our composites built from them. */
+const components = [
+  ...readdirSync(dir).filter((f) => f.endsWith('.tsx')).map((f) => new URL(f, dir)),
+  ...readdirSync(composites).filter((f) => f.endsWith('.tsx') && !f.includes('.test.')).map((f) => new URL(f, composites)),
+]
 
 describe('the palette guard', () => {
   it('finds colours that are not roles, and passes roles', async () => {
@@ -28,8 +33,8 @@ describe('the palette guard', () => {
   })
 })
 
-describe.each(components.map((f) => [f]))('%s', (file) => {
+describe.each(components.map((u) => [u.pathname.split('/components/')[1], u]))('%s', (_, file) => {
   it('uses only theme roles for colour', async () => {
-    expect(await missingColours(readFileSync(new URL(file, dir), 'utf8'))).toEqual([])
+    expect(await missingColours(readFileSync(file, 'utf8'))).toEqual([])
   })
 })

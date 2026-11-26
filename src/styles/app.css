@@ -3,10 +3,11 @@
 @import "../index.css" layer(legacy);
 
 /*
- * The shadcn components the site uses: Tailwind scans files, not imports, so
+ * The shadcn components and composites the site uses: Tailwind scans files, not imports, so
  * each one is listed here, or its classes would be missing (or, listing the
  * whole folder, unused ones would be shipped). src/styles/tailwind.test.ts
  * checks this list against what the site imports.
  */
 @source not "../components/ui";
+@source not "../components/composites";
 /* (none yet) */
