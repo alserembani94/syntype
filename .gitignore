@@ -33,3 +33,6 @@ scripts/og/.render.html
 .dev.vars
 .env
 dist-preview
+
+# Visual, accessibility and speed check output (scripts/visual/)
+.visual
