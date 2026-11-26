@@ -141,6 +141,8 @@ export const CodeView = memo(function CodeView({
           ref={inputRef}
           id="type-input"
           className="hidden-input"
+          // The app's own key handler types for it (src/lib/keyTarget.ts leaves it to the app).
+          data-typing-input=""
           defaultValue={SENTINEL}
           onInput={handleInput}
           autoCapitalize="off"

@@ -29,6 +29,7 @@ const LeaderboardView = lazy(() => import('./components/LeaderboardView').then((
 import { applyTheme, getTheme, loadTheme, saveTheme } from './themes'
 import { isLeaderboardPath, isRunsPath, isSitePath, languageFromPath, languagePage, leaderboardPage, RUNS_PAGE } from './seo/site'
 import { Results } from './components/Results'
+import { ownsKey } from './lib/keyTarget'
 
 interface Settings {
   languageId: string
@@ -221,8 +222,8 @@ export default function App() {
       // My runs has its own controls; keys don't type there.
       if (s.view !== 'type') return
 
-      const onButton = e.target instanceof Element && e.target.closest('button')
-      if (onButton && (e.key === 'Enter' || e.key === ' ')) return
+      // A focused control that uses this key (a button's Enter, a toggle group's arrows) keeps it.
+      if (ownsKey(e)) return
 
       if (s.phase === 'done') {
         if (e.key === 'Enter') {
@@ -425,29 +426,44 @@ export default function App() {
     showLanguageInAddress(lang.id)
     start(pickSnippet(lang.snippets, length), { languageId: lang.id })
   }
-  const changeLength = (l: SnippetLength) => {
-    setLength(l)
-    save('length', l)
-    start(pickSnippet(language.snippets, l), { length: l })
+  /**
+   * start() puts focus in the editor, so a click on a setting leaves you ready to type.
+   * A setting changed from the keyboard (its control focus-visible) keeps focus instead,
+   * so the settings row can be used with the arrow keys.
+   */
+  const keepingKeyboardFocus = (change: () => void) => {
+    const el = document.activeElement
+    const keep = el instanceof HTMLElement && el.matches(':focus-visible') && el.closest('[data-settings]') ? el : null
+    change()
+    keep?.focus({ preventScroll: true })
   }
-  const toggleIndent = () => {
-    const v = !autoIndent
-    setAutoIndent(v)
-    save('autoIndent', v)
-    start(snippet, { autoIndent: v })
-  }
-  const toggleClose = () => {
-    const v = !autoClose
-    setAutoClose(v)
-    save('autoClose', v)
-    start(snippet, { autoClose: v })
-  }
-  const toggleAutocomplete = () => {
-    const v = !autocomplete
-    setAutocomplete(v)
-    save('autocomplete', v)
-    start(snippet, { autocomplete: v })
-  }
+  const changeLength = (l: SnippetLength) =>
+    keepingKeyboardFocus(() => {
+      setLength(l)
+      save('length', l)
+      start(pickSnippet(language.snippets, l), { length: l })
+    })
+  const toggleIndent = () =>
+    keepingKeyboardFocus(() => {
+      const v = !autoIndent
+      setAutoIndent(v)
+      save('autoIndent', v)
+      start(snippet, { autoIndent: v })
+    })
+  const toggleClose = () =>
+    keepingKeyboardFocus(() => {
+      const v = !autoClose
+      setAutoClose(v)
+      save('autoClose', v)
+      start(snippet, { autoClose: v })
+    })
+  const toggleAutocomplete = () =>
+    keepingKeyboardFocus(() => {
+      const v = !autocomplete
+      setAutocomplete(v)
+      save('autocomplete', v)
+      start(snippet, { autocomplete: v })
+    })
 
   // Fixed identities for the memoised Header and SettingsBar, so typing never redraws them.
   const onView = useStableCallback(showView)

@@ -30,7 +30,13 @@ export async function wcagViolations(exemptions: Exemption[] = []) {
 async function run(exemptions: Exemption[]) {
   // Measure the settled page: finish entry animations and theme cross-fades, then let a frame paint.
   // (Endless ones, such as a spinner, can't finish and don't change colours.)
-  for (const a of document.getAnimations()) if (a.effect?.getComputedTiming().endTime !== Infinity) a.finish()
+  // Twice, with a style pass between: a finished fade can start transitions on controls that use its colours.
+  const finish = () => {
+    for (const a of document.getAnimations()) if (a.effect?.getComputedTiming().endTime !== Infinity) a.finish()
+  }
+  finish()
+  void getComputedStyle(document.body).color
+  finish()
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
   const result = await axe.run(document, {
     runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22a', 'wcag22aa'] },

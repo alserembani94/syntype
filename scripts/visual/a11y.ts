@@ -60,7 +60,15 @@ try {
     await page.clock.resume()
     // Finish every running transition, as screenshots do: themes cross-fade their colours, and contrast
     // measured mid-fade varies from run to run.
-    await page.evaluate(() => document.getAnimations().forEach((a) => a.finish()))
+    // Twice, with a style pass between: finishing the theme's fade changes the colours that
+    // controls with their own transitions (shadcn's transition-all) then start fading towards.
+    // Endless animations (a spinner) can't finish and are left alone.
+    await page.evaluate(() => {
+      const finish = () => document.getAnimations().forEach((a) => a.effect?.getComputedTiming().endTime !== Infinity && a.finish())
+      finish()
+      getComputedStyle(document.body).color
+      finish()
+    })
     // evaluate() runs outside the page's CSP, so axe needs no script tag.
     await page.evaluate(axeSource)
     const result = await page.evaluate(async (tags) => {

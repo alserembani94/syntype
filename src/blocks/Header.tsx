@@ -4,6 +4,9 @@
  * app, so typing never redraws it (CLAUDE.md, Performance).
  */
 import { memo } from 'react'
+import { ChartColumnIcon, CodeXmlIcon, ContrastIcon, InfoIcon, TrophyIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Tip } from '@/components/composites/tip'
 import { Account } from '../components/Account'
 import { RenderMark } from '../lib/renderMark'
 import type { Player } from '../lib/account'
@@ -28,68 +31,49 @@ interface Props {
   onTheme: () => void
 }
 
+const NAV: { view: View; label: string; Icon: typeof CodeXmlIcon; siteOnly?: boolean }[] = [
+  { view: 'type', label: 'Type', Icon: CodeXmlIcon },
+  { view: 'runs', label: 'My runs', Icon: ChartColumnIcon },
+  { view: 'board', label: 'Leaderboard', Icon: TrophyIcon, siteOnly: true },
+]
+
 export const Header = memo(function Header({ view, onSite, onView, onAccountOpenChange, onPlayer, history, hasAbout, onAbout, themeName, themeShortcut, onTheme }: Props) {
   // Inside the memo: the mark only reports when this block itself renders.
   return (
     <RenderMark id="header">
-      <header className="top">
-        <div className="brand">
-          <h1>
-            Syn<span>type</span>
-          </h1>
-        </div>
-        <nav className="tabs" aria-label="Sections">
-          <button type="button" aria-current={view === 'type' ? 'page' : undefined} onClick={() => onView('type')}>
-            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
-              <path d="M8 7l-5 5 5 5M16 7l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span>Type</span>
-          </button>
-          <button type="button" aria-current={view === 'runs' ? 'page' : undefined} onClick={() => onView('runs')}>
-            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
-              <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            <span>My runs</span>
-          </button>
-          {onSite && (
-            <button type="button" aria-current={view === 'board' ? 'page' : undefined} onClick={() => onView('board')}>
-              <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
-                <path
-                  d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <span>Leaderboard</span>
-            </button>
-          )}
+      <header className="flex flex-wrap items-center gap-3 sm:gap-5">
+        <h1 className="m-0 font-display text-3xl font-bold tracking-tight [text-shadow:var(--code-glow)]">
+          Syn<span className="text-primary">type</span>
+        </h1>
+        <nav aria-label="Sections" className="flex gap-1 rounded-lg border border-border bg-card p-1">
+          {NAV.filter((n) => onSite || !n.siteOnly).map(({ view: v, label, Icon }) => (
+            <Button
+              key={v}
+              variant="ghost"
+              aria-current={view === v ? 'page' : undefined}
+              className="text-muted-foreground aria-[current=page]:bg-accent aria-[current=page]:text-primary"
+              onPress={() => onView(v)}
+            >
+              <Icon data-icon="inline-start" />
+              {/* On phones only the icon shows; the name stays for screen readers. */}
+              <span className="max-sm:sr-only">{label}</span>
+            </Button>
+          ))}
         </nav>
-        <div className="top-actions">
+        <div className="ml-auto flex items-center gap-1.5">
           <Account available={onSite} onOpenChange={onAccountOpenChange} onMyRuns={() => onView('runs')} onPlayer={onPlayer} history={history} />
           {hasAbout && (
-            <button type="button" className="icon-button" onClick={onAbout} aria-haspopup="dialog" aria-label="About Syntype" title="About Syntype">
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="2" />
-                <path d="M12 11v5.5M12 7.6v.4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-              </svg>
-            </button>
+            <Tip label="About Syntype">
+              <Button variant="outline" size="icon" aria-haspopup="dialog" aria-label="About Syntype" onPress={onAbout}>
+                <InfoIcon />
+              </Button>
+            </Tip>
           )}
-          <button
-            type="button"
-            className="icon-button theme-button"
-            onClick={onTheme}
-            aria-haspopup="dialog"
-            aria-label={`Theme: ${themeName}. Change theme`}
-            title={`Theme: ${themeName} (${themeShortcut})`}
-          >
-            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-              <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="2" />
-              <path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor" />
-            </svg>
-          </button>
+          <Tip label={`Theme: ${themeName}`} shortcut={themeShortcut}>
+            <Button variant="outline" size="icon" className="theme-button" aria-haspopup="dialog" aria-label={`Theme: ${themeName}. Change theme`} onPress={onTheme}>
+              <ContrastIcon />
+            </Button>
+          </Tip>
         </div>
       </header>
     </RenderMark>

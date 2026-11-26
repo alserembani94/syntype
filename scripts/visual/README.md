@@ -9,6 +9,8 @@ Syntype looks is compared against a baseline instead of judged by eye.
 | `npm run check:a11y` | axe-core on the same pages. Fails on WCAG 2.0–2.2 A and AA rules; best practice is reported only. `-- --record` writes the report without failing. |
 | `npm run bench:keys` | The keystroke benchmark (250 keys of the longest snippet at 1×, 4× and 6× CPU slowdown), locally or against a URL: `-- https://syntype.vercel.my`. |
 | `npm run bench:renders` | Which parts of the typing screen render while typing, from React's profiling build (`<RenderMark>` regions, `src/lib/renderMark.tsx`). Fails if the header or settings row renders at all. Builds the profiling version into `dist/` and restores the normal build afterwards. |
+| `npm run check:controls` | The typing screen's controls with a real keyboard and pointer: the settings row's toolbar keys, letters typed on a control going to the editor, Tab leaving controls, focus kept after a keyboard change, and the results keys (Enter, R, V). |
+| `npm run bench:restyle` | What one keystroke costs, counted from a Chrome trace: elements restyled, style time, event handling and main-thread time per key. Steadier than `bench:keys` for comparing two builds. |
 | `npm run check:csp` | Opens every kind of page (home, a language, My runs, leaderboard, policies, admin) on the local site with the real Content Security Policy and fails on any violation. |
 | `npm run report:size` | Gzipped sizes from `dist/`: first load, lazy chunks, the TypeScript worker, admin, the artifact page. |
 | `npm run visual:fixtures` | Regenerates the test data in `fixtures/` (rerun after editing a snippet it uses). |

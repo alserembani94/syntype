@@ -1,7 +1,7 @@
+// Local edit: TooltipTrigger passes its trigger through directly (see below).
 import * as React from "react"
 import { cn } from "cn"
 import {
-  Focusable,
   OverlayArrow,
   Tooltip as TooltipPrimitive,
   TooltipTrigger as TooltipTriggerPrimitive,
@@ -20,9 +20,11 @@ function TooltipTrigger({
       delay={delay}
       {...props}
     >
-      <Focusable>
-        {trigger as React.ComponentProps<typeof Focusable>["children"]}
-      </Focusable>
+      {/* Local edit: the trigger goes in directly. shadcn wraps it in <Focusable>, whose
+          key handler stops every key from bubbling, so keys pressed on a control with a
+          tooltip never reached the app (the results' V and R, letters typed on a chip).
+          Every trigger here is a React Aria control, which TooltipTrigger supports itself. */}
+      {trigger}
       {tooltip}
     </TooltipTriggerPrimitive>
   )

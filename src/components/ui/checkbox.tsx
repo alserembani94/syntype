@@ -1,4 +1,5 @@
 "use client"
+// Local edit: indeterminate shows a dash (see the indicator below).
 
 import { cn } from "cn"
 import {
@@ -6,7 +7,7 @@ import {
   composeRenderProps,
   type CheckboxProps,
 } from "react-aria-components"
-import { CheckIcon } from "lucide-react"
+import { CheckIcon, MinusIcon } from "lucide-react"
 
 function Checkbox({ className, children, ...props }: CheckboxProps) {
   return (
@@ -26,10 +27,8 @@ function Checkbox({ className, children, ...props }: CheckboxProps) {
               data-slot="checkbox-indicator"
               className="grid place-content-center text-current transition-none [&>svg]:size-3.5"
             >
-              {(isSelected || isIndeterminate) && (
-                <CheckIcon
-                />
-              )}
+              {/* Local edit: a dash when indeterminate (shadcn draws the check for both). */}
+              {isIndeterminate ? <MinusIcon /> : isSelected && <CheckIcon />}
             </span>
             {children}
           </>

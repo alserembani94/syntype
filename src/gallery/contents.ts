@@ -11,5 +11,5 @@ export const CONTENTS: [string, [string, string][]][] = [
   ['Overlays', [['dialog', 'Dialog'], ['alert-dialog', 'Alert dialog'], ['sheet', 'Sheet'], ['popover', 'Popover'], ['tooltip', 'Tooltip'], ['dropdown-menu', 'Dropdown menu'], ['command', 'Command']]],
   ['Navigation', [['tabs', 'Tabs'], ['breadcrumb', 'Breadcrumb']]],
   ['Display', [['card', 'Card'], ['badge', 'Badge'], ['alert', 'Alert'], ['empty', 'Empty'], ['kbd', 'Kbd'], ['separator', 'Separator'], ['skeleton', 'Skeleton and spinner'], ['table', 'Table'], ['collapsible', 'Collapsible']]],
-  ['Composites', [['toast', 'Toast'], ['report-dialog', 'Report dialog'], ['account-menu', 'Account menu'], ['picker', 'Picker']]],
+  ['Composites', [['toast', 'Toast'], ['tip', 'Tip'], ['report-dialog', 'Report dialog'], ['account-menu', 'Account menu'], ['picker', 'Picker']]],
 ]

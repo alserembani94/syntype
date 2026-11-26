@@ -1,6 +1,7 @@
 import { useId } from 'react'
 import { SearchIcon, XIcon } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
+import { LabelledCheckbox, LabelledSwitch } from '@/components/composites/labelled'
 import { Field, FieldContent, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group'
@@ -67,14 +68,18 @@ export function Forms() {
       <Section id="checkbox" title="Checkbox">
         <States>
           <State label="Unchecked, checked, indeterminate">
-            <Labelled label="Show me on the leaderboards">{(l) => <Checkbox aria-labelledby={l} />}</Labelled>
-            <Labelled label="Auto-close">{(l) => <Checkbox aria-labelledby={l} defaultSelected />}</Labelled>
-            <Labelled label="Some languages">{(l) => <Checkbox aria-labelledby={l} isIndeterminate />}</Labelled>
+            <LabelledCheckbox label="Show me on the leaderboards" />
+            <LabelledCheckbox label="Auto-close" defaultSelected />
+            <LabelledCheckbox label="Some languages" isIndeterminate />
           </State>
           <State label="Disabled, invalid">
-            <Labelled label="Disabled">{(l) => <Checkbox aria-labelledby={l} isDisabled />}</Labelled>
-            <Labelled label="Disabled, checked">{(l) => <Checkbox aria-labelledby={l} isDisabled defaultSelected />}</Labelled>
-            <Labelled label="Invalid">{(l) => <Checkbox aria-labelledby={l} isInvalid />}</Labelled>
+            <LabelledCheckbox label="Disabled" isDisabled />
+            <LabelledCheckbox label="Disabled, checked" isDisabled defaultSelected />
+            <LabelledCheckbox label="Invalid" isInvalid />
+          </State>
+          <State label="Bare (in a table row, named by aria-label)">
+            <Checkbox aria-label="Select grace-417" />
+            <Checkbox aria-label="Select LinusFast" defaultSelected />
           </State>
         </States>
       </Section>
@@ -116,13 +121,16 @@ export function Forms() {
       <Section id="switch" title="Switch">
         <States>
           <State label="Off, on, small">
-            <Labelled label="Smooth caret">{(l) => <Switch aria-labelledby={l} />}</Labelled>
-            <Labelled label="Auto-indent">{(l) => <Switch aria-labelledby={l} defaultSelected />}</Labelled>
-            <Labelled label="Small">{(l) => <Switch aria-labelledby={l} size="sm" defaultSelected />}</Labelled>
+            <LabelledSwitch label="Smooth caret" />
+            <LabelledSwitch label="Auto-indent" defaultSelected />
+            <LabelledSwitch label="Small" size="sm" defaultSelected />
           </State>
           <State label="Disabled">
-            <Labelled label="Disabled">{(l) => <Switch aria-labelledby={l} isDisabled />}</Labelled>
-            <Labelled label="Disabled, on">{(l) => <Switch aria-labelledby={l} isDisabled defaultSelected />}</Labelled>
+            <LabelledSwitch label="Disabled" isDisabled />
+            <LabelledSwitch label="Disabled, on" isDisabled defaultSelected />
+          </State>
+          <State label="Bare (named by aria-label)">
+            <Switch aria-label="Smooth caret" />
           </State>
         </States>
       </Section>

@@ -3,7 +3,7 @@
  * primitives' scales, and the dark variant that follows each theme's
  * color-scheme (design system step 5).
  */
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { compile } from '@tailwindcss/node'
@@ -85,14 +85,14 @@ describe('shadcn components in the site\'s CSS', () => {
   /** Every source file of the site: not admin, tests, or the components themselves. */
   const siteFiles = (path: string): string[] =>
     statSync(path).isDirectory()
-      ? readdirSync(path).flatMap((f) => (['admin', 'ui', 'composites', 'test'].includes(f) ? [] : siteFiles(join(path, f))))
+      ? readdirSync(path).flatMap((f) => (['admin', 'gallery', 'ui', 'composites', 'test'].includes(f) ? [] : siteFiles(join(path, f))))
       : /\.tsx?$/.test(path) && !/\.test\.tsx?$/.test(path)
         ? [path]
         : []
 
   it('app.css lists exactly the shadcn components and composites the site uses', () => {
     const src = fileURLToPath(new URL('../', import.meta.url))
-    const IMPORT = /from ['"](?:@\/components|(?:\.{1,2}\/)+(?:components\/)?)(ui|composites)\/([\w-]+)['"]/g
+    const IMPORT = /from ['"](?:@\/components\/|(?:\.{1,2}\/)+(?:components\/)?)(ui|composites)\/([\w-]+)['"]/g
     const used = new Set<string>()
     const add = (text: string) => {
       for (const m of text.matchAll(IMPORT)) used.add(`${m[1]}/${m[2]}`)
@@ -101,9 +101,12 @@ describe('shadcn components in the site\'s CSS', () => {
     // What those import in turn (a composite uses components; dialog uses button).
     for (let size = -1; size !== used.size; ) {
       size = used.size
-      for (const name of [...used]) add(readFileSync(join(src, 'components', `${name}.tsx`), 'utf8'))
+      for (const name of [...used]) {
+        const file = join(src, 'components', name)
+        add(readFileSync(existsSync(`${file}.tsx`) ? `${file}.tsx` : `${file}.ts`, 'utf8'))
+      }
     }
-    const listed = [...read('./app.css').matchAll(/@source "\.\.\/components\/((?:ui|composites)\/[\w-]+)\.tsx"/g)].map((m) => m[1])
+    const listed = [...read('./app.css').matchAll(/@source "\.\.\/components\/((?:ui|composites)\/[\w-]+)\.tsx?"/g)].map((m) => m[1])
     expect(listed.sort()).toEqual([...used].sort())
   })
 })

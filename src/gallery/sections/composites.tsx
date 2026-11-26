@@ -5,6 +5,7 @@ import { AccountMenu } from '@/components/composites/account-menu'
 import { Picker } from '@/components/composites/picker'
 import { ReportDialog } from '@/components/composites/report-dialog'
 import { Toaster } from '@/components/composites/toast'
+import { Tip } from '@/components/composites/tip'
 import { useToast } from '@/components/composites/use-toast'
 import { LANGUAGE_SECTIONS, SAMPLE_LANGUAGES } from '../sample'
 import { Section, State, States } from '../Section'
@@ -61,6 +62,20 @@ export function Composites() {
             <ToastButtons />
           </State>
         </Toaster>
+      </Section>
+
+      <Section id="tip" title="Tip" note="A tooltip with the control's keyboard shortcut as keys, replacing title. Hover or focus the buttons.">
+        <State label="With shortcuts">
+          <Tip label="Change language" shortcut="Ctrl+Shift+L">
+            <Button variant="outline">Python</Button>
+          </Tip>
+          <Tip label="Theme" shortcut="Ctrl+K, then T">
+            <Button variant="outline">Ctrl+K chord</Button>
+          </Tip>
+          <Tip label="New snippet" shortcut="⌘↩">
+            <Button variant="outline">Mac keys</Button>
+          </Tip>
+        </State>
       </Section>
 
       <Section id="report-dialog" title="Report dialog" note="Sending fails on purpose here, to show the error.">

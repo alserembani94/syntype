@@ -6,6 +6,10 @@ import type { HighlightRules } from '../languages'
 import { SpeedChart } from './SpeedChart'
 import { Review } from './Review'
 import { AdSlot } from './AdSlot'
+import { Button } from '@/components/ui/button'
+import { Kbd } from '@/components/ui/kbd'
+import { Toggle } from '@/components/ui/toggle'
+import { Tip } from '@/components/composites/tip'
 
 export interface TestInfo {
   language: string
@@ -173,25 +177,25 @@ export function Results({ result: r, isBest, info, run, highlight, onNext, onRet
 
       {reviewing && <Review run={run} highlight={highlight} />}
 
-      <div className="r-actions">
-        <button ref={nextRef} className="icon-btn" onClick={onNext} aria-label="Next snippet" title="Next snippet">
-          <Icon d={ICONS.next} />
-        </button>
-        <button className="icon-btn" onClick={onRetry} aria-label="Retry this snippet" title="Retry this snippet">
-          <Icon d={ICONS.retry} />
-        </button>
-        <button
-          className="icon-btn"
-          onClick={() => setReviewing((v) => !v)}
-          aria-pressed={reviewing}
-          aria-label="Review your code"
-          title="Review your code"
-        >
-          <Icon d={ICONS.review} />
-        </button>
+      <div className="flex justify-center gap-4">
+        <Tip label="Next snippet" shortcut="Enter">
+          <Button ref={nextRef} variant="ghost" size="icon-lg" aria-label="Next snippet" onPress={onNext}>
+            <Icon d={ICONS.next} />
+          </Button>
+        </Tip>
+        <Tip label="Retry this snippet" shortcut="R">
+          <Button variant="ghost" size="icon-lg" aria-label="Retry this snippet" onPress={onRetry}>
+            <Icon d={ICONS.retry} />
+          </Button>
+        </Tip>
+        <Tip label="Review your code" shortcut="V">
+          <Toggle size="lg" className="aria-pressed:bg-accent aria-pressed:text-primary data-selected:bg-accent data-selected:text-primary" aria-label="Review your code" isSelected={reviewing} onChange={setReviewing}>
+            <Icon d={ICONS.review} />
+          </Toggle>
+        </Tip>
       </div>
-      <p className="r-hints">
-        <kbd>enter</kbd> next · <kbd>r</kbd> retry · <kbd>v</kbd> review
+      <p className="m-0 -mt-2 flex items-center justify-center gap-1.5 text-xs text-muted-foreground max-sm:hidden">
+        <Kbd>Enter</Kbd> next · <Kbd>R</Kbd> retry · <Kbd>V</Kbd> review
       </p>
       {/* Below the actions, so the stats and buttons never move when it fills. */}
       <AdSlot slot="results" />

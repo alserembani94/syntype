@@ -162,7 +162,7 @@ export const STATES: State[] = [
       await p.goto('/python')
       await fontsLoaded(p)
       // From the keyboard: a click would leave the pointer over the list, and hovering a row moves the highlight (and previews a theme).
-      await p.locator('.lang-button').first().focus()
+      await p.locator('#language-button').focus()
       await p.keyboard.press('Enter')
       await p.getByRole('dialog').waitFor()
     },

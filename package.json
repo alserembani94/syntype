@@ -18,8 +18,10 @@
     "check:a11y": "node scripts/visual/run.mjs scripts/visual/a11y.ts",
     "bench:keys": "node scripts/visual/run.mjs scripts/visual/bench.ts",
     "ui:add": "node scripts/ui-add.ts",
+    "check:controls": "node scripts/visual/run.mjs scripts/visual/controls.ts",
     "check:csp": "node scripts/visual/run.mjs scripts/visual/csp.ts",
     "report:size": "node scripts/visual/run.mjs scripts/visual/size.ts",
+    "bench:restyle": "node scripts/visual/run.mjs scripts/visual/restyle.ts",
     "bench:renders": "node scripts/visual/run.mjs scripts/visual/renders.ts"
   },
   "dependencies": {
