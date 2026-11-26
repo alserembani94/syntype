@@ -45,6 +45,8 @@ Roles use shadcn's names (`--background`, `--foreground`, `--card`, `--popover`,
 - **T4 · Colour vision.** A theme made for a colour vision deficiency (`vision` in `THEMES`) keeps plain text, comments, mistakes and the five code colours at least 12 apart (CIEDE2000) from each other, both as its audience sees them (Machado et al. 2009 simulation, full severity, in `src/test/colour.ts`) and with normal vision, and its chart colours 12 apart as its audience sees them; mistakes and success at least 30 apart; and its text and signal colours readable as its audience sees them. Pick colours from the base palette's own scales; don't trust a palette's colour-blind label without running the check (GitHub's own syntax colours fail it).
 - **T5 · Own palette.** Every value in a theme's block is `var()` of a primitive from that theme's own family (`--syntype-…`, `--onedark-…`, `--primer-light-…`, `--primer-dark-…`, `--vscode-…`), never a literal colour. High Contrast's two `--vscode-hc-exception-…` tints are the only exceptions, until its outline replaces them.
 
+Styles go through Tailwind CSS 4 (`src/styles/system.css`, imported by `src/styles/app.css` and `src/styles/admin.css`). Its only colours are the roles (`bg-primary`, `text-muted-foreground`; `bg-slate-500` doesn't exist) and its scales are the primitives' `@theme` block. Layers, lowest first: theme, base (Tailwind's reset, then `legacy-reset.css`), legacy (today's `index.css` and `admin.css`), components, utilities. Utilities beat legacy, so a screen moves onto the system by adding classes and deleting its legacy rules. A legacy class whose name is also a Tailwind utility (`grid`, `hidden`, `table`) gets that utility too: rename it (the charts' grid lines are `gridline`). `src/styles/tailwind.test.ts` checks the mapping and that `dark:` matches exactly the dark themes.
+
 A theme borrowed from an editor takes its colours from that theme's source files, not memory: add them to `primitives.css` with their source key, and name the file in a comment above the theme's block. Borrowed primitives are checked against snapshots in `src/design/sources/` (regenerate with `node scripts/design/sources.mjs`, then review the diff); Syntype's own are named `<family>-<step>` by OKLCH lightness. `src/design/primitives.test.ts` checks both. Old token names (`--bg`, `--accent-soft`, `--tok-kw`, `--f-ui` …) are retired, and a test fails if one comes back.
 
 ## SEO
@@ -65,7 +67,7 @@ While typing, only the editor and the status bar render. The header and the sett
 
 ## Security headers
 
-`public/_headers` sets a Content Security Policy on every page. `scripts/build-pages.mjs` builds it, hashing the inline code it finds in the built pages, so inline scripts and handlers are covered automatically. Anything loaded from another origin (a script, stylesheet, font, frame or API) needs that origin added to the policy there, or browsers will block it.
+`public/_headers` sets a Content Security Policy on every page. `scripts/build-pages.mjs` builds it, hashing the inline code it finds in the built pages, so inline scripts and handlers are covered automatically. Anything loaded from another origin (a script, stylesheet, font, frame or API) needs that origin added to the policy there, or browsers will block it. `npm run check:csp` opens every kind of page with the real policy and fails on any violation; run it after changing how scripts or styles are built or loaded.
 
 ## Working in this repo
 

@@ -584,7 +584,7 @@ function RunsChart({ runs, best }: { runs: StoredRun[]; best: StoredRun | null }
     <svg className="chart runs-svg" viewBox={`0 0 ${w} ${h}`} role="img" aria-label={`${runs.length} runs from ${Math.round(Math.min(...values))} to ${Math.round(Math.max(...values))} wpm`}>
       {ticks.map((t) => (
         <g key={t}>
-          <line className="grid" x1={pad.l} x2={w - pad.r} y1={y(t)} y2={y(t)} />
+          <line className="gridline" x1={pad.l} x2={w - pad.r} y1={y(t)} y2={y(t)} />
           <text className="axis" x={pad.l - 6} y={y(t) + 3} textAnchor="end">
             {t}
           </text>

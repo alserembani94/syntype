@@ -160,19 +160,40 @@
   --vscode-hc-exception-accent-soft: #3d2105; /* exception: until the outline */
   --vscode-hc-exception-err-soft: #4a1a12; /* exception: until the outline */
 
+}
+
+/*
+ * The scales, as Tailwind theme variables: each becomes both a CSS variable
+ * (var(--text-sm)) and Tailwind's utilities (text-sm, rounded-lg, shadow-md,
+ * font-mono, p-4). "static" emits every variable whether or not a class uses
+ * it, because the legacy CSS reads them with var(). Tailwind's own type scale
+ * is switched off, so only these sizes exist. A browser reading this file
+ * without Tailwind (the link-preview page) ignores this block.
+ */
+@theme static {
+  --text-*: initial;
   /* ——— Type: Tailwind's scale, 16px body ——— */
   --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --font-display: "Bricolage Grotesque", "Space Grotesk", system-ui, sans-serif;
   --text-xs: 0.75rem;
+  --text-xs--line-height: calc(1 / 0.75);
   --text-sm: 0.875rem;
+  --text-sm--line-height: calc(1.25 / 0.875);
   --text-base: 1rem;
+  --text-base--line-height: calc(1.5 / 1);
   --text-lg: 1.125rem;
+  --text-lg--line-height: calc(1.75 / 1.125);
   --text-xl: 1.25rem;
+  --text-xl--line-height: calc(1.75 / 1.25);
   --text-2xl: 1.5rem;
+  --text-2xl--line-height: calc(2 / 1.5);
   --text-3xl: 1.875rem;
+  --text-3xl--line-height: calc(2.25 / 1.875);
   --text-4xl: 2.25rem;
+  --text-4xl--line-height: calc(2.5 / 2.25);
   --text-display: 4rem;
+  --text-display--line-height: 1;
 
   /* ——— Radius: Nova's 10px ——— */
   --radius: 0.625rem;

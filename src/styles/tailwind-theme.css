@@ -1,0 +1,66 @@
+/*
+ * What Tailwind sees of the design system. Its own colour palette is switched
+ * off: the only colours are the theme roles (src/themes/themes.css), so
+ * bg-primary and text-muted-foreground exist and bg-slate-500 doesn't.
+ * "inline" makes each utility read the role itself (var(--primary)), so
+ * classes follow the live theme. The scales are in src/design/primitives.css.
+ */
+@theme inline {
+  --color-*: initial;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-muted: var(--destructive-muted);
+  --color-success: var(--success);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-overlay: var(--overlay);
+  --color-shadow-color: var(--shadow-color);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-code-keyword: var(--code-keyword);
+  --color-code-string: var(--code-string);
+  --color-code-number: var(--code-number);
+  --color-code-function: var(--code-function);
+  --color-code-type: var(--code-type);
+  --color-code-comment: var(--code-comment);
+  --color-code-punctuation: var(--code-punctuation);
+  --color-tab-indicator: var(--tab-indicator);
+}
+
+/*
+ * dark: matches inside a dark theme (every theme whose color-scheme is dark;
+ * src/themes/themes.test.ts keeps this list in step), and in System when the
+ * computer is dark or the host page says so. CSS can't ask for the nearest
+ * theme, so a light theme's swatch inside a dark page still counts as dark;
+ * swatches use no dark: classes.
+ */
+@custom-variant dark {
+  &:where([data-syntype-theme="dark"], [data-syntype-theme="dark"] *, [data-syntype-theme="hc-black"], [data-syntype-theme="hc-black"] *, [data-syntype-theme="one-dark-pro"], [data-syntype-theme="one-dark-pro"] *, [data-syntype-theme="phosphor"], [data-syntype-theme="phosphor"] *, [data-syntype-theme="protanopia"], [data-syntype-theme="protanopia"] *, [data-syntype-theme="deuteranopia"], [data-syntype-theme="deuteranopia"] *, [data-syntype-theme="tritanopia"], [data-syntype-theme="tritanopia"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-syntype-theme], [data-theme="light"]), :root:not([data-syntype-theme], [data-theme="light"]) *) {
+      @slot;
+    }
+  }
+  &:where(:root[data-theme="dark"]:not([data-syntype-theme]), :root[data-theme="dark"]:not([data-syntype-theme]) *) {
+    @slot;
+  }
+}

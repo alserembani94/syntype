@@ -1,0 +1,22 @@
+/*
+ * The design system's stylesheet, shared by every entry (app.css, admin.css).
+ *
+ * Layers, lowest first. Utilities beat legacy, so a screen moves onto the
+ * system by adding classes and deleting its legacy rules.
+ *   theme       primitives, the theme blocks, Tailwind's theme variables
+ *   base        Tailwind's reset, then the defaults legacy still needs back
+ *   legacy      today's CSS (index.css, admin.css), deleted screen by screen
+ *   components  shadcn's component styles
+ *   utilities   Tailwind classes
+ */
+@layer theme, base, legacy, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "../themes/themes.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "./legacy-reset.css" layer(base);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "./tailwind-theme.css";
+
+/* Tailwind scans the app's source for classes; nothing else (not tests, scripts or fixtures). */
+@source not "../**/*.test.ts";

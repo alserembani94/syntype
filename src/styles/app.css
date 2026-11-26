@@ -1,0 +1,3 @@
+/* The site and the game artifact. */
+@import "./system.css";
+@import "../index.css" layer(legacy);

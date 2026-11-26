@@ -78,7 +78,7 @@ export function SpeedChart({ samples }: { samples: Sample[] }) {
     <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Words per minute and errors over the run">
       {[0, top / 2, top].map((v) => (
         <g key={v}>
-          <line className="grid" x1={L} x2={W - R} y1={y(v)} y2={y(v)} />
+          <line className="gridline" x1={L} x2={W - R} y1={y(v)} y2={y(v)} />
           <text className="axis" x={L - 8} y={y(v) + 4} textAnchor="end">
             {Math.round(v)}
           </text>
@@ -91,7 +91,7 @@ export function SpeedChart({ samples }: { samples: Sample[] }) {
       ))}
       {xTicks.map((t) => (
         <g key={t}>
-          <line className="grid faint" x1={x(t)} x2={x(t)} y1={T} y2={H - B} />
+          <line className="gridline faint" x1={x(t)} x2={x(t)} y1={T} y2={H - B} />
           <text className="axis" x={x(t)} y={H - 8} textAnchor="middle">
             {t}
           </text>

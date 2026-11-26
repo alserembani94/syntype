@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
@@ -5,7 +6,7 @@ import { defineConfig } from 'vite'
 // Cloudflare Access). Built on its own after the game, into the same dist/, so
 // the game's bundle (and the single-file page built from it) never includes it.
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   base: '/',
   build: {
     emptyOutDir: false,

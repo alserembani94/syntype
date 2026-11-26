@@ -10,13 +10,13 @@
     "preview": "vite preview",
     "test": "vitest run",
     "build:page": "node scripts/build-page.mjs",
-    "build:preview": "vite build --config vite.preview.config.ts && node scripts/build-preview.mjs",
     "deploy": "wrangler d1 migrations apply syntype --remote && wrangler deploy",
     "dev:api": "npm run build && wrangler d1 migrations apply syntype --local && wrangler dev --var ADMIN_DEV_EMAIL:admin@localhost --var TURNSTILE_SITE_KEY:1x00000000000000000000BB",
     "visual:fixtures": "node scripts/visual/run.mjs scripts/visual/make-fixtures.ts",
     "check:visual": "node scripts/visual/run.mjs scripts/visual/capture.ts",
     "check:a11y": "node scripts/visual/run.mjs scripts/visual/a11y.ts",
     "bench:keys": "node scripts/visual/run.mjs scripts/visual/bench.ts",
+    "check:csp": "node scripts/visual/run.mjs scripts/visual/csp.ts",
     "report:size": "node scripts/visual/run.mjs scripts/visual/size.ts",
     "bench:renders": "node scripts/visual/run.mjs scripts/visual/renders.ts"
   },
@@ -26,6 +26,7 @@
     "ts-lang": "npm:typescript@6.0.3"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.5",
     "@types/node": "^24.19.2",
     "@types/pngjs": "6.0.5",
     "@types/react": "^19.3.0",
@@ -37,6 +38,7 @@
     "pixelmatch": "8.0.0",
     "playwright": "1.63.0",
     "pngjs": "7.0.0",
+    "tailwindcss": "^4.3.5",
     "typescript": "~7.0.2",
     "vite": "^8.3.6",
     "vitest": "^5.1.1",

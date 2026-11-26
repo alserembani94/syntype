@@ -32,7 +32,6 @@ scripts/og/.render.html
 # Local Worker secrets (wrangler dev); real ones live in the Cloudflare dashboard
 .dev.vars
 .env
-dist-preview
 
 # Visual, accessibility and speed check output (scripts/visual/)
 .visual

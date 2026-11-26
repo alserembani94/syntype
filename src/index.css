@@ -149,8 +149,8 @@ span.c { color: color-mix(in srgb, var(--tc, var(--foreground)) var(--a), transp
 .r-chart .legend i.raw { border-top-color: var(--muted-foreground); }
 .r-chart .legend i.er { width: auto; height: auto; border: 0; vertical-align: baseline; color: var(--destructive); font-weight: 700; }
 svg.chart { width: 100%; height: auto; display: block; overflow: visible; }
-svg.chart .grid { stroke: var(--border); stroke-width: 1; }
-svg.chart .grid.faint { opacity: .45; }
+svg.chart .gridline { stroke: var(--border); stroke-width: 1; }
+svg.chart .gridline.faint { opacity: .45; }
 svg.chart .axis { fill: var(--muted-foreground); font: 11px var(--font-mono); }
 svg.chart .axis.title { font-size: 10px; letter-spacing: .06em; }
 svg.chart .wpm { fill: none; stroke: var(--primary); stroke-width: 2.5; stroke-linejoin: round; }
@@ -526,9 +526,6 @@ svg.chart .runs-dot.best { fill: var(--primary); }
 }
 .toast-close { border: 0; background: transparent; color: inherit; cursor: pointer; font-size: 13px; opacity: .7; }
 @media (max-width: 640px) { .account-label { display: none; } .account-button { padding: 0 8px; } .account-button .avatar { margin-left: 0; } }
-/* The leaderboard preview page (src/preview): a note that the data is made up. */
-.preview-banner { margin: 0; display: flex; gap: 6px 16px; flex-wrap: wrap; align-items: center; padding: 10px 14px; border-radius: 10px; font-size: 13px; color: var(--foreground); background: var(--accent); }
-.preview-banner label { display: inline-flex; gap: 6px; align-items: center; color: var(--muted-foreground); cursor: pointer; }
 /* Account & data (AccountSettings). */
 .dialog.account-settings { width: min(560px, 100%); max-height: calc(100vh - 48px); overflow-y: auto; }
 .settings-block { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
