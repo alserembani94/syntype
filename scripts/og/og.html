@@ -1,38 +1,36 @@
 <!doctype html>
 <!--
-  The link preview image (public/og.png, 1200 × 630), in Syntype Light: the
-  colours are its values from src/themes/themes.css. scripts/og-image.mjs
-  renders it; {{LANGUAGES}} becomes the number of languages.
+  The link preview image (public/og.png, 1200 × 630), in Syntype Light, using
+  the theme roles from src/themes/themes.css. scripts/og-image.mjs renders it
+  (from scripts/og/, so the stylesheet path is relative to there);
+  {{LANGUAGES}} becomes the number of languages.
 -->
-<html lang="en">
+<html lang="en" data-syntype-theme="light">
 <head>
 <meta charset="utf-8" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=block" />
+<link rel="stylesheet" href="../../src/themes/themes.css" />
 <style>
-  :root {
-    --bg: #eef0f4; --surface: #ffffff; --surface-2: #f6f7fa; --line: #dde1ea;
-    --fg: #1c2232; --muted: #646b82; --accent: #c25a08; --accent-soft: #fbe9d8;
-    --kw: #7a3fc4; --str: #18805c; --num: #b8520c; --fn: #1f62c9; --pun: #4a5268; --dot: #e8c547;
-  }
   * { box-sizing: border-box; }
   html, body { margin: 0; }
-  body { width: 1200px; height: 630px; overflow: hidden; background: var(--bg); color: var(--fg); font-family: "IBM Plex Sans", sans-serif; position: relative; }
+  :root { transition: none; }
+  body { width: 1200px; height: 630px; overflow: hidden; background: var(--background); color: var(--foreground); font-family: "IBM Plex Sans", sans-serif; position: relative; }
   .top { position: absolute; left: 72px; top: 62px; right: 72px; display: flex; align-items: flex-end; justify-content: space-between; }
   .logo { font: 700 84px/1 "Bricolage Grotesque", sans-serif; letter-spacing: -0.03em; margin: 0; }
-  .logo span { color: var(--accent); }
-  .tagline { font-size: 32px; color: var(--muted); margin: 14px 0 0; }
-  .facts { text-align: right; font-size: 22px; color: var(--muted); line-height: 1.5; }
-  .facts b { color: var(--fg); font-weight: 600; }
-  .pane { position: absolute; left: 72px; right: 72px; top: 262px; height: 420px; background: var(--surface); border: 2px solid var(--line); border-radius: 18px; overflow: hidden; box-shadow: 0 18px 50px rgb(28 34 50 / 0.08); }
-  .tabbar { height: 58px; background: var(--surface-2); border-bottom: 2px solid var(--line); display: flex; align-items: stretch; }
-  .tab { display: flex; align-items: center; gap: 12px; padding: 0 28px; background: var(--surface); border-right: 2px solid var(--line); font: 22px "JetBrains Mono", monospace; margin-bottom: -2px; }
-  .tab i { width: 12px; height: 12px; border-radius: 3px; background: var(--dot); }
+  .logo span { color: var(--primary); }
+  .tagline { font-size: 32px; color: var(--muted-foreground); margin: 14px 0 0; }
+  .facts { text-align: right; font-size: 22px; color: var(--muted-foreground); line-height: 1.5; }
+  .facts b { color: var(--foreground); font-weight: 600; }
+  .pane { position: absolute; left: 72px; right: 72px; top: 262px; height: 420px; background: var(--card); border: 2px solid var(--border); border-radius: 18px; overflow: hidden; box-shadow: 0 18px 50px color-mix(in srgb, var(--shadow-color) 8%, transparent); }
+  .tabbar { height: 58px; background: var(--muted); border-bottom: 2px solid var(--border); display: flex; align-items: stretch; }
+  .tab { display: flex; align-items: center; gap: 12px; padding: 0 28px; background: var(--card); border-right: 2px solid var(--border); font: 22px "JetBrains Mono", monospace; margin-bottom: -2px; }
+  .tab i { width: 12px; height: 12px; border-radius: 3px; background: var(--tab-indicator); }
   pre { margin: 0; padding: 26px 0 0; display: flex; font: 26px/1.72 "JetBrains Mono", monospace; font-variant-ligatures: none; }
-  .gutter { color: var(--muted); opacity: .55; text-align: right; padding: 0 22px 0 26px; }
-  .gutter .now { color: var(--accent); opacity: 1; }
-  .k { color: var(--kw); } .s { color: var(--str); } .n { color: var(--num); } .f { color: var(--fn); } .p { color: var(--pun); }
+  .gutter { color: var(--muted-foreground); opacity: .55; text-align: right; padding: 0 22px 0 26px; }
+  .gutter .now { color: var(--primary); opacity: 1; }
+  .k { color: var(--code-keyword); } .s { color: var(--code-string); } .n { color: var(--code-number); } .f { color: var(--code-function); } .p { color: var(--code-punctuation); }
   .todo { opacity: .34; }
-  .cur { box-shadow: inset 3px 0 0 var(--accent); background: var(--accent-soft); opacity: .85; }
+  .cur { box-shadow: inset 3px 0 0 var(--primary); background: var(--accent); opacity: .85; }
 </style>
 </head>
 <body>

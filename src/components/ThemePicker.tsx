@@ -38,10 +38,10 @@ const idOf = (t: Theme) => t.id
 function Swatch({ themeId }: { themeId: string }) {
   return (
     <span className="swatch" data-syntype-theme={themeId} aria-hidden="true">
-      <i style={{ background: 'var(--fg)' }} />
-      <i style={{ background: 'var(--accent)' }} />
-      <i style={{ background: 'var(--tok-kw)' }} />
-      <i style={{ background: 'var(--tok-str)' }} />
+      <i style={{ background: 'var(--foreground)' }} />
+      <i style={{ background: 'var(--primary)' }} />
+      <i style={{ background: 'var(--code-keyword)' }} />
+      <i style={{ background: 'var(--code-string)' }} />
     </span>
   )
 }

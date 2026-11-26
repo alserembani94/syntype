@@ -1,77 +1,96 @@
 /*
- * Colour themes. Each theme is one block of the variables below, applied to
+ * Colour themes: the semantic roles (shadcn's names, plus success, overlay,
+ * shadow-color and the code colours) set once per theme, applied to
  * <html data-syntype-theme="…"> (or to any element, which is how the picker's
  * swatches show a theme without switching to it). With no data-syntype-theme,
  * "System" follows the computer's light or dark setting, and the host's
  * data-theme="light|dark" when it sets one.
  *
- * Every theme defines every variable; src/themes/themes.test.ts checks that
- * and the contrast rules in CLAUDE.md. Optional: --glow (a text-shadow for
- * code and big numbers) and --tab-dot (the file tab's marker).
+ * Every value is a primitive from the theme's own palette
+ * (src/design/primitives.css, rule T5). src/themes/themes.test.ts checks that,
+ * that every theme sets every role, and the contrast rules in CLAUDE.md.
+ * --code-glow is a text-shadow for code and big numbers (none in most themes).
  *
  * The System defaults use :where() so they weigh nothing and any chosen theme wins.
  */
+@import "../design/primitives.css";
 
 /*
  * Theme changes cross-fade instead of switching at once. Registering the
  * colours as <color> lets the browser animate them; every element inherits the
  * animated values from the root. Browsers without @property switch instantly.
  */
-@property --bg { syntax: "<color>"; inherits: true; initial-value: #000; }
-@property --surface { syntax: "<color>"; inherits: true; initial-value: #000; }
-@property --surface-2 { syntax: "<color>"; inherits: true; initial-value: #000; }
-@property --line { syntax: "<color>"; inherits: true; initial-value: #000; }
-@property --fg { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --background { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --foreground { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --card { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --card-foreground { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --popover { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --popover-foreground { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --primary { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --primary-foreground { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --secondary { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --secondary-foreground { syntax: "<color>"; inherits: true; initial-value: #000; }
 @property --muted { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --muted-foreground { syntax: "<color>"; inherits: true; initial-value: #000; }
 @property --accent { syntax: "<color>"; inherits: true; initial-value: #000; }
-@property --accent-soft { syntax: "<color>"; inherits: true; initial-value: #000; }
-@property --err { syntax: "<color>"; inherits: true; initial-value: #000; }
-@property --err-soft { syntax: "<color>"; inherits: true; initial-value: #000; }
-@property --ok { syntax: "<color>"; inherits: true; initial-value: #000; }
-@property --tok-kw { syntax: "<color>"; inherits: true; initial-value: #000; }
-@property --tok-str { syntax: "<color>"; inherits: true; initial-value: #000; }
-@property --tok-num { syntax: "<color>"; inherits: true; initial-value: #000; }
-@property --tok-fn { syntax: "<color>"; inherits: true; initial-value: #000; }
-@property --tok-ty { syntax: "<color>"; inherits: true; initial-value: #000; }
-@property --tok-com { syntax: "<color>"; inherits: true; initial-value: #000; }
-@property --tok-pun { syntax: "<color>"; inherits: true; initial-value: #000; }
-@property --tab-dot { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --accent-foreground { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --destructive { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --destructive-muted { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --success { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --border { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --input { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --ring { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --overlay { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --shadow-color { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --chart-1 { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --chart-2 { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --chart-3 { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --chart-4 { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --chart-5 { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --code-keyword { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --code-string { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --code-number { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --code-function { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --code-type { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --code-comment { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --code-punctuation { syntax: "<color>"; inherits: true; initial-value: #000; }
+@property --tab-indicator { syntax: "<color>"; inherits: true; initial-value: #000; }
 :root {
-  transition: --bg var(--theme-fade), --surface var(--theme-fade), --surface-2 var(--theme-fade), --line var(--theme-fade), --fg var(--theme-fade), --muted var(--theme-fade), --accent var(--theme-fade), --accent-soft var(--theme-fade), --err var(--theme-fade), --err-soft var(--theme-fade), --ok var(--theme-fade), --tok-kw var(--theme-fade), --tok-str var(--theme-fade), --tok-num var(--theme-fade), --tok-fn var(--theme-fade), --tok-ty var(--theme-fade), --tok-com var(--theme-fade), --tok-pun var(--theme-fade), --tab-dot var(--theme-fade);
-  --theme-fade: 0.7s ease;
+  transition: --background var(--duration-theme) ease, --foreground var(--duration-theme) ease, --card var(--duration-theme) ease, --card-foreground var(--duration-theme) ease, --popover var(--duration-theme) ease, --popover-foreground var(--duration-theme) ease, --primary var(--duration-theme) ease, --primary-foreground var(--duration-theme) ease, --secondary var(--duration-theme) ease, --secondary-foreground var(--duration-theme) ease, --muted var(--duration-theme) ease, --muted-foreground var(--duration-theme) ease, --accent var(--duration-theme) ease, --accent-foreground var(--duration-theme) ease, --destructive var(--duration-theme) ease, --destructive-muted var(--duration-theme) ease, --success var(--duration-theme) ease, --border var(--duration-theme) ease, --input var(--duration-theme) ease, --ring var(--duration-theme) ease, --overlay var(--duration-theme) ease, --shadow-color var(--duration-theme) ease, --chart-1 var(--duration-theme) ease, --chart-2 var(--duration-theme) ease, --chart-3 var(--duration-theme) ease, --chart-4 var(--duration-theme) ease, --chart-5 var(--duration-theme) ease, --code-keyword var(--duration-theme) ease, --code-string var(--duration-theme) ease, --code-number var(--duration-theme) ease, --code-function var(--duration-theme) ease, --code-type var(--duration-theme) ease, --code-comment var(--duration-theme) ease, --code-punctuation var(--duration-theme) ease, --tab-indicator var(--duration-theme) ease;
 }
 
 /* Syntype Light: the default in light mode. */
 :where(:root),
 [data-syntype-theme="light"] {
-  --bg: #eef0f4; --surface: #ffffff; --surface-2: #f6f7fa; --line: #dde1ea;
-  --fg: #1c2232; --muted: #646b82; --accent: #c25a08; --accent-soft: #fbe9d8;
-  --err: #d0303f; --err-soft: #fbdfe2; --ok: #1d8a55;
-  --tok-kw: #7a3fc4; --tok-str: #18805c; --tok-num: #b8520c; --tok-fn: #1f62c9;
-  --tok-ty: #a0277a; --tok-com: #8b92a6; --tok-pun: #4a5268;
-  --glow: none; --tab-dot: #e8c547;
+  --background: var(--syntype-slate-125); --foreground: var(--syntype-slate-825); --card: var(--syntype-white); --card-foreground: var(--syntype-slate-825); --popover: var(--syntype-white); --popover-foreground: var(--syntype-slate-825);
+  --primary: var(--syntype-orange-475); --primary-foreground: var(--syntype-white); --secondary: var(--syntype-slate-75); --secondary-foreground: var(--syntype-slate-825); --muted: var(--syntype-slate-75); --muted-foreground: var(--syntype-slate-525); --accent: var(--syntype-amber-150); --accent-foreground: var(--syntype-slate-825);
+  --destructive: var(--syntype-red-500); --destructive-muted: var(--syntype-rose-200); --success: var(--syntype-green-500); --border: var(--syntype-slate-225); --input: var(--syntype-slate-225); --ring: var(--syntype-orange-475);
+  --overlay: var(--syntype-slate-825); --shadow-color: var(--syntype-slate-825); --chart-1: var(--syntype-orange-475); --chart-2: var(--syntype-purple-550); --chart-3: var(--syntype-emerald-525); --chart-4: var(--syntype-blue-525); --chart-5: var(--syntype-pink-550);
+  --code-keyword: var(--syntype-purple-550); --code-string: var(--syntype-emerald-525); --code-number: var(--syntype-orange-500); --code-function: var(--syntype-blue-525); --code-type: var(--syntype-pink-550); --code-comment: var(--syntype-slate-425); --code-punctuation: var(--syntype-slate-600); --tab-indicator: var(--syntype-yellow-325);
+  --code-glow: none;
   color-scheme: light;
 }
 
 /* Syntype Dark: the default in dark mode. */
 @media (prefers-color-scheme: dark) {
   :where(:root:not([data-theme="light"])) {
-    --bg: #12151c; --surface: #1a1e28; --surface-2: #161a23; --line: #2a3040;
-    --fg: #dfe3ee; --muted: #7d859b; --accent: #f2a04b; --accent-soft: #3a2a1a;
-    --err: #ff6b78; --err-soft: #4a1f27; --ok: #4fd08f;
-    --tok-kw: #c49bff; --tok-str: #7fd6a8; --tok-num: #f7b46f; --tok-fn: #7fb3ff;
-    --tok-ty: #f08ccf; --tok-com: #687088; --tok-pun: #aab2c6;
+    --background: var(--syntype-slate-900); --foreground: var(--syntype-slate-200); --card: var(--syntype-slate-850); --card-foreground: var(--syntype-slate-200); --popover: var(--syntype-slate-850); --popover-foreground: var(--syntype-slate-200);
+    --primary: var(--syntype-amber-350); --primary-foreground: var(--syntype-slate-850); --secondary: var(--syntype-slate-875); --secondary-foreground: var(--syntype-slate-200); --muted: var(--syntype-slate-875); --muted-foreground: var(--syntype-slate-450); --accent: var(--syntype-amber-775); --accent-foreground: var(--syntype-slate-200);
+    --destructive: var(--syntype-rose-400); --destructive-muted: var(--syntype-rose-775); --success: var(--syntype-emerald-375); --border: var(--syntype-slate-750); --input: var(--syntype-slate-750); --ring: var(--syntype-amber-350);
+    --overlay: var(--syntype-slate-900); --shadow-color: var(--syntype-slate-900); --chart-1: var(--syntype-amber-350); --chart-2: var(--syntype-emerald-350); --chart-3: var(--syntype-blue-375); --chart-4: var(--syntype-pink-375); --chart-5: var(--syntype-slate-500);
+    --code-keyword: var(--syntype-purple-375); --code-string: var(--syntype-emerald-350); --code-number: var(--syntype-amber-325); --code-function: var(--syntype-blue-375); --code-type: var(--syntype-pink-375); --code-comment: var(--syntype-slate-500); --code-punctuation: var(--syntype-slate-375); --tab-indicator: var(--syntype-yellow-325);
+    --code-glow: none;
     color-scheme: dark;
   }
 }
 :where(:root[data-theme="dark"]),
 [data-syntype-theme="dark"] {
-  --bg: #12151c; --surface: #1a1e28; --surface-2: #161a23; --line: #2a3040;
-  --fg: #dfe3ee; --muted: #7d859b; --accent: #f2a04b; --accent-soft: #3a2a1a;
-  --err: #ff6b78; --err-soft: #4a1f27; --ok: #4fd08f;
-  --tok-kw: #c49bff; --tok-str: #7fd6a8; --tok-num: #f7b46f; --tok-fn: #7fb3ff;
-  --tok-ty: #f08ccf; --tok-com: #687088; --tok-pun: #aab2c6;
-  --glow: none; --tab-dot: #e8c547;
+  --background: var(--syntype-slate-900); --foreground: var(--syntype-slate-200); --card: var(--syntype-slate-850); --card-foreground: var(--syntype-slate-200); --popover: var(--syntype-slate-850); --popover-foreground: var(--syntype-slate-200);
+  --primary: var(--syntype-amber-350); --primary-foreground: var(--syntype-slate-850); --secondary: var(--syntype-slate-875); --secondary-foreground: var(--syntype-slate-200); --muted: var(--syntype-slate-875); --muted-foreground: var(--syntype-slate-450); --accent: var(--syntype-amber-775); --accent-foreground: var(--syntype-slate-200);
+  --destructive: var(--syntype-rose-400); --destructive-muted: var(--syntype-rose-775); --success: var(--syntype-emerald-375); --border: var(--syntype-slate-750); --input: var(--syntype-slate-750); --ring: var(--syntype-amber-350);
+  --overlay: var(--syntype-slate-900); --shadow-color: var(--syntype-slate-900); --chart-1: var(--syntype-amber-350); --chart-2: var(--syntype-emerald-350); --chart-3: var(--syntype-blue-375); --chart-4: var(--syntype-pink-375); --chart-5: var(--syntype-slate-500);
+  --code-keyword: var(--syntype-purple-375); --code-string: var(--syntype-emerald-350); --code-number: var(--syntype-amber-325); --code-function: var(--syntype-blue-375); --code-type: var(--syntype-pink-375); --code-comment: var(--syntype-slate-500); --code-punctuation: var(--syntype-slate-375); --tab-indicator: var(--syntype-yellow-325);
+  --code-glow: none;
   color-scheme: dark;
 }
 
@@ -88,12 +107,12 @@
  * exceptions in src/design/primitives.css until an outline replaces them.
  */
 [data-syntype-theme="hc-black"] {
-  --bg: #000000; --surface: #000000; --surface-2: #000000; --line: #6fc3df;
-  --fg: #ffffff; --muted: #b3b3b3; --accent: #f38518; --accent-soft: #3d2105;
-  --err: #f48771; --err-soft: #4a1a12; --ok: #89d185;
-  --tok-kw: #569cd6; --tok-str: #ce9178; --tok-num: #b5cea8; --tok-fn: #dcdcaa;
-  --tok-ty: #4ec9b0; --tok-com: #7ca668; --tok-pun: #ffffff;
-  --glow: none; --tab-dot: #f38518;
+  --background: var(--vscode-hc-background); --foreground: var(--vscode-hc-foreground); --card: var(--vscode-hc-background); --card-foreground: var(--vscode-hc-foreground); --popover: var(--vscode-hc-background); --popover-foreground: var(--vscode-hc-foreground);
+  --primary: var(--vscode-focus-border); --primary-foreground: var(--vscode-hc-background); --secondary: var(--vscode-hc-background); --secondary-foreground: var(--vscode-hc-foreground); --muted: var(--vscode-hc-background); --muted-foreground: var(--vscode-hc-description); --accent: var(--vscode-hc-exception-accent-soft); --accent-foreground: var(--vscode-hc-foreground);
+  --destructive: var(--vscode-error-foreground); --destructive-muted: var(--vscode-hc-exception-err-soft); --success: var(--vscode-charts-green); --border: var(--vscode-contrast-border); --input: var(--vscode-contrast-border); --ring: var(--vscode-focus-border);
+  --overlay: var(--vscode-hc-background); --shadow-color: var(--vscode-hc-background); --chart-1: var(--vscode-focus-border); --chart-2: var(--vscode-hc-keyword); --chart-3: var(--vscode-hc-function); --chart-4: var(--vscode-hc-type); --chart-5: var(--vscode-hc-description);
+  --code-keyword: var(--vscode-hc-keyword); --code-string: var(--vscode-hc-string); --code-number: var(--vscode-hc-number); --code-function: var(--vscode-hc-function); --code-type: var(--vscode-hc-type); --code-comment: var(--vscode-hc-comment); --code-punctuation: var(--vscode-hc-foreground); --tab-indicator: var(--vscode-focus-border);
+  --code-glow: none;
   color-scheme: dark;
 }
 
@@ -104,12 +123,12 @@
  * type #e5c07b, comment #7f848e, red #e06c75.
  */
 [data-syntype-theme="one-dark-pro"] {
-  --bg: #21252b; --surface: #282c34; --surface-2: #21252b; --line: #3e4452;
-  --fg: #abb2bf; --muted: #9da5b4; --accent: #61afef; --accent-soft: #2c3a4f;
-  --err: #e06c75; --err-soft: #4a2a2f; --ok: #98c379;
-  --tok-kw: #c678dd; --tok-str: #98c379; --tok-num: #d19a66; --tok-fn: #61afef;
-  --tok-ty: #e5c07b; --tok-com: #7f848e; --tok-pun: #abb2bf;
-  --glow: none; --tab-dot: #e5c07b;
+  --background: var(--onedark-side-bar-background); --foreground: var(--onedark-light-white); --card: var(--onedark-editor-background); --card-foreground: var(--onedark-light-white); --popover: var(--onedark-editor-background); --popover-foreground: var(--onedark-light-white);
+  --primary: var(--onedark-malibu); --primary-foreground: var(--onedark-editor-background); --secondary: var(--onedark-side-bar-background); --secondary-foreground: var(--onedark-light-white); --muted: var(--onedark-side-bar-background); --muted-foreground: var(--onedark-status-bar-foreground); --accent: var(--onedark-list-active-selection); --accent-foreground: var(--onedark-light-white);
+  --destructive: var(--onedark-coral); --destructive-muted: var(--onedark-diff-removed-on-editor); --success: var(--onedark-green); --border: var(--onedark-panel-border); --input: var(--onedark-panel-border); --ring: var(--onedark-malibu);
+  --overlay: var(--onedark-side-bar-background); --shadow-color: var(--onedark-side-bar-background); --chart-1: var(--onedark-malibu); --chart-2: var(--onedark-purple); --chart-3: var(--onedark-green); --chart-4: var(--onedark-whiskey); --chart-5: var(--onedark-light-dark);
+  --code-keyword: var(--onedark-purple); --code-string: var(--onedark-green); --code-number: var(--onedark-whiskey); --code-function: var(--onedark-malibu); --code-type: var(--onedark-chalky); --code-comment: var(--onedark-light-dark); --code-punctuation: var(--onedark-light-white); --tab-indicator: var(--onedark-chalky);
+  --code-glow: none;
   color-scheme: dark;
 }
 
@@ -123,12 +142,12 @@
  * fg.default and fg.muted.
  */
 [data-syntype-theme="github-light"] {
-  --bg: #f6f8fa; --surface: #ffffff; --surface-2: #f6f8fa; --line: #d0d7de;
-  --fg: #1f2328; --muted: #656d76; --accent: #0969da; --accent-soft: #ddf4ff;
-  --err: #cf222e; --err-soft: #ffebe9; --ok: #1a7f37;
-  --tok-kw: #cf222e; --tok-str: #0a3069; --tok-num: #0550ae; --tok-fn: #8250df;
-  --tok-ty: #953800; --tok-com: #6e7781; --tok-pun: #1f2328;
-  --glow: none; --tab-dot: #bf8700;
+  --background: var(--primer-light-canvas-subtle); --foreground: var(--primer-light-github-fg-default); --card: var(--primer-light-canvas-default); --card-foreground: var(--primer-light-github-fg-default); --popover: var(--primer-light-canvas-default); --popover-foreground: var(--primer-light-github-fg-default);
+  --primary: var(--primer-light-accent-fg); --primary-foreground: var(--primer-light-canvas-default); --secondary: var(--primer-light-canvas-subtle); --secondary-foreground: var(--primer-light-github-fg-default); --muted: var(--primer-light-canvas-subtle); --muted-foreground: var(--primer-light-github-fg-muted); --accent: var(--primer-light-accent-subtle); --accent-foreground: var(--primer-light-github-fg-default);
+  --destructive: var(--primer-light-danger-fg); --destructive-muted: var(--primer-light-danger-subtle); --success: var(--primer-light-success-fg); --border: var(--primer-light-border-default); --input: var(--primer-light-border-default); --ring: var(--primer-light-accent-fg);
+  --overlay: var(--primer-light-github-fg-default); --shadow-color: var(--primer-light-github-fg-default); --chart-1: var(--primer-light-accent-fg); --chart-2: var(--primer-light-syntax-keyword); --chart-3: var(--primer-light-syntax-string); --chart-4: var(--primer-light-syntax-entity); --chart-5: var(--primer-light-success-fg);
+  --code-keyword: var(--primer-light-syntax-keyword); --code-string: var(--primer-light-syntax-string); --code-number: var(--primer-light-syntax-constant); --code-function: var(--primer-light-syntax-entity); --code-type: var(--primer-light-syntax-variable); --code-comment: var(--primer-light-syntax-comment); --code-punctuation: var(--primer-light-github-fg-default); --tab-indicator: var(--primer-light-attention-emphasis);
+  --code-glow: none;
   color-scheme: light;
 }
 
@@ -138,12 +157,12 @@
  * glow. Mistakes stay red-orange so they can't be missed.
  */
 [data-syntype-theme="phosphor"] {
-  --bg: #000a02; --surface: #021204; --surface-2: #031806; --line: #0f4d1c;
-  --fg: #33ff66; --muted: #20b049; --accent: #7dff9c; --accent-soft: #0b3315;
-  --err: #ff6b4a; --err-soft: #3a1208; --ok: #33ff66;
-  --tok-kw: #8cffaa; --tok-str: #c6ff7a; --tok-num: #e8ff9e; --tok-fn: #4dffd2;
-  --tok-ty: #a6ffc4; --tok-com: #1f9e45; --tok-pun: #2ad75a;
-  --glow: 0 0 6px rgb(51 255 102 / 0.45); --tab-dot: #33ff66;
+  --background: var(--syntype-green-975); --foreground: var(--syntype-green-300); --card: var(--syntype-green-950); --card-foreground: var(--syntype-green-300); --popover: var(--syntype-green-950); --popover-foreground: var(--syntype-green-300);
+  --primary: var(--syntype-green-250); --primary-foreground: var(--syntype-green-950); --secondary: var(--syntype-green-925); --secondary-foreground: var(--syntype-green-300); --muted: var(--syntype-green-925); --muted-foreground: var(--syntype-green-425); --accent: var(--syntype-green-775); --accent-foreground: var(--syntype-green-300);
+  --destructive: var(--syntype-red-400); --destructive-muted: var(--syntype-red-825); --success: var(--syntype-green-300); --border: var(--syntype-green-700); --input: var(--syntype-green-700); --ring: var(--syntype-green-250);
+  --overlay: var(--syntype-green-975); --shadow-color: var(--syntype-green-975); --chart-1: var(--syntype-green-250); --chart-2: var(--syntype-lime-175); --chart-3: var(--syntype-emerald-250); --chart-4: var(--syntype-green-175); --chart-5: var(--syntype-green-450);
+  --code-keyword: var(--syntype-green-225); --code-string: var(--syntype-lime-175); --code-number: var(--syntype-lime-125); --code-function: var(--syntype-emerald-250); --code-type: var(--syntype-green-175); --code-comment: var(--syntype-green-450); --code-punctuation: var(--syntype-green-350); --tab-indicator: var(--syntype-green-300);
+  --code-glow: 0 0 6px color-mix(in srgb, var(--syntype-green-300) 45%, transparent);
   color-scheme: dark;
 }
 
@@ -162,32 +181,29 @@
  * and functions look the same to deuteranopes. themes.test.ts checks it (T4).
  */
 [data-syntype-theme="protanopia"] {
-  --bg: #010409; --surface: #0d1117; --surface-2: #151b23; --line: #3d444d;
-  --fg: #f0f6fc; --muted: #9198a1; --accent: #4493f8; --accent-soft: #13233a;
-  --err: #f0883e; --err-soft: #2c1f1a; --ok: #58a6ff;
-  /* cyan.8, lime.8, brown.9, purple.6, red.7 */
-  --tok-kw: #45cbf7; --tok-str: #9fcc3e; --tok-num: #dbceb3; --tok-fn: #b687f7;
-  --tok-ty: #f48b8d; --tok-com: #9198a1; --tok-pun: #f0f6fc;
-  --glow: none; --tab-dot: #d29922;
+  --background: var(--primer-dark-bg-inset); --foreground: var(--primer-dark-fg-default); --card: var(--primer-dark-bg-default); --card-foreground: var(--primer-dark-fg-default); --popover: var(--primer-dark-bg-default); --popover-foreground: var(--primer-dark-fg-default);
+  --primary: var(--primer-dark-fg-accent); --primary-foreground: var(--primer-dark-bg-default); --secondary: var(--primer-dark-bg-muted); --secondary-foreground: var(--primer-dark-fg-default); --muted: var(--primer-dark-bg-muted); --muted-foreground: var(--primer-dark-fg-muted); --accent: var(--primer-dark-accent-muted-on-default); --accent-foreground: var(--primer-dark-fg-default);
+  --destructive: var(--primer-dark-colorblind-danger); --destructive-muted: var(--primer-dark-colorblind-danger-muted-on-default); --success: var(--primer-dark-colorblind-success); --border: var(--primer-dark-border-default); --input: var(--primer-dark-border-default); --ring: var(--primer-dark-fg-accent);
+  --overlay: var(--primer-dark-bg-inset); --shadow-color: var(--primer-dark-bg-inset); --chart-1: var(--primer-dark-fg-accent); --chart-2: var(--primer-dark-cyan-8); --chart-3: var(--primer-dark-lime-8); --chart-4: var(--primer-dark-brown-9); --chart-5: var(--primer-dark-fg-muted);
+  --code-keyword: var(--primer-dark-cyan-8); --code-string: var(--primer-dark-lime-8); --code-number: var(--primer-dark-brown-9); --code-function: var(--primer-dark-purple-6); --code-type: var(--primer-dark-red-7); --code-comment: var(--primer-dark-fg-muted); --code-punctuation: var(--primer-dark-fg-default); --tab-indicator: var(--primer-dark-fg-attention);
+  --code-glow: none;
   color-scheme: dark;
 }
 [data-syntype-theme="deuteranopia"] {
-  --bg: #010409; --surface: #0d1117; --surface-2: #151b23; --line: #3d444d;
-  --fg: #f0f6fc; --muted: #9198a1; --accent: #4493f8; --accent-soft: #13233a;
-  --err: #f0883e; --err-soft: #2c1f1a; --ok: #58a6ff;
-  /* blue.6, green.9, auburn.8, cyan.9, pine.6 */
-  --tok-kw: #4da0ff; --tok-str: #99e090; --tok-num: #d4b7b5; --tok-fn: #80dbf9;
-  --tok-ty: #1bb673; --tok-com: #9198a1; --tok-pun: #f0f6fc;
-  --glow: none; --tab-dot: #d29922;
+  --background: var(--primer-dark-bg-inset); --foreground: var(--primer-dark-fg-default); --card: var(--primer-dark-bg-default); --card-foreground: var(--primer-dark-fg-default); --popover: var(--primer-dark-bg-default); --popover-foreground: var(--primer-dark-fg-default);
+  --primary: var(--primer-dark-fg-accent); --primary-foreground: var(--primer-dark-bg-default); --secondary: var(--primer-dark-bg-muted); --secondary-foreground: var(--primer-dark-fg-default); --muted: var(--primer-dark-bg-muted); --muted-foreground: var(--primer-dark-fg-muted); --accent: var(--primer-dark-accent-muted-on-default); --accent-foreground: var(--primer-dark-fg-default);
+  --destructive: var(--primer-dark-colorblind-danger); --destructive-muted: var(--primer-dark-colorblind-danger-muted-on-default); --success: var(--primer-dark-colorblind-success); --border: var(--primer-dark-border-default); --input: var(--primer-dark-border-default); --ring: var(--primer-dark-fg-accent);
+  --overlay: var(--primer-dark-bg-inset); --shadow-color: var(--primer-dark-bg-inset); --chart-1: var(--primer-dark-fg-accent); --chart-2: var(--primer-dark-auburn-8); --chart-3: var(--primer-dark-cyan-9); --chart-4: var(--primer-dark-fg-muted); --chart-5: var(--primer-dark-fg-attention);
+  --code-keyword: var(--primer-dark-blue-6); --code-string: var(--primer-dark-green-9); --code-number: var(--primer-dark-auburn-8); --code-function: var(--primer-dark-cyan-9); --code-type: var(--primer-dark-pine-6); --code-comment: var(--primer-dark-fg-muted); --code-punctuation: var(--primer-dark-fg-default); --tab-indicator: var(--primer-dark-fg-attention);
+  --code-glow: none;
   color-scheme: dark;
 }
 [data-syntype-theme="tritanopia"] {
-  --bg: #010409; --surface: #0d1117; --surface-2: #151b23; --line: #3d444d;
-  --fg: #f0f6fc; --muted: #9198a1; --accent: #4493f8; --accent-soft: #13233a;
-  --err: #f85149; --err-soft: #301b1e; --ok: #58a6ff;
-  /* pink.7, blue.9, olive.9, purple.6, green.6 */
-  --tok-kw: #ec8dbd; --tok-str: #a3d3ff; --tok-num: #e2d04b; --tok-fn: #b687f7;
-  --tok-ty: #41b445; --tok-com: #9198a1; --tok-pun: #f0f6fc;
-  --glow: none; --tab-dot: #d29922;
+  --background: var(--primer-dark-bg-inset); --foreground: var(--primer-dark-fg-default); --card: var(--primer-dark-bg-default); --card-foreground: var(--primer-dark-fg-default); --popover: var(--primer-dark-bg-default); --popover-foreground: var(--primer-dark-fg-default);
+  --primary: var(--primer-dark-fg-accent); --primary-foreground: var(--primer-dark-bg-default); --secondary: var(--primer-dark-bg-muted); --secondary-foreground: var(--primer-dark-fg-default); --muted: var(--primer-dark-bg-muted); --muted-foreground: var(--primer-dark-fg-muted); --accent: var(--primer-dark-accent-muted-on-default); --accent-foreground: var(--primer-dark-fg-default);
+  --destructive: var(--primer-dark-tritanopia-danger); --destructive-muted: var(--primer-dark-tritanopia-danger-muted-on-default); --success: var(--primer-dark-tritanopia-success); --border: var(--primer-dark-border-default); --input: var(--primer-dark-border-default); --ring: var(--primer-dark-fg-accent);
+  --overlay: var(--primer-dark-bg-inset); --shadow-color: var(--primer-dark-bg-inset); --chart-1: var(--primer-dark-fg-accent); --chart-2: var(--primer-dark-pink-7); --chart-3: var(--primer-dark-olive-9); --chart-4: var(--primer-dark-purple-6); --chart-5: var(--primer-dark-fg-muted);
+  --code-keyword: var(--primer-dark-pink-7); --code-string: var(--primer-dark-blue-9); --code-number: var(--primer-dark-olive-9); --code-function: var(--primer-dark-purple-6); --code-type: var(--primer-dark-green-6); --code-comment: var(--primer-dark-fg-muted); --code-punctuation: var(--primer-dark-fg-default); --tab-indicator: var(--primer-dark-fg-attention);
+  --code-glow: none;
   color-scheme: dark;
 }

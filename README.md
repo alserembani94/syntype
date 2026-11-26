@@ -158,9 +158,9 @@ A language can have a **completion service** (`completion.service`, see `src/lib
 
 ## Adding a theme
 
-1. Add a block to `src/themes/themes.css`: `[data-syntype-theme="<id>"] { … }`, setting every variable the others set (backgrounds, text, accent, errors, the seven code colours, `--glow`, `--tab-dot`) and `color-scheme`. For a theme borrowed from an editor, take the colours from the theme's own source files and say which in a comment above the block.
+1. Add its colours to `src/design/primitives.css` as primitives of its own family (for a theme borrowed from an editor, taken from the theme's own source files, each with its source key), then add a block to `src/themes/themes.css`: `[data-syntype-theme="<id>"] { … }`, setting every role the others set (`--background`, `--primary`, `--destructive`, the code colours, charts and so on) to those primitives, plus `--code-glow` and `color-scheme`. Name the source files in a comment above the block.
 2. List it in `THEMES` in `src/themes/index.ts` with a name and a section.
-3. Run `npm test`: `src/themes/themes.test.ts` checks the rules in CLAUDE.md (every colour set, readable contrast).
+3. Run `npm test`: `src/themes/themes.test.ts` checks the rules in CLAUDE.md (every role set, only its own palette, readable contrast).
 
 ## Adding snippets
 

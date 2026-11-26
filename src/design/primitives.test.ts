@@ -1,15 +1,14 @@
 /**
  * The primitives layer (src/design/primitives.css): borrowed colours equal
- * their sources, Syntype's own colours are named by their lightness, every
- * scale is complete, and every colour the themes use today is a primitive of
- * the theme's own palette, a listed replacement, or a listed exception.
+ * their sources, Syntype's own colours are named by their lightness, and every
+ * scale is complete. That themes use only their own palette's primitives (T5)
+ * is checked in src/themes/themes.test.ts.
  */
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 // Read from disk: Vitest stubs out CSS imports, even with ?raw.
 const css = readFileSync(new URL('./primitives.css', import.meta.url), 'utf8')
-const themesCss = readFileSync(new URL('../themes/themes.css', import.meta.url), 'utf8')
 
 type Snapshot = { sources: object[]; colors: Record<string, string> }
 const FAMILIES = ['syntype', 'onedark', 'primer-light', 'primer-dark', 'vscode'] as const
@@ -31,7 +30,6 @@ const primitives: Primitive[] = [...css.matchAll(/^\s*--([\w-]+):\s*(#[0-9a-f]{6
   value: m[2],
   comment: m[3],
 }))
-const byName = new Map(primitives.map((p) => [p.name, p]))
 
 /** Blends a translucent #rrggbbaa over an opaque #rrggbb, as a browser paints it (as scripts/design/sources.mjs). */
 function over(rgba: string, base: string) {
@@ -84,24 +82,6 @@ function hueFamily({ C, H }: { C: number; H: number }) {
   return Object.keys(HUES).reduce((a, b) => (gap(b) < gap(a) ? b : a))
 }
 
-/** Which palette each theme draws from (rule T5). */
-const THEME_FAMILY: Record<string, Family> = {
-  light: 'syntype', dark: 'syntype', phosphor: 'syntype',
-  'one-dark-pro': 'onedark', 'github-light': 'primer-light',
-  protanopia: 'primer-dark', deuteranopia: 'primer-dark', tritanopia: 'primer-dark',
-  'hc-black': 'vscode',
-}
-/**
- * Colours made up for a theme rather than taken from its source, each with the
- * source colour made for the same job that replaces it in step 4.
- */
-const REPLACEMENTS: Record<string, Record<string, string>> = {
-  'one-dark-pro': { '#2c3a4f': 'onedark-list-active-selection', '#4a2a2f': 'onedark-diff-removed-on-editor' },
-  protanopia: { '#13233a': 'primer-dark-accent-muted-on-default', '#2c1f1a': 'primer-dark-colorblind-danger-muted-on-default' },
-  deuteranopia: { '#13233a': 'primer-dark-accent-muted-on-default', '#2c1f1a': 'primer-dark-colorblind-danger-muted-on-default' },
-  tritanopia: { '#13233a': 'primer-dark-accent-muted-on-default', '#301b1e': 'primer-dark-tritanopia-danger-muted-on-default' },
-}
-
 describe('primitives', () => {
   it('reads every colour primitive, each in a known palette', () => {
     expect(primitives.length).toBeGreaterThan(100)
@@ -148,20 +128,6 @@ describe('primitives', () => {
     for (const list of steps.values()) {
       const sorted = [...list].sort((a, b) => a.step - b.step)
       for (let i = 1; i < sorted.length; i++) expect(sorted[i].L, `${sorted[i].name} darker than ${sorted[i - 1].name}`).toBeLessThan(sorted[i - 1].L)
-    }
-  })
-
-  it("covers every colour the themes use, from the theme's own palette", () => {
-    const blocks = [...themesCss.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/\[data-syntype-theme="([\w-]+)"\]\s*\{([^}]*)\}/g)]
-    expect(blocks.map((b) => b[1]).sort()).toEqual(Object.keys(THEME_FAMILY).sort())
-    for (const [, theme, body] of blocks) {
-      const family = THEME_FAMILY[theme]
-      const own = new Set(primitives.filter((p) => p.family === family).map((p) => p.value))
-      for (const [, variable, value] of body.matchAll(/--([\w-]+):\s*(#[0-9a-f]{6})\b/gi)) {
-        const replacement = REPLACEMENTS[theme]?.[value.toLowerCase()]
-        if (replacement) expect(byName.get(replacement)?.family, `${theme} --${variable}: ${replacement}`).toBe(family)
-        else expect(own.has(value.toLowerCase()), `${theme} --${variable}: ${value} is a ${family} primitive`).toBe(true)
-      }
     }
   })
 
