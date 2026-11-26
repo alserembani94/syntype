@@ -8,6 +8,8 @@
  *   2. rewrites the reviewed non-role colours (REWRITES in scripts/design/palette.ts);
  *   3. fails on any other colour class Tailwind writes nothing for;
  *   4. runs the palette test, lint and the type check.
+ * Refuses to replace an installed component unless given --overwrite, and then
+ * lists the files whose "Local edit:" comments the update replaced.
  * Runs with Node's built-in TypeScript support: node scripts/ui-add.ts.
  */
 import { execFileSync } from 'node:child_process'
@@ -29,6 +31,15 @@ const OUTPUT = ['src/components/ui', 'src/hooks', 'src/lib']
 const files = (path: string): string[] =>
   !existsSync(path) ? [] : statSync(path).isDirectory() ? readdirSync(path).flatMap((f) => files(join(path, f))) : [path]
 const snapshot = (paths: string[]) => new Map(paths.flatMap(files).map((f) => [f, readFileSync(f, 'utf8')]))
+
+// No silent overwrite: our edits to shadcn's files are marked "Local edit:" and an update would drop them.
+const names = args.filter((a) => !a.startsWith('-'))
+const existing = names.filter((n) => existsSync(`src/components/ui/${n}.tsx`))
+if (existing.length && !args.includes('--overwrite')) {
+  console.error(`Already installed: ${existing.join(', ')}. Pass --overwrite to replace them.`)
+  process.exit(1)
+}
+const edited = OUTPUT.flatMap(files).filter((f) => readFileSync(f, 'utf8').includes('Local edit:'))
 
 const kept = snapshot(PROTECTED)
 const before = snapshot(OUTPUT)
@@ -75,3 +86,5 @@ execFileSync('npx', ['vitest', 'run', 'src/components/ui'], { stdio: 'inherit' }
 execFileSync('npm', ['run', 'lint'], { stdio: 'inherit' })
 execFileSync('npx', ['tsc', '-b'], { stdio: 'inherit' })
 console.log(`\nAdded: ${touched.join(', ') || 'nothing new'}`)
+const lost = edited.filter((f) => !readFileSync(f, 'utf8').includes('Local edit:'))
+if (lost.length) console.log(`\nThese files had local edits that the update replaced; put them back (see git diff):\n${lost.map((f) => `  ${f}`).join('\n')}`)

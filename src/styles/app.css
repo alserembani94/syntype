@@ -1,3 +1,12 @@
 /* The site and the game artifact. */
 @import "./system.css";
 @import "../index.css" layer(legacy);
+
+/*
+ * The shadcn components the site uses: Tailwind scans files, not imports, so
+ * each one is listed here, or its classes would be missing (or, listing the
+ * whole folder, unused ones would be shipped). src/styles/tailwind.test.ts
+ * checks this list against what the site imports.
+ */
+@source not "../components/ui";
+/* (none yet) */

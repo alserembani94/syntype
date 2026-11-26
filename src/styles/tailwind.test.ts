@@ -3,7 +3,8 @@
  * primitives' scales, and the dark variant that follows each theme's
  * color-scheme (design system step 5).
  */
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { compile } from '@tailwindcss/node'
 import { beforeAll, describe, expect, it } from 'vitest'
@@ -77,5 +78,28 @@ describe('Tailwind and the design system', () => {
     expect(css).toContain('[data-syntype-theme="one-dark-pro"]')
     expect(css).toContain('prefers-color-scheme: dark')
     expect(css).not.toContain('[data-syntype-theme="light"] *')
+  })
+})
+
+describe('shadcn components in the site\'s CSS', () => {
+  /** Every source file of the site: not admin, tests, or the components themselves. */
+  const siteFiles = (path: string): string[] =>
+    statSync(path).isDirectory()
+      ? readdirSync(path).flatMap((f) => (['admin', 'ui', 'test'].includes(f) ? [] : siteFiles(join(path, f))))
+      : /\.tsx?$/.test(path) && !/\.test\.tsx?$/.test(path)
+        ? [path]
+        : []
+
+  it('app.css lists exactly the shadcn components the site imports', () => {
+    const src = fileURLToPath(new URL('../', import.meta.url))
+    const imported = new Set<string>()
+    for (const file of siteFiles(src))
+      for (const m of readFileSync(file, 'utf8').matchAll(/from ['"](?:@\/components\/ui|\.{1,2}(?:\/\.\.)*\/components\/ui|\.\/ui)\/([\w-]+)['"]/g)) imported.add(m[1])
+    // A component's own imports of other components (dialog uses button) count too.
+    const ui = fileURLToPath(new URL('../components/ui/', import.meta.url))
+    for (const name of [...imported])
+      for (const m of readFileSync(join(ui, `${name}.tsx`), 'utf8').matchAll(/from ['"]@\/components\/ui\/([\w-]+)['"]/g)) imported.add(m[1])
+    const listed = [...read('./app.css').matchAll(/@source "\.\.\/components\/ui\/([\w-]+)\.tsx"/g)].map((m) => m[1])
+    expect(listed.sort()).toEqual([...imported].sort())
   })
 })
