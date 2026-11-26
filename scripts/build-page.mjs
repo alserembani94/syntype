@@ -39,7 +39,9 @@ if (!themeBoot) throw new Error('index.html has no <script id="theme-boot">')
 const fonts =
   'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap'
 
-const html = `<title>Syntype</title>
+// The charset comes first: inline scripts hold non-ASCII text (the cn package's tables), which breaks if read as another encoding.
+const html = `<meta charset="utf-8">
+<title>Syntype</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 ${themeBoot}
 <link rel="preload" as="style" href="${fonts}" onload="this.onload = null; this.rel = 'stylesheet'">

@@ -8,6 +8,7 @@
 // import their snippets with ?raw, which only Vite understands).
 import crypto from 'node:crypto'
 import fs from 'node:fs'
+import { reactAriaStyles } from './react-aria-styles.mjs'
 import path from 'node:path'
 import { createServer } from 'vite'
 
@@ -196,7 +197,8 @@ const csp = [
   // Cloudflare Web Analytics' beacon is injected by Cloudflare at its versioned address
   // (/beacon.min.js/v…), so the whole host is allowed; it reports to our own /cdn-cgi/rum.
   `script-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com ${[...inlineScripts].join(' ')}${inlineHandlers.size ? ` 'unsafe-hashes' ${[...inlineHandlers].join(' ')}` : ''}`,
-  "style-src 'self' https://fonts.googleapis.com",
+  // React Aria adds two fixed <style> elements at runtime (scripts/react-aria-styles.mjs); only those, by hash.
+  `style-src 'self' https://fonts.googleapis.com ${reactAriaStyles().map(hashOf).join(' ')}`,
   'font-src https://fonts.gstatic.com',
   "img-src 'self' data:",
   "connect-src 'self'",

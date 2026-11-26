@@ -13,6 +13,7 @@ export default defineConfig({
   build: {
     emptyOutDir: false,
     assetsDir: 'admin-assets',
-    rollupOptions: { input: 'admin.html' },
+    // The admin page, and the design system gallery (admin/gallery.html, served at /admin/gallery) on its own.
+    rollupOptions: { input: ['admin.html', 'admin/gallery.html'] },
   },
 })

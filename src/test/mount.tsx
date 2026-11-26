@@ -12,6 +12,11 @@ import '../styles/admin.css'
 // Tell React these tests drive it with act().
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
+// Themes cross-fade their colours over 0.7 s; tests switch themes at once, as reduced motion does.
+const still = document.createElement('style')
+still.textContent = ':root { transition: none !important; }'
+document.head.append(still)
+
 let root: Root | null = null
 let host: HTMLElement | null = null
 

@@ -13,6 +13,10 @@
 /admin
   Cache-Control: no-store
 
+# The design system gallery, also behind Access (it holds no data).
+/admin/*
+  Cache-Control: no-store
+
 # Every page: never framed by another site, HTTPS only, no device access, and a
 # Content Security Policy. Its placeholder line is filled in by scripts/build-pages.mjs with
 # hashes of the pages' own inline code, so the policy matches what was built.

@@ -12,7 +12,7 @@ import type { LogEntry } from '../../src/lib/runcore'
 
 export interface State {
   id: string
-  area: 'Typing' | 'Overlays' | 'My runs' | 'Leaderboards' | 'Pages' | 'Admin'
+  area: 'Typing' | 'Overlays' | 'My runs' | 'Leaderboards' | 'Pages' | 'Admin' | 'Gallery'
   title: string
   signedIn?: boolean
   /** Import the run history fixture before opening. */
@@ -317,4 +317,41 @@ export const STATES: State[] = [
     },
   },
   { id: 'admin-activity', area: 'Admin', title: 'Activity', open: (p) => p.goto('/admin#activity').then(() => p.getByText('Renamed').first().waitFor()) },
+
+  // ——— Design system gallery (/admin/gallery; made-up content) ———
+  { id: 'gallery', area: 'Gallery', title: 'Every component', open: (p) => p.goto('/admin/gallery').then(() => p.getByRole('heading', { name: 'Composites', level: 2 }).waitFor()) },
+  {
+    id: 'gallery-focus',
+    area: 'Gallery',
+    title: 'Keyboard focus and hover on buttons',
+    open: async (p) => {
+      await p.goto('/admin/gallery')
+      await p.getByRole('button', { name: 'Type this snippet' }).focus()
+      await p.keyboard.press('Shift+Tab')
+      await p.keyboard.press('Tab')
+      await p.getByRole('button', { name: 'Outline' }).hover()
+    },
+  },
+  {
+    id: 'gallery-dialog',
+    area: 'Gallery',
+    title: 'A dialog open',
+    open: async (p) => {
+      await p.goto('/admin/gallery')
+      await p.getByRole('button', { name: 'Change name' }).click()
+      await p.getByRole('dialog').waitFor()
+    },
+  },
+  {
+    id: 'gallery-menu',
+    area: 'Gallery',
+    title: 'A dropdown menu open',
+    open: async (p) => {
+      await p.goto('/admin/gallery')
+      await p.getByRole('button', { name: 'Options' }).click()
+      // (The Command example is a menu too.)
+      await p.locator('[data-slot="dropdown-menu-content"] [role="menu"]').waitFor()
+      await p.keyboard.press('ArrowDown')
+    },
+  },
 ]
