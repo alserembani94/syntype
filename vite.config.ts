@@ -7,4 +7,6 @@ export default defineConfig({
   // Relative asset URLs, so the build (and its worker) works from any folder.
   base: './',
   worker: { format: 'es' },
+  // npm run bench:renders builds with React's profiling build, so <RenderMark>s record render times.
+  resolve: process.env.PROFILE ? { alias: { 'react-dom/client': 'react-dom/profiling' } } : undefined,
 })

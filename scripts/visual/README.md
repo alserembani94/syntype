@@ -8,6 +8,7 @@ Syntype looks is compared against a baseline instead of judged by eye.
 | `npm run check:visual` | Screenshots every state × theme × viewport into `.visual/<label>/`. `-- --compare <tag>` also captures that tag (in a git worktree, with its own scripts) and writes a pixel-diff report to `.visual/compare-<tag>/`. |
 | `npm run check:a11y` | axe-core on the same pages. Fails on WCAG 2.0–2.2 A and AA rules; best practice is reported only. `-- --record` writes the report without failing. |
 | `npm run bench:keys` | The keystroke benchmark (250 keys of the longest snippet at 1×, 4× and 6× CPU slowdown), locally or against a URL: `-- https://syntype.vercel.my`. |
+| `npm run bench:renders` | Which parts of the typing screen render while typing, from React's profiling build (`<RenderMark>` regions, `src/lib/renderMark.tsx`). Fails if the header or settings row renders at all. Builds the profiling version into `dist/` and restores the normal build afterwards. |
 | `npm run report:size` | Gzipped sizes from `dist/`: first load, lazy chunks, the TypeScript worker, admin, the artifact page. |
 | `npm run visual:fixtures` | Regenerates the test data in `fixtures/` (rerun after editing a snippet it uses). |
 

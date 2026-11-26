@@ -58,6 +58,9 @@ try {
   await walk(async (page, { state, theme, viewport }) => {
     // axe uses the page's timers, which the typing states pause; nothing is captured here, so let time run.
     await page.clock.resume()
+    // Finish every running transition, as screenshots do: themes cross-fade their colours, and contrast
+    // measured mid-fade varies from run to run.
+    await page.evaluate(() => document.getAnimations().forEach((a) => a.finish()))
     // evaluate() runs outside the page's CSP, so axe needs no script tag.
     await page.evaluate(axeSource)
     const result = await page.evaluate(async (tags) => {

@@ -17,7 +17,8 @@
     "check:visual": "node scripts/visual/run.mjs scripts/visual/capture.ts",
     "check:a11y": "node scripts/visual/run.mjs scripts/visual/a11y.ts",
     "bench:keys": "node scripts/visual/run.mjs scripts/visual/bench.ts",
-    "report:size": "node scripts/visual/run.mjs scripts/visual/size.ts"
+    "report:size": "node scripts/visual/run.mjs scripts/visual/size.ts",
+    "bench:renders": "node scripts/visual/run.mjs scripts/visual/renders.ts"
   },
   "dependencies": {
     "react": "^19.3.1",

@@ -15,7 +15,10 @@ import { useSubmission } from './hooks/useSubmission'
 import type { Player } from './lib/account'
 import { CHORD_TIMEOUT_MS, keyLabels, shortcut, shortcutText } from './lib/shortcuts'
 import { CodeView } from './components/CodeView'
-import { ConfigBar } from './components/ConfigBar'
+import { Header, type View } from './blocks/Header'
+import { SettingsBar } from './blocks/SettingsBar'
+import { useStableCallback } from './hooks/useStableCallback'
+import { RenderMark } from './lib/renderMark'
 import { AdSlot } from './components/AdSlot'
 import { LanguagePicker } from './components/LanguagePicker'
 import { ThemePicker } from './components/ThemePicker'
@@ -23,7 +26,6 @@ import { ThemePicker } from './components/ThemePicker'
 const AboutDialog = lazy(() => import('./components/AboutDialog').then((m) => ({ default: m.AboutDialog })))
 const RunsView = lazy(() => import('./components/RunsView').then((m) => ({ default: m.RunsView })))
 const LeaderboardView = lazy(() => import('./components/LeaderboardView').then((m) => ({ default: m.LeaderboardView })))
-import { Account } from './components/Account'
 import { applyTheme, getTheme, loadTheme, saveTheme } from './themes'
 import { isLeaderboardPath, isRunsPath, isSitePath, languageFromPath, languagePage, leaderboardPage, RUNS_PAGE } from './seo/site'
 import { Results } from './components/Results'
@@ -63,8 +65,7 @@ const languageInAddress = onSite
   : null
 const lengthInAddress = boardQuery?.get('length') ?? null
 
-/** Typing, the personal board (My runs, at /runs) or the global leaderboards (/leaderboard). */
-type View = 'type' | 'runs' | 'board'
+/** The view the address shows. */
 const viewInAddress = (): View => (!onSite ? 'type' : isRunsPath(location.pathname) ? 'runs' : isLeaderboardPath(location.pathname) ? 'board' : 'type')
 const BOARD_PAGE = leaderboardPage(LANGUAGES)
 const pageTitle = (v: View, languageId: string) => (v === 'runs' ? RUNS_PAGE.title : v === 'board' ? BOARD_PAGE.title : languagePage(getLanguage(languageId)).title)
@@ -448,6 +449,20 @@ export default function App() {
     start(snippet, { autocomplete: v })
   }
 
+  // Fixed identities for the memoised Header and SettingsBar, so typing never redraws them.
+  const onView = useStableCallback(showView)
+  const openAbout = useStableCallback(() => setAboutOpen(true))
+  const openTheme = useStableCallback(() => setThemeOpen(true))
+  const openLanguage = useStableCallback(() => setPickerOpen(true))
+  const onLength = useStableCallback(changeLength)
+  const onToggleIndent = useStableCallback(toggleIndent)
+  const onToggleClose = useStableCallback(toggleClose)
+  const onToggleAutocomplete = useStableCallback(toggleAutocomplete)
+  const onNewSnippet = useStableCallback(() => {
+    next()
+    inputRef.current?.focus({ preventScroll: true })
+  })
+
   const keys = keyLabels()
   const { line, col } = caretPosition(run)
   const best = currentBests[currentKey]
@@ -475,59 +490,19 @@ export default function App() {
           onSmoothCaret={changeSmoothCaret}
         />
       )}
-      <header className="top">
-        <div className="brand">
-          <h1>
-            Syn<span>type</span>
-          </h1>
-        </div>
-        <nav className="tabs" aria-label="Sections">
-          <button type="button" aria-current={view === 'type' ? 'page' : undefined} onClick={() => showView('type')}>
-            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
-              <path d="M8 7l-5 5 5 5M16 7l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span>Type</span>
-          </button>
-          <button type="button" aria-current={view === 'runs' ? 'page' : undefined} onClick={() => showView('runs')}>
-            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
-              <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            <span>My runs</span>
-          </button>
-          {onSite && (
-            <button type="button" aria-current={view === 'board' ? 'page' : undefined} onClick={() => showView('board')}>
-              <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
-                <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <span>Leaderboard</span>
-            </button>
-          )}
-        </nav>
-        <div className="top-actions">
-          <Account available={onSite} onOpenChange={setAccountOpen} onMyRuns={() => showView('runs')} onPlayer={onPlayer} history={runHistory} />
-          {aboutSection && (
-            <button type="button" className="icon-button" onClick={() => setAboutOpen(true)} aria-haspopup="dialog" aria-label="About Syntype" title="About Syntype">
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="2" />
-                <path d="M12 11v5.5M12 7.6v.4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-              </svg>
-            </button>
-          )}
-          <button
-            type="button"
-            className="icon-button theme-button"
-            onClick={() => setThemeOpen(true)}
-            aria-haspopup="dialog"
-            aria-label={`Theme: ${getTheme(themeId).name}. Change theme`}
-            title={`Theme: ${getTheme(themeId).name} (${shortcutText('theme')})`}
-          >
-            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-              <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="2" />
-              <path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor" />
-            </svg>
-          </button>
-        </div>
-      </header>
+      <Header
+        view={view}
+        onSite={onSite}
+        onView={onView}
+        onAccountOpenChange={setAccountOpen}
+        onPlayer={onPlayer}
+        history={runHistory}
+        hasAbout={!!aboutSection}
+        onAbout={openAbout}
+        themeName={getTheme(themeId).name}
+        themeShortcut={shortcutText('theme')}
+        onTheme={openTheme}
+      />
 
       {view === 'board' ? (
         <Suspense fallback={<section className="runs" aria-busy="true" />}>
@@ -539,118 +514,95 @@ export default function App() {
         </Suspense>
       ) : (
         <>
-          {/* Everything that changes the run, next to the code it changes. No clock or score while typing. */}
-          <div className="settings">
-            <button
-              type="button"
-              id="language-button"
-              className="lang-button"
-              onClick={() => setPickerOpen(true)}
-              aria-haspopup="dialog"
-              title={`Change language (${shortcutText('language')})`}
-            >
-              <span className="lang-icon" aria-hidden="true">
-                {'</>'}
-              </span>
-              {language.name}
-            </button>
-            <ConfigBar
-              length={length}
-              autoIndent={autoIndent}
-              autoClose={autoClose}
-              onLength={changeLength}
-              onToggleIndent={toggleIndent}
-              onToggleClose={toggleClose}
-              autocomplete={autocomplete}
-              onToggleAutocomplete={toggleAutocomplete}
-            />
-            <button
-              type="button"
-              className="new-snippet"
-              onClick={() => {
-                next()
-                inputRef.current?.focus({ preventScroll: true })
-              }}
-              title={`New snippet (${shortcutText('newSnippet')})`}
-            >
-              <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
-                <path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              new snippet
-            </button>
-          </div>
+          <SettingsBar
+            languageName={language.name}
+            languageShortcut={shortcutText('language')}
+            onLanguage={openLanguage}
+            length={length}
+            autoIndent={autoIndent}
+            autoClose={autoClose}
+            autocomplete={autocomplete}
+            onLength={onLength}
+            onToggleIndent={onToggleIndent}
+            onToggleClose={onToggleClose}
+            onToggleAutocomplete={onToggleAutocomplete}
+            newSnippetShortcut={shortcutText('newSnippet')}
+            onNewSnippet={onNewSnippet}
+          />
 
-          <section className="pane">
-            <div className="tabbar">
-              <div className="tab">
-                <span className="dot" />
-                <span>{snippet.name}</span>
+          <RenderMark id="editor">
+            <section className="pane">
+              <div className="tabbar">
+                <div className="tab">
+                  <span className="dot" />
+                  <span>{snippet.name}</span>
+                </div>
+                <span className="lang">{language.name}</span>
               </div>
-              <span className="lang">{language.name}</span>
-            </div>
 
-            {result ? (
-              <Results
-                key={state.runId}
-                result={result}
-                isBest={isBest}
-                info={{
-                  language: language.name,
-                  length,
-                  snippet: snippet.name,
-                  assists: aidNames({ autoIndent, autoClose, autocomplete }),
-                }}
-                run={run}
-                highlight={language.highlight}
-                onNext={next}
-                onRetry={retry}
-                leaderboard={submission.view}
-                onResubmit={submission.retry}
-              />
-            ) : (
-              <CodeView
-                code={snippet.code}
-                highlight={language.highlight}
-                run={run}
-                typing={phase === 'running'}
-                inputRef={inputRef}
-                onMobileInput={onMobileInput}
-                suggest={state.suggest}
-                onAccept={accept}
-                smoothCaret={smoothCaret}
-                overlay={overlay}
-                touch={isTouch()}
-              />
-            )}
-
-            <div className="statusbar">
-              <span>
-                Ln {line}, Col {col}
-              </span>
-              <span>
-                {run.pos} / {run.chars.length} chars
-              </span>
-              {/* Personal best is a score too, so it waits for the results screen. */}
-              <span className="push">
-                {phase === 'done' &&
-                  `best (${[language.name, length, autoClose && 'auto-close', autocomplete && 'autocomplete'].filter(Boolean).join(', ')}): ${best ? `${Math.round(best)} wpm` : '—'}`}
-              </span>
-              {serviceLabel && (
-                <span
-                  className={`service ${serviceStatus}`}
-                  title={
-                    serviceStatus === 'failed'
-                      ? `Couldn't start: ${service?.failure?.() ?? 'unknown reason'}`
-                      : "Type-aware suggestions from the language's own service"
-                  }
-                >
-                  {serviceLabel}
-                </span>
+              {result ? (
+                <Results
+                  key={state.runId}
+                  result={result}
+                  isBest={isBest}
+                  info={{
+                    language: language.name,
+                    length,
+                    snippet: snippet.name,
+                    assists: aidNames({ autoIndent, autoClose, autocomplete }),
+                  }}
+                  run={run}
+                  highlight={language.highlight}
+                  onNext={next}
+                  onRetry={retry}
+                  leaderboard={submission.view}
+                  onResubmit={submission.retry}
+                />
+              ) : (
+                <CodeView
+                  code={snippet.code}
+                  highlight={language.highlight}
+                  run={run}
+                  typing={phase === 'running'}
+                  inputRef={inputRef}
+                  onMobileInput={onMobileInput}
+                  suggest={state.suggest}
+                  onAccept={accept}
+                  smoothCaret={smoothCaret}
+                  overlay={overlay}
+                  touch={isTouch()}
+                />
               )}
-              <span>{language.indentWithTabs ? 'Tab Size' : 'Spaces'}: {language.indentSize ?? 2}</span>
-              <span>UTF-8</span>
-            </div>
-          </section>
+
+              <div className="statusbar">
+                <span>
+                  Ln {line}, Col {col}
+                </span>
+                <span>
+                  {run.pos} / {run.chars.length} chars
+                </span>
+                {/* Personal best is a score too, so it waits for the results screen. */}
+                <span className="push">
+                  {phase === 'done' &&
+                    `best (${[language.name, length, autoClose && 'auto-close', autocomplete && 'autocomplete'].filter(Boolean).join(', ')}): ${best ? `${Math.round(best)} wpm` : '—'}`}
+                </span>
+                {serviceLabel && (
+                  <span
+                    className={`service ${serviceStatus}`}
+                    title={
+                      serviceStatus === 'failed'
+                        ? `Couldn't start: ${service?.failure?.() ?? 'unknown reason'}`
+                        : "Type-aware suggestions from the language's own service"
+                    }
+                  >
+                    {serviceLabel}
+                  </span>
+                )}
+                <span>{language.indentWithTabs ? 'Tab Size' : 'Spaces'}: {language.indentSize ?? 2}</span>
+                <span>UTF-8</span>
+              </div>
+            </section>
+          </RenderMark>
 
           <p
             className={`hint${chord || atPending(run) || suggestOpen ? ' attention' : ''}`}

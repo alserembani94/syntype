@@ -59,6 +59,8 @@ The admin page (`/admin`, `src/admin/`) sits behind Cloudflare Access. Every `/a
 
 Typing must stay fast on slow phones. `CodeView` renders the snippet as memoised lines, so a keystroke re-renders only the caret's line, and untyped code is dimmed by mixing its colour (`--tc`, `--a` in `src/index.css`), never with `opacity` on characters: hundreds of elements with their own opacity made every keystroke repaint the whole snippet (about 47 ms a key with the CPU slowed 4×; about 6 ms now). Measure a change to the editor's rendering or CSS on the longest snippet before and after.
 
+While typing, only the editor and the status bar render. The header and the settings row are memoised blocks (`src/blocks/`) whose handlers come through `useStableCallback`, because the controls around the editor redraw on every keystroke otherwise: cheap as plain buttons, but ten React Aria controls left unmemoised add 2.5–3.1 ms of React work per key at 4× slowdown, nearly tripling it. `npm run bench:renders` checks it and fails if either renders while typing; run it after any change to the typing screen. Tooling for screenshots, accessibility and speed is in `scripts/visual/README.md`.
+
 ## Security headers
 
 `public/_headers` sets a Content Security Policy on every page. `scripts/build-pages.mjs` builds it, hashing the inline code it finds in the built pages, so inline scripts and handlers are covered automatically. Anything loaded from another origin (a script, stylesheet, font, frame or API) needs that origin added to the policy there, or browsers will block it.
