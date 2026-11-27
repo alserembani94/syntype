@@ -110,19 +110,35 @@ describe.each(LANGUAGES.map((l) => [l.name, l] as const))('%s', (_, lang) => {
     )
   }
 
-  it(`R9 · accepting suggestions finishes every snippet without mistakes${lang.symbolic ? '' : ' and saves keystrokes'}`, () => {
-    let saved = 0
-    let keystrokes = 0
-    for (const s of lang.snippets) {
-      const end = play(lang, s, { acceptSuggestions: true, service: true })
-      expect(end.phase, s.name).toBe('done')
-      expect(firstMistake(end), s.name).toBeNull()
-      const c = counts(end.run)
-      saved += Math.max(0, c.suggested - end.run.completions)
-      keystrokes += end.run.keystrokes
-    }
-    console.info(`${lang.name}: accepting suggestions takes ${keystrokes} keystrokes and saves ${saved}`)
-    // A symbolic language has no words for suggestions to complete.
-    if (!lang.symbolic) expect(saved).toBeGreaterThan(0)
+  // R9 plays each snippet in its own test: played all in one, the TypeScript
+  // service's languages took about 2 s idle and passed Vitest's 5 s limit when
+  // the full suite loaded the machine. The overall check sums the same plays.
+  const accepted = new Map<string, ReturnType<typeof play>>()
+  const playAccepting = (s: (typeof lang.snippets)[number]) => {
+    let end = accepted.get(s.name)
+    if (!end) accepted.set(s.name, (end = play(lang, s, { acceptSuggestions: true, service: true })))
+    return end
+  }
+
+  it.each(snippets)('R9 · %s finishes without mistakes when accepting suggestions', (_, s) => {
+    const end = playAccepting(s)
+    expect(end.phase).toBe('done')
+    expect(firstMistake(end)).toBeNull()
   })
+
+  // A symbolic language has no words for suggestions to complete.
+  if (!lang.symbolic) {
+    it('R9 · accepting suggestions saves keystrokes', () => {
+      let saved = 0
+      let keystrokes = 0
+      for (const s of lang.snippets) {
+        const end = playAccepting(s)
+        const c = counts(end.run)
+        saved += Math.max(0, c.suggested - end.run.completions)
+        keystrokes += end.run.keystrokes
+      }
+      console.info(`${lang.name}: accepting suggestions takes ${keystrokes} keystrokes and saves ${saved}`)
+      expect(saved).toBeGreaterThan(0)
+    })
+  }
 })
