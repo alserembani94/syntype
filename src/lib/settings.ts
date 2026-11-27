@@ -1,4 +1,4 @@
-import type { SnippetLength } from '../languages'
+import type { SnippetLength } from '../languages/types'
 
 /** Personal bests keyed by "languageId:length", plus a suffix for each assist that was on. */
 export type Bests = Record<string, number>

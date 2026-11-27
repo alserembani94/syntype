@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useReducer } from 'react'
 import type { Move } from '../lib/engine'
 import { activeSeconds, init, reducer, type TestOptions } from '../lib/typing'
-import type { Snippet } from '../languages'
+import type { Snippet } from '../languages/types'
 
 export * from '../lib/typing'
 

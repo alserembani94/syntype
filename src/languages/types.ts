@@ -154,3 +154,13 @@ export interface Language {
   completion?: CompletionConfig
   snippets: Snippet[]
 }
+
+/** A language's identity, in its meta.ts: enough for the picker, the pages and the address. */
+export type LanguageMeta = Pick<Language, 'id' | 'name' | 'category' | 'aliases' | 'basedOn' | 'symbolic' | 'extension'>
+
+/** A snippet without its text, for lists and counts. */
+export type SnippetInfo = Pick<Snippet, 'name' | 'length'>
+
+/** What the first load holds for every language (catalog.ts); a full Language has this and more. */
+export type LanguageInfo = LanguageMeta & { snippets: readonly SnippetInfo[] }
+

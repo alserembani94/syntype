@@ -1,7 +1,8 @@
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { defineConfig, type PluginOption } from 'vite'
+import { defineConfig, type Plugin, type PluginOption } from 'vite'
 import { visualizer } from 'rollup-plugin-visualizer'
 
 /**
@@ -18,13 +19,41 @@ export function analyze(name: string): PluginOption[] {
   ]
 }
 
+/**
+ * `import list from './snippets.txt?index'`: a language's snippets without their text (name and
+ * length), read at build time. The language catalog (src/languages/catalog.ts) lists them in
+ * the first load; the text loads with the language. Mirrors parseSnippets()
+ * (src/languages/snippets.ts), which can't be imported here; catalog.test.ts checks they agree.
+ */
+export function snippetIndex(): Plugin {
+  return {
+    name: 'syntype-snippet-index',
+    enforce: 'pre',
+    load(id) {
+      if (!id.endsWith('snippets.txt?index')) return
+      const file = id.slice(0, -'?index'.length)
+      this.addWatchFile(file)
+      const list = readFileSync(file, 'utf8')
+        .split(/^=== /m)
+        .filter((block) => block.trim())
+        .map((block) => {
+          const nl = block.indexOf('\n')
+          const n = block.slice(nl + 1).replace(/\s+$/, '').length
+          return { name: block.slice(0, nl).trim(), length: n < 120 ? 'short' : n <= 300 ? 'medium' : 'long' }
+        })
+      return `export default ${JSON.stringify(list)}`
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), ...analyze('app')],
+  plugins: [react(), tailwindcss(), snippetIndex(), ...analyze('app')],
   // Relative asset URLs, so the build (and its worker) works from any folder.
   base: './',
   worker: { format: 'es', plugins: () => analyze('worker') },
-  build: { sourcemap: !!process.env.ANALYZE },
+  // The manifest maps each language to its file, for the preloads scripts/build-pages.mjs writes (it deletes the manifest after).
+  build: { sourcemap: !!process.env.ANALYZE, manifest: true },
   // npm run bench:renders builds with React's profiling build, so <RenderMark>s record render times.
   resolve: {
     alias: {

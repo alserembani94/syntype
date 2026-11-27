@@ -1,4 +1,5 @@
 import type { Language } from '../types'
+import { meta } from './meta'
 import { parseSnippets } from '../snippets'
 import raw from './snippets.txt?raw'
 
@@ -6,11 +7,7 @@ const KEYWORDS =
   'HAI KTHXBYE CAN HAS I ITZ R A VISIBLE GIMMEH SUM DIFF PRODUKT QUOSHUNT MOD BIGGR SMALLR BOTH SAEM DIFFRINT EITHER WON NOT ALL ANY OF AN O RLY YA NO WAI MEBBE OIC WTF OMG OMGWTF GTFO IM IN YR OUTTA UPPIN NERFIN TIL WILE HOW IZ IF U SAY SO FOUND MKAY SMOOSH MAEK IS NOW YARN NUMBR NUMBAR TROOF NOOB WIN FAIL'
 
 export const lolcode: Language = {
-  id: 'lolcode',
-  name: 'LOLCODE',
-  category: 'Esoteric',
-  aliases: ['lol'],
-  extension: 'lol',
+  ...meta,
   indentSize: 2,
   highlight: {
     keywords: KEYWORDS.split(' '),

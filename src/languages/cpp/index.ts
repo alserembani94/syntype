@@ -1,14 +1,11 @@
 import type { Language } from '../types'
+import { meta } from './meta'
 import { parseSnippets } from '../snippets'
 import { packs } from './completions'
 import raw from './snippets.txt?raw'
 
 export const cpp: Language = {
-  id: 'cpp',
-  name: 'C++',
-  category: 'Systems',
-  aliases: ['c++', 'cxx', 'cplusplus', 'c++20'],
-  extension: 'cpp',
+  ...meta,
   // VS Code's default, as for C.
   indentSize: 4,
   highlight: {

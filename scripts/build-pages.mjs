@@ -126,10 +126,62 @@ ${links}
     </section>`
 }
 
+// Each language's own file (rules and snippets, src/languages/catalog.ts) and the files it imports
+// (a framework track's base language), from Vite's manifest, so a page can fetch the language it
+// starts in alongside the app's script instead of after it. The manifest isn't deployed.
+const manifestFile = path.join(dist, '.vite', 'manifest.json')
+const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'))
+fs.rmSync(path.join(dist, '.vite'), { recursive: true })
+const inEntry = new Set()
+;(function walk(key) {
+  if (inEntry.has(key)) return
+  inEntry.add(key)
+  for (const k of manifest[key].imports ?? []) walk(k)
+})('index.html')
+// A language another one imports statically (TypeScript imports JavaScript) becomes a shared chunk,
+// listed by its chunk name rather than its source path.
+function languageKey(id) {
+  const key = manifest[`src/languages/${id}/index.ts`] ? `src/languages/${id}/index.ts` : Object.keys(manifest).find((k) => k.startsWith(`_${id}-`))
+  if (!key) throw new Error(`No file for the language ${id} in Vite's manifest`)
+  return key
+}
+const languageFiles = Object.fromEntries(
+  LANGUAGES.map((l) => {
+    const files = []
+    ;(function walk(key) {
+      if (inEntry.has(key) || files.includes(`./${manifest[key].file}`)) return
+      for (const k of manifest[key].imports ?? []) walk(k)
+      files.push(`./${manifest[key].file}`)
+    })(languageKey(l.id))
+    return [l.id, files]
+  }),
+)
+const preload = (files) => files.map((f) => `    <link rel="modulepreload" crossorigin href="${f}" />`).join('\n')
+/** A language page preloads its language; the others, the language the app will start in (src/lib/address.ts). */
+function languageBlock(page, { query = false } = {}) {
+  if (page.languageId) return preload(languageFiles[page.languageId])
+  return `    <script id="language-boot">
+      try {
+        var files = ${JSON.stringify(languageFiles)}
+        var id = ${query ? "new URLSearchParams(location.search).get('lang')" : 'null'}
+        if (!files[id]) id = JSON.parse(localStorage.getItem('syntype:language'))
+        if (!files[id]) id = ${JSON.stringify(LANGUAGES[0].id)}
+        files[id].forEach(function (f) {
+          var l = document.createElement('link')
+          l.rel = 'modulepreload'
+          l.crossOrigin = ''
+          l.href = f
+          document.head.appendChild(l)
+        })
+      } catch (e) {}
+    </script>`
+}
+
 const pages = seo.allPages(LANGUAGES)
 for (const page of pages) {
   let html = between(template, 'seo', head(page))
   html = between(html, 'about', about(page))
+  html = between(html, 'language', languageBlock(page, { query: page.path === '/leaderboard' }))
   fs.writeFileSync(path.join(dist, page.file), html)
 }
 // The personal board: personal content kept on the device, so not indexed and not in the sitemap.
@@ -138,6 +190,7 @@ for (const page of pages) {
   const home = pages[0]
   let html = between(template, 'seo', [`    <title>${esc(runs.title)}</title>`, `    <meta name="robots" content="noindex" />`].join('\n'))
   html = between(html, 'about', about(home))
+  html = between(html, 'language', languageBlock(runs, { query: true }))
   fs.writeFileSync(path.join(dist, runs.file), html)
 }
 // The privacy and fair-play pages: plain reading, no app (src/seo/policies.ts). Styled with the

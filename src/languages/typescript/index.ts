@@ -1,4 +1,5 @@
 import type { Language } from '../types'
+import { meta } from './meta'
 import { parseSnippets } from '../snippets'
 import { javascript } from '../javascript'
 import { getTypeScriptService } from '../../lib/ts/client'
@@ -10,11 +11,7 @@ const TS_KEYWORDS =
   )
 
 export const typescript: Language = {
-  id: 'typescript',
-  name: 'TypeScript',
-  category: 'Web',
-  aliases: ['ts'],
-  extension: 'ts',
+  ...meta,
   highlight: {
     ...javascript.highlight,
     keywords: [...javascript.highlight.keywords, ...TS_KEYWORDS],

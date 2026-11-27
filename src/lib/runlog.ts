@@ -14,7 +14,7 @@
 import { type TestState } from './typing'
 import { computePairs } from './pairs'
 import { encodeLog, fingerprint, replayLog, resultOf, type LogEntry, type TypingAids } from './runcore'
-import type { Language, Snippet, SnippetLength } from '../languages'
+import type { Language, Snippet, SnippetLength } from '../languages/types'
 
 export interface RunRecord {
   /** Unique per run. */

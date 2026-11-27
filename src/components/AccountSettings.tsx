@@ -4,7 +4,7 @@
  * downloading everything the server keeps, and deleting the account.
  */
 import { useEffect, useState } from 'react'
-import { LANGUAGES } from '../languages'
+import { CATALOG } from '../languages/catalog'
 import { deleteAccount, deleteEntry, downloadData, fetchEntries, setHidden, signOutEverywhere, type Entry, type Player } from '../lib/account'
 import { speed, whenPlayed } from '../lib/format'
 import { PROVIDER_NAMES as PROVIDERS } from '../lib/labels'
@@ -56,7 +56,7 @@ export function AccountSettings({ player, onClose, onRename, onPlayer, onDeleted
   }, [])
 
   const name = player.name ?? player.suggestedName
-  const langName = (id: string) => LANGUAGES.find((l) => l.id === id)?.name ?? id
+  const langName = (id: string) => CATALOG.find((l) => l.id === id)?.name ?? id
 
   if (deleted) {
     return (

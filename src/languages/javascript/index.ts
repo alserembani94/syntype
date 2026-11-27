@@ -1,14 +1,11 @@
 import type { Language } from '../types'
+import { meta } from './meta'
 import { parseSnippets } from '../snippets'
 import raw from './snippets.txt?raw'
 import { getTypeScriptService } from '../../lib/ts/client'
 
 export const javascript: Language = {
-  id: 'javascript',
-  name: 'JavaScript',
-  category: 'Web',
-  aliases: ['js', 'node', 'ecmascript'],
-  extension: 'js',
+  ...meta,
   highlight: {
     keywords:
       'const let var function return if else for while do switch case default break continue new class extends super this import export from as async await try catch finally throw typeof instanceof in of null undefined true false void delete yield get set static'.split(

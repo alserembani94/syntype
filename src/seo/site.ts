@@ -4,7 +4,7 @@
  * scripts/build-pages.mjs writes the pages at build time; the app uses the
  * same titles when the language changes. src/seo/site.test.ts checks them.
  */
-import type { Language } from '../languages/types'
+import type { LanguageInfo } from '../languages/types'
 
 export const SITE_URL = 'https://syntype.vercel.my'
 export const SITE_NAME = 'Syntype'
@@ -52,7 +52,7 @@ export interface Page {
 }
 
 
-const homePage = (languages: Language[]): Page => ({
+const homePage = (languages: LanguageInfo[]): Page => ({
   path: '/',
   file: 'index.html',
   url: `${SITE_URL}/`,
@@ -62,7 +62,7 @@ const homePage = (languages: Language[]): Page => ({
   intro: `Syntype is a typing test for programmers. Instead of English words, you type real snippets in ${languages.length} languages, with the editor helping the way VS Code does: brackets close themselves, indentation follows you and suggestions appear as you type. No clock or score gets in the way; your WPM, accuracy and consistency appear when you finish.`,
 })
 
-export function languagePage(lang: Language): Page {
+export function languagePage(lang: LanguageInfo): Page {
   const blurb = BLURBS[lang.id] ?? ''
   const on = lang.basedOn ? ` (${lang.basedOn})` : ''
   return {
@@ -78,7 +78,7 @@ export function languagePage(lang: Language): Page {
 }
 
 /** The global leaderboards, at /leaderboard: public, so indexed and in the sitemap. */
-export const leaderboardPage = (languages: Language[]): Page => ({
+export const leaderboardPage = (languages: LanguageInfo[]): Page => ({
   path: '/leaderboard',
   file: 'leaderboard.html',
   url: `${SITE_URL}/leaderboard`,
@@ -88,10 +88,10 @@ export const leaderboardPage = (languages: Language[]): Page => ({
   intro: `Every snippet in Syntype has its own leaderboard: the fastest signed-in players, ranked by WPM with at least 75% accuracy, each run checked by replaying its keystrokes. Filter by typing aids, and watch replays of the top runs.`,
 })
 
-export const allPages = (languages: Language[]): Page[] => [homePage(languages), ...languages.map(languagePage), leaderboardPage(languages)]
+export const allPages = (languages: LanguageInfo[]): Page[] => [homePage(languages), ...languages.map(languagePage), leaderboardPage(languages)]
 
 /** The language a page address names (/python, /python.html, /python/), if any. */
-export function languageFromPath(pathname: string, languages: Language[]): string | null {
+export function languageFromPath(pathname: string, languages: LanguageInfo[]): string | null {
   const slug = pathname.replace(/^\/+|\/+$/g, '').replace(/\.html$/, '')
   return languages.some((l) => l.id === slug) ? slug : null
 }
@@ -108,7 +108,7 @@ export const isRunsPath = (pathname: string) => /^\/runs(\.html)?\/?$/.test(path
 export const isLeaderboardPath = (pathname: string) => /^\/leaderboard(\.html)?\/?$/.test(pathname)
 
 /** Whether this page is the site itself (home, a language page, /runs or /leaderboard), so it can keep the address in step with what's shown. */
-export function isSitePath(pathname: string, languages: Language[]): boolean {
+export function isSitePath(pathname: string, languages: LanguageInfo[]): boolean {
   return /^\/(index\.html)?$/.test(pathname) || languageFromPath(pathname, languages) !== null || isRunsPath(pathname) || isLeaderboardPath(pathname)
 }
 

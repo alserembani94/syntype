@@ -1,4 +1,5 @@
 import type { Language } from '../types'
+import { meta } from './meta'
 import { parseSnippets } from '../snippets'
 import { typescript } from '../typescript'
 import raw from './snippets.txt?raw'
@@ -10,10 +11,6 @@ import raw from './snippets.txt?raw'
  */
 export const playwright: Language = {
   ...typescript,
-  id: 'playwright',
-  name: 'Playwright',
-  category: 'Testing & QA',
-  aliases: ['e2e', 'end-to-end'],
-  basedOn: 'TypeScript',
+  ...meta,
   snippets: parseSnippets(raw),
 }

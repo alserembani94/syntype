@@ -1,7 +1,7 @@
 import { memo, useLayoutEffect, useMemo, useRef } from 'react'
 import { tokenize } from '../lib/tokenize'
 import type { Run } from '../lib/engine'
-import type { HighlightRules } from '../languages'
+import type { HighlightRules } from '../languages/types'
 import type { SuggestState } from '../hooks/useTypingTest'
 import { SuggestBox } from './SuggestBox'
 

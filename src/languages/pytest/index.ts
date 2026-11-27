@@ -1,4 +1,5 @@
 import type { CompletionItem, Language, SuggestionKind, VocabularyPack } from '../types'
+import { meta } from './meta'
 import { parseSnippets } from '../snippets'
 import { python } from '../python'
 import raw from './snippets.txt?raw'
@@ -25,11 +26,7 @@ const pytestPack: VocabularyPack = {
 /** pytest tests in Python: everything from the Python language, plus pytest's vocabulary. */
 export const pytest: Language = {
   ...python,
-  id: 'pytest',
-  name: 'pytest',
-  category: 'Testing & QA',
-  aliases: ['unit test'],
-  basedOn: 'Python',
+  ...meta,
   completion: { ...python.completion, packs: [...(python.completion?.packs ?? []), pytestPack] },
   snippets: parseSnippets(raw),
 }

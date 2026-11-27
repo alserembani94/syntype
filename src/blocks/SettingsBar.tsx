@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Tip } from '@/components/composites/tip'
 import { ConfigBar } from '../components/ConfigBar'
 import { RenderMark } from '../lib/renderMark'
-import type { SnippetLength } from '../languages'
+import type { SnippetLength } from '../languages/types'
 
 interface Props {
   languageName: string

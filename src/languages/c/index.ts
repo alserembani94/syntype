@@ -1,14 +1,11 @@
 import type { Language } from '../types'
+import { meta } from './meta'
 import { parseSnippets } from '../snippets'
 import { packs } from './completions'
 import raw from './snippets.txt?raw'
 
 export const c: Language = {
-  id: 'c',
-  name: 'C',
-  category: 'Systems',
-  aliases: ['c11', 'c17', 'ansi c'],
-  extension: 'c',
+  ...meta,
   // VS Code's default, and K&R style as most C outside the Linux kernel is written.
   indentSize: 4,
   highlight: {

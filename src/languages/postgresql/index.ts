@@ -1,4 +1,5 @@
 import type { Language } from '../types'
+import { meta } from './meta'
 import { parseSnippets } from '../snippets'
 import { packs, TYPES } from './completions'
 import raw from './snippets.txt?raw'
@@ -7,11 +8,7 @@ const KEYWORDS =
   'SELECT FROM WHERE AND OR NOT NULL IS IN AS ON USING JOIN LEFT RIGHT INNER OUTER FULL CROSS GROUP BY ORDER HAVING LIMIT OFFSET DISTINCT INSERT INTO VALUES UPDATE SET DELETE RETURNING CREATE TABLE INDEX UNIQUE PRIMARY KEY FOREIGN REFERENCES DEFAULT CHECK CONSTRAINT ALTER ADD DROP COLUMN IF EXISTS CASCADE WITH RECURSIVE UNION ALL CASE WHEN THEN ELSE END ASC DESC OVER PARTITION ROWS RANGE BETWEEN UNBOUNDED PRECEDING FOLLOWING CURRENT ROW CONFLICT DO NOTHING BEGIN COMMIT ROLLBACK FUNCTION RETURNS RETURN LANGUAGE TRIGGER BEFORE AFTER FOR EACH EXECUTE REPLACE VIEW CONCURRENTLY TRUE FALSE LIKE ILIKE INTERVAL NEW OLD DECLARE'
 
 export const postgresql: Language = {
-  id: 'postgresql',
-  name: 'PostgreSQL',
-  category: 'Data & config',
-  aliases: ['postgres', 'psql', 'sql'],
-  extension: 'sql',
+  ...meta,
   indentSize: 2,
   highlight: {
     // Written uppercase, as in the PostgreSQL docs; matched in any case, like SQL.

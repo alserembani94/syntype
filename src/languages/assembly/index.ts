@@ -1,4 +1,5 @@
 import type { Language } from '../types'
+import { meta } from './meta'
 import { parseSnippets } from '../snippets'
 import { packs, REGISTERS } from './completions'
 import raw from './snippets.txt?raw'
@@ -9,11 +10,7 @@ const KEYWORDS =
   'section segment global extern bits default rel db dw dd dq resb resw resd resq equ times byte word dword qword'
 
 export const assembly: Language = {
-  id: 'assembly',
-  name: 'x86-64 Assembly',
-  category: 'Systems',
-  aliases: ['asm', 'nasm', 'x86', 'x64', 'amd64', 'assembler'],
-  extension: 'asm',
+  ...meta,
   // NASM style: labels at column 0, instructions and data one level in.
   indentSize: 4,
   highlight: {

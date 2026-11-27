@@ -1,21 +1,23 @@
-import { CATEGORIES, type Language } from '../languages'
+import { useEffect } from 'react'
+import { CATEGORIES, type LanguageInfo } from '../languages/types'
+import { loadAllLanguages } from '../languages/catalog'
 import { fuzzyMatch } from '../lib/suggest'
 import { Picker } from '@/components/composites/picker'
 
 interface Props {
-  languages: Language[]
+  languages: LanguageInfo[]
   currentId: string
   onSelect: (id: string) => void
   onClose: () => void
   /** What each row says at its end; the number of snippets unless given (My runs shows your run count). */
-  detail?: (lang: Language) => string
+  detail?: (lang: LanguageInfo) => string
 }
 
 /**
  * Matches on name, id, extension, aliases ("golang", "sql") or section
  * ("web" lists all web languages); fuzzy on the name, so "ts" finds TypeScript.
  */
-function matches(lang: Language, query: string): boolean {
+function matches(lang: LanguageInfo, query: string): boolean {
   const q = query.trim().toLowerCase()
   if (!q) return true
   return (
@@ -29,12 +31,18 @@ function matches(lang: Language, query: string): boolean {
   )
 }
 
-const sectionOf = (l: Language) => l.category
-const idOf = (l: Language) => l.id
-const textOf = (l: Language) => l.name
+const sectionOf = (l: LanguageInfo) => l.category
+const idOf = (l: LanguageInfo) => l.id
+const textOf = (l: LanguageInfo) => l.name
 
 /** A searchable list of languages in a modal, opened from the language button. */
 export function LanguagePicker({ languages, currentId, onSelect, onClose, detail = (l) => `${l.snippets.length} snippets` }: Props) {
+  // Opening the picker fetches every language (each 1–4 KB, cached), so choosing one is instant.
+  useEffect(() => {
+    loadAllLanguages().catch(() => {
+      /* each choice retries its own language, and says so if it still can't */
+    })
+  }, [])
   return (
     <Picker
       label="Choose a language"

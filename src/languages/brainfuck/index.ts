@@ -1,15 +1,10 @@
 import type { Language } from '../types'
+import { meta } from './meta'
 import { parseSnippets } from '../snippets'
 import raw from './snippets.txt?raw'
 
 export const brainfuck: Language = {
-  id: 'brainfuck',
-  name: 'Brainfuck',
-  category: 'Esoteric',
-  aliases: ['bf'],
-  extension: 'bf',
-  // Eight one-character commands and no words: see "symbolic" in CLAUDE.md.
-  symbolic: true,
+  ...meta,
   indentSize: 2,
   highlight: {
     keywords: [],

@@ -1,4 +1,5 @@
 import type { CompletionItem, Language, SuggestionKind, VocabularyPack } from '../types'
+import { meta } from './meta'
 import { parseSnippets } from '../snippets'
 import { python } from '../python'
 import raw from './snippets.txt?raw'
@@ -32,11 +33,7 @@ const seleniumPack: VocabularyPack = {
 /** Selenium tests in Python: everything from the Python language, plus Selenium's vocabulary. */
 export const selenium: Language = {
   ...python,
-  id: 'selenium',
-  name: 'Selenium',
-  category: 'Testing & QA',
-  aliases: ['webdriver'],
-  basedOn: 'Python',
+  ...meta,
   completion: { ...python.completion, packs: [...(python.completion?.packs ?? []), seleniumPack] },
   snippets: parseSnippets(raw),
 }

@@ -1,4 +1,5 @@
 import type { Language } from '../types'
+import { meta } from './meta'
 import { parseSnippets } from '../snippets'
 import { packs } from './completions'
 import raw from './snippets.txt?raw'
@@ -9,10 +10,7 @@ const KEYWORDS =
 const TYPES = 'int float string bool void mixed never iterable object'
 
 export const php: Language = {
-  id: 'php',
-  name: 'PHP',
-  category: 'Web',
-  extension: 'php',
+  ...meta,
   // PSR-12.
   indentSize: 4,
   highlight: {

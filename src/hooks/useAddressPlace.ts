@@ -6,7 +6,7 @@
  * in state only.
  */
 import { useEffect, useRef, useState } from 'react'
-import type { SnippetLength } from '../languages'
+import type { SnippetLength } from '../languages/types'
 
 /** How a view's own part of the place reads from and writes to the query string. */
 export interface AddressSpec<Own> {

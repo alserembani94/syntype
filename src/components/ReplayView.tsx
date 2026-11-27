@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { Language, Snippet } from '../languages'
+import type { Language, Snippet } from '../languages/types'
 import type { LogEntry, TypingAids } from '../lib/runcore'
 import { buildReplay, frameAt, type Replay } from '../lib/replay'
 import { duration, speed as runSpeed } from '../lib/format'

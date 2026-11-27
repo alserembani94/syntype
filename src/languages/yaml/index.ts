@@ -1,14 +1,11 @@
 import type { Language } from '../types'
+import { meta } from './meta'
 import { parseSnippets } from '../snippets'
 import { packs } from './completions'
 import raw from './snippets.txt?raw'
 
 export const yaml: Language = {
-  id: 'yaml',
-  name: 'YAML',
-  category: 'Data & config',
-  aliases: ['yml'],
-  extension: 'yaml',
+  ...meta,
   indentSize: 2,
   highlight: {
     keywords: ['true', 'false', 'null'],

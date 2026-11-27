@@ -1,14 +1,11 @@
 import type { Language } from '../types'
+import { meta } from './meta'
 import { parseSnippets } from '../snippets'
 import { packs } from './completions'
 import raw from './snippets.txt?raw'
 
 export const python: Language = {
-  id: 'python',
-  name: 'Python',
-  category: 'Scripting',
-  aliases: ['py'],
-  extension: 'py',
+  ...meta,
   // PEP 8.
   indentSize: 4,
   highlight: {

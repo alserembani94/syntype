@@ -1,14 +1,11 @@
 import type { Language } from '../types'
+import { meta } from './meta'
 import { parseSnippets } from '../snippets'
 import { packs } from './completions'
 import raw from './snippets.txt?raw'
 
 export const rust: Language = {
-  id: 'rust',
-  name: 'Rust',
-  category: 'Systems',
-  aliases: ['rs'],
-  extension: 'rs',
+  ...meta,
   // rustfmt's default.
   indentSize: 4,
   highlight: {

@@ -1,6 +1,10 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { aidNames } from './lib/aids'
-import { getLanguage, LANGUAGES, pickSnippet, type Snippet, type SnippetLength } from './languages'
+import { pickSnippet } from './languages/snippets'
+import { CATALOG, languageInfo, loadedLanguage, loadLanguage } from './languages/catalog'
+import type { Language, Snippet, SnippetLength } from './languages/types'
+import { lengthInAddress, onSite, startLanguageId } from './lib/address'
+import { useToast } from '@/components/composites/use-toast'
 import { useTypingTest, type TestOptions } from './hooks/useTypingTest'
 import { isTouch, usePageFocus } from './hooks/usePageFocus'
 import { MIN_ACCURACY_FOR_BEST, summarize } from './lib/stats'
@@ -31,7 +35,7 @@ const AboutDialog = lazy(() => import('./components/AboutDialog').then((m) => ({
 const RunsView = lazy(() => import('./components/RunsView').then((m) => ({ default: m.RunsView })))
 const LeaderboardView = lazy(() => import('./components/LeaderboardView').then((m) => ({ default: m.LeaderboardView })))
 import { applyTheme, getTheme, loadTheme, saveTheme } from './themes'
-import { isLeaderboardPath, isRunsPath, isSitePath, languageFromPath, languagePage, leaderboardPage, RUNS_PAGE } from './seo/site'
+import { isLeaderboardPath, isRunsPath, languageFromPath, languagePage, leaderboardPage, RUNS_PAGE } from './seo/site'
 import { Results } from './components/Results'
 import { ownsKey } from './lib/keyTarget'
 import { Kbd } from '@/components/ui/kbd'
@@ -52,7 +56,8 @@ const bestKey = (s: Settings) =>
   `${s.languageId}:${s.length}${s.autoClose ? ':autoclose' : ''}${s.autocomplete ? ':autocomplete' : ''}`
 
 const runOptions = (snippet: Snippet, s: Settings): TestOptions => {
-  const lang = getLanguage(s.languageId)
+  // The current language: loaded before the app starts, or before switching to it.
+  const lang = loadedLanguage(s.languageId)
   return {
     autoIndent: s.autoIndent,
     autoClose: s.autoClose,
@@ -61,28 +66,15 @@ const runOptions = (snippet: Snippet, s: Settings): TestOptions => {
   }
 }
 
-/**
- * On the site itself (home or a language page such as /python), the address
- * names the language: opening /python starts in Python, and choosing another
- * language moves to its page. Elsewhere (the single-file artifact) the
- * address is left alone.
- */
-const onSite = typeof location !== 'undefined' && /^https?:$/.test(location.protocol) && isSitePath(location.pathname, LANGUAGES)
-/** The language and length a page's address names: /python, or ?lang= and ?length= on /runs and /leaderboard. One setting for the whole app. */
-const boardQuery = onSite && (isRunsPath(location.pathname) || isLeaderboardPath(location.pathname)) ? new URLSearchParams(location.search) : null
-const languageInAddress = onSite
-  ? (languageFromPath(location.pathname, LANGUAGES) ?? (LANGUAGES.some((l) => l.id === boardQuery?.get('lang')) ? boardQuery!.get('lang') : null))
-  : null
-const lengthInAddress = boardQuery?.get('length') ?? null
 
 /** The view the address shows. */
 const viewInAddress = (): View => (!onSite ? 'type' : isRunsPath(location.pathname) ? 'runs' : isLeaderboardPath(location.pathname) ? 'board' : 'type')
-const BOARD_PAGE = leaderboardPage(LANGUAGES)
-const pageTitle = (v: View, languageId: string) => (v === 'runs' ? RUNS_PAGE.title : v === 'board' ? BOARD_PAGE.title : languagePage(getLanguage(languageId)).title)
+const BOARD_PAGE = leaderboardPage(CATALOG)
+const pageTitle = (v: View, languageId: string) => (v === 'runs' ? RUNS_PAGE.title : v === 'board' ? BOARD_PAGE.title : languagePage(languageInfo(languageId)).title)
 
 function showLanguageInAddress(id: string) {
   if (!onSite || isRunsPath(location.pathname) || isLeaderboardPath(location.pathname)) return
-  const page = languagePage(getLanguage(id))
+  const page = languagePage(languageInfo(id))
   document.title = page.title
   try {
     if (location.pathname !== page.path) history.replaceState(null, '', page.path + location.search + location.hash)
@@ -94,9 +86,10 @@ function showLanguageInAddress(id: string) {
 const NAV_KEYS: Record<string, 'right' | 'end' | 'down'> = { ArrowRight: 'right', End: 'end', ArrowDown: 'down' }
 
 export default function App() {
-  // A language page (/python) wins over the language saved from last time.
-  const [languageId, setLanguageId] = useState(() => getLanguage(languageInAddress ?? load('language', '')).id)
-  const language = getLanguage(languageId)
+  // main.tsx has loaded it (a language page wins over the language saved from last time).
+  const toast = useToast()
+  const [languageId, setLanguageId] = useState(startLanguageId)
+  const language = loadedLanguage(languageId)
   const [length, setLength] = useState<SnippetLength>(() => savedLength(lengthInAddress ?? load('length', 'medium')))
   const [view, setView] = useState<View>(viewInAddress)
   // A caret that glides between letters (on by default; switched in the theme dialog).
@@ -348,7 +341,7 @@ export default function App() {
   }
   /** A language link in the about dialog: switch here instead of loading the page again. */
   const aboutLanguage = (path: string) => {
-    const id = languageFromPath(path, LANGUAGES)
+    const id = languageFromPath(path, CATALOG)
     if (!id) return false
     closeAbout()
     if (id !== languageId) changeLanguage(id)
@@ -412,9 +405,18 @@ export default function App() {
     setPickerOpen(false)
     inputRef.current?.focus({ preventScroll: true })
   }
+  // Switching language waits for its file (instant once the picker has fetched them all);
+  // if switches overlap, the last one wins.
+  const switching = useRef(0)
+  const whenLoaded = (id: string, then: (lang: Language) => void) => {
+    const turn = ++switching.current
+    loadLanguage(id).then(
+      (lang) => turn === switching.current && then(lang),
+      () => turn === switching.current && toast.show(`${languageInfo(id).name} couldn’t be loaded. Check your connection and try again.`, { tone: 'error' }),
+    )
+  }
   /** From My runs: type exactly this snippet, switching language and length to match it. */
-  const typeSnippet = (id: string, name: string) => {
-    const lang = getLanguage(id)
+  const typeSnippet = (id: string, name: string) => whenLoaded(id, (lang) => {
     const target = lang.snippets.find((x) => x.name === name)
     if (!target) return
     setLanguageId(lang.id)
@@ -429,18 +431,18 @@ export default function App() {
       document.title = page.title
     }
     requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }))
-  }
+  })
   const pickLanguage = (id: string) => {
     closePicker()
     if (id !== languageId) changeLanguage(id)
   }
-  const changeLanguage = (id: string) => {
-    const lang = getLanguage(id)
-    setLanguageId(lang.id)
-    save('language', lang.id)
-    showLanguageInAddress(lang.id)
-    start(pickSnippet(lang.snippets, length), { languageId: lang.id })
-  }
+  const changeLanguage = (id: string) =>
+    whenLoaded(id, (lang) => {
+      setLanguageId(lang.id)
+      save('language', lang.id)
+      showLanguageInAddress(lang.id)
+      start(pickSnippet(lang.snippets, length), { languageId: lang.id })
+    })
   /**
    * start() puts focus in the editor, so a click on a setting leaves you ready to type.
    * A setting changed from the keyboard (its control focus-visible) keeps focus instead,
@@ -506,7 +508,7 @@ export default function App() {
       <AdSlot slot="rail" className={cn(RAIL, 'left-[calc(50%+500px)]', phase === 'running' && 'opacity-35')} />
       {pickerOpen && (
         <Suspense fallback={null}>
-          <LanguagePicker languages={LANGUAGES} currentId={languageId} onSelect={pickLanguage} onClose={closePicker} />
+          <LanguagePicker languages={CATALOG} currentId={languageId} onSelect={pickLanguage} onClose={closePicker} />
         </Suspense>
       )}
       {aboutOpen && aboutSection && (
@@ -542,11 +544,11 @@ export default function App() {
 
       {view === 'board' ? (
         <Suspense fallback={<section className="grid gap-4" aria-busy="true" aria-label="Loading" />}>
-          <LeaderboardView languages={LANGUAGES} language={languageId} length={length} onLanguage={changeLanguage} onLength={changeLength} player={player.player} onType={typeSnippet} />
+          <LeaderboardView languages={CATALOG} language={languageId} length={length} onLanguage={changeLanguage} onLength={changeLength} player={player.player} onType={typeSnippet} />
         </Suspense>
       ) : view === 'runs' ? (
         <Suspense fallback={<section className="grid gap-4" aria-busy="true" aria-label="Loading" />}>
-          <RunsView languages={LANGUAGES} history={runHistory} language={languageId} length={length} onLanguage={changeLanguage} onLength={changeLength} inAddress={onSite} onType={typeSnippet} />
+          <RunsView languages={CATALOG} history={runHistory} language={languageId} length={length} onLanguage={changeLanguage} onLength={changeLength} inAddress={onSite} onType={typeSnippet} />
         </Suspense>
       ) : (
         <>

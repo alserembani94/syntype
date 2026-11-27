@@ -5,7 +5,7 @@
  * taking those arrows; letters typed here still go to the editor.
  */
 import { Choice, Toggles } from '@/components/composites/choices'
-import type { SnippetLength } from '../languages'
+import type { SnippetLength } from '../languages/types'
 
 // No "any": every run belongs to one length, so speeds are only compared like for like.
 const LENGTHS = (['short', 'medium', 'long'] as const).map((l) => ({ id: l, label: l }))

@@ -1,4 +1,5 @@
 import type { Language } from '../types'
+import { meta } from './meta'
 import { parseSnippets } from '../snippets'
 import { packs } from './completions'
 import raw from './snippets.txt?raw'
@@ -7,11 +8,7 @@ const KEYWORDS =
   'IDENTIFICATION ENVIRONMENT DATA PROCEDURE DIVISION SECTION PROGRAM-ID INPUT-OUTPUT FILE-CONTROL SELECT ASSIGN TO ORGANIZATION IS LINE SEQUENTIAL FILE FD WORKING-STORAGE LINKAGE PIC PICTURE VALUE OCCURS TIMES REDEFINES INDEXED BY DISPLAY ACCEPT MOVE ADD SUBTRACT MULTIPLY DIVIDE GIVING COMPUTE ROUNDED IF THEN ELSE END-IF EVALUATE WHEN OTHER END-EVALUATE PERFORM VARYING FROM UNTIL THRU END-PERFORM READ WRITE OPEN CLOSE INPUT OUTPUT AT END NOT END-READ STRING DELIMITED SIZE INTO END-STRING UNSTRING INSPECT TALLYING REPLACING STOP RUN GOBACK CALL USING RETURNING EXIT CONTINUE INITIALIZE SET TRUE FALSE ZERO ZEROS SPACE SPACES AND OR OF FUNCTION'
 
 export const cobol: Language = {
-  id: 'cobol',
-  name: 'COBOL',
-  category: 'Mainframe',
-  aliases: ['cbl'],
-  extension: 'cbl',
+  ...meta,
   // Fixed format: code starts at column 8 (Area A); statements at column 12
   // (Area B), then 4 columns per level. Nothing past column 72.
   indentOffset: 7,

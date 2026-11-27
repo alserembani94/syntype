@@ -6,7 +6,9 @@
  */
 import { useAddressPlace, type AddressSpec } from '../hooks/useAddressPlace'
 import { useEffect, useMemo, useState } from 'react'
-import type { Language, Snippet, SnippetLength } from '../languages'
+import type { Language, LanguageInfo, Snippet, SnippetLength } from '../languages/types'
+import { useLanguage } from '../hooks/useLanguage'
+import { languageInfo } from '../languages/catalog'
 import type { Player } from '../lib/account'
 import { AIDS, aidsKey, aidsOf } from '../lib/aids'
 import { AidTags } from './AidTags'
@@ -46,7 +48,8 @@ interface Place {
 }
 
 interface Props {
-  languages: Language[]
+  /** The catalog: names and snippet lists. A snippet's board and a replay load their language in full. */
+  languages: LanguageInfo[]
   language: string
   length: SnippetLength
   /** The app's language and length, shared by every view; changing them here changes them everywhere. */
@@ -79,12 +82,15 @@ const ADDRESS: AddressSpec<Own> = {
 export function LeaderboardView({ languages, language, length, onLanguage, onLength, player, onType, inAddress = true }: Props) {
   const [place, go] = useAddressPlace(ADDRESS, { language, length, onLanguage, onLength, inAddress })
   const lang = languages.find((l) => l.id === place.language) ?? languages[0]
+  // A snippet's board fingerprints the snippet's text, so it needs the language in full.
+  const { language: full, failed } = useLanguage(place.snippet && !place.replay ? lang.id : null)
 
-  if (place.replay) return <BoardReplayView languages={languages} runId={place.replay} admin={place.admin} onClose={() => go({ replay: null, admin: false }, true)} />
-  if (place.snippet) {
+  if (place.replay) return <BoardReplayView runId={place.replay} admin={place.admin} onClose={() => go({ replay: null, admin: false }, true)} />
+  if (place.snippet && !full) return <LanguageLoading name={lang.name} failed={failed} onBack={() => go({ snippet: null, version: null, aids: 'any' }, true)} />
+  if (place.snippet && full) {
     return (
       <SnippetBoard
-        lang={lang}
+        lang={full}
         name={place.snippet}
         version={place.version}
         aids={place.aids}
@@ -116,8 +122,8 @@ function LanguageOverview({
   onLength,
   onOpen,
 }: {
-  languages: Language[]
-  lang: Language
+  languages: LanguageInfo[]
+  lang: LanguageInfo
   length: SnippetLength
   onLanguage: (id: string) => void
   onLength: (l: SnippetLength) => void
@@ -429,7 +435,19 @@ function Row({ row: r, mine, canReport, onReplay, onReported }: { row: BoardRow;
   )
 }
 
-function BoardReplayView({ languages, runId, admin, onClose }: { languages: Language[]; runId: string; admin: boolean; onClose: () => void }) {
+/** While a language's rules and snippets load (normally a moment); if they can't, says so. */
+function LanguageLoading({ name, failed, onBack }: { name: string; failed: boolean; onBack: () => void }) {
+  if (!failed) return <section className="grid min-w-0 gap-4" aria-busy="true" aria-label={`Loading ${name}`} />
+  return (
+    <section className="grid min-w-0 gap-4">
+      <Note title={`${name} couldn’t be loaded`} problem action={<Button variant="outline" onPress={onBack}>‹ Back</Button>}>
+        Check your connection and try again.
+      </Note>
+    </section>
+  )
+}
+
+function BoardReplayView({ runId, admin, onClose }: { runId: string; admin: boolean; onClose: () => void }) {
   const [data, setData] = useState<{ id: string; replay: BoardReplay } | { id: string; error: string } | null>(null)
   useEffect(() => {
     let live = true
@@ -443,15 +461,15 @@ function BoardReplayView({ languages, runId, admin, onClose }: { languages: Lang
   }, [runId, admin])
   const loaded = data?.id === runId ? data : null
   const replay = loaded && 'replay' in loaded ? loaded.replay : null
+  const { language: lang, failed } = useLanguage(replay?.snippet.language ?? null)
   // Stable objects for the replay, so it loads once.
   const parts = useMemo(() => {
-    if (!replay) return null
-    const lang = languages.find((l) => l.id === replay.snippet.language)
-    if (!lang) return null
+    if (!replay || !lang) return null
     const snippet: Snippet = { name: replay.snippet.name, code: replay.snippet.code, length: replay.snippet.length }
     return { lang, snippet, run: { wpm: replay.wpm, accuracy: replay.accuracy, finishedAt: replay.finishedAt, aids: aidsOf(replay.aids) } }
-  }, [replay, languages])
+  }, [replay, lang])
 
+  if (failed) return <LanguageLoading name={languageInfo(replay!.snippet.language).name} failed onBack={onClose} />
   if (loaded && 'error' in loaded) {
     return (
       <section className="grid min-w-0 gap-4">

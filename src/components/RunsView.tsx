@@ -12,7 +12,8 @@ import { cn } from '@/lib/utils'
 import { AidTags } from './AidTags'
 import { LanguagePicker } from './LanguagePicker'
 import { LanguageButton, Mark, Muted, Note, Stat, TableSkeleton, ViewHead, ViewTitle } from './ViewParts'
-import type { Language, SnippetLength } from '../languages'
+import type { Language, LanguageInfo, SnippetLength } from '../languages/types'
+import { useLanguage } from '../hooks/useLanguage'
 import { AIDS } from '../lib/aids'
 import { keepSafe, snippetKey, storageInfo, type History, type StoredRun } from '../lib/history'
 import { fingerprint } from '../lib/runcore'
@@ -25,7 +26,8 @@ import { useAddressPlace, type AddressSpec } from '../hooks/useAddressPlace'
 const LENGTHS = (['short', 'medium', 'long'] as const).map((l) => ({ id: l, label: l }))
 
 interface Props {
-  languages: Language[]
+  /** The catalog: names and snippet lists. The language shown loads in full, for its snippets' fingerprints. */
+  languages: LanguageInfo[]
   history: Promise<History | null>
   /** The app's language and length, shared by every view; changing them here changes them everywhere. */
   language: string
@@ -67,11 +69,13 @@ export function RunsView({ languages, history, language, length, onLanguage, onL
     }
   }, [history, reload])
 
-  const lang = languages.find((l) => l.id === place.language) ?? languages[0]
+  const info = languages.find((l) => l.id === place.language) ?? languages[0]
+  const { language: lang, failed } = useLanguage(info.id)
 
   // Runs only count for a snippet's current text: an edited snippet starts afresh, as on the leaderboard.
   const [prints, setPrints] = useState<Record<string, string>>({})
   useEffect(() => {
+    if (!lang) return
     let live = true
     Promise.all(lang.snippets.map(async (s) => [s.name, await fingerprint(s.code)] as const)).then(
       (pairs) => live && setPrints(Object.fromEntries(pairs)),
@@ -91,7 +95,17 @@ export function RunsView({ languages, history, language, length, onLanguage, onL
       </section>
     )
   }
-  if (!runs || store === undefined) {
+  if (failed) {
+    return (
+      <section className="grid min-w-0 gap-4">
+        <ViewTitle>My runs</ViewTitle>
+        <Note title={`${info.name} couldn’t be loaded`} problem>
+          Check your connection and try again.
+        </Note>
+      </section>
+    )
+  }
+  if (!runs || store === undefined || !lang) {
     return (
       <section className="grid min-w-0 gap-4">
         <ViewTitle>My runs</ViewTitle>
@@ -203,7 +217,7 @@ const BEST = 'font-display text-base font-bold text-primary'
 const FIGURE = 'font-display text-sm font-semibold'
 
 interface OverviewProps {
-  languages: Language[]
+  languages: LanguageInfo[]
   lang: Language
   length: SnippetLength
   runs: StoredRun[]

@@ -6,7 +6,7 @@
 import type { StoredRun } from './history'
 import type { TypingAids } from './runcore'
 import { MIN_ACCURACY_FOR_BEST } from './stats'
-import type { SnippetLength } from '../languages'
+import type { SnippetLength } from '../languages/types'
 
 /** Which runs to show by typing aids: any, all on, all off, or an exact combination. */
 export type AidsFilter = 'any' | 'on' | 'off' | TypingAids

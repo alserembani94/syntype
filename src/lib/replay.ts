@@ -13,7 +13,7 @@ import { decodeLog, type LogEntry, type TypingAids } from './runcore'
 import { init, reducer, type LoggedAction, type TestState } from './typing'
 import { computePairs } from './pairs'
 import type { Run } from './engine'
-import type { Language, Snippet } from '../languages'
+import type { Language, Snippet } from '../languages/types'
 
 export const CHECKPOINT_EVERY = 64
 

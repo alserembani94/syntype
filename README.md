@@ -94,11 +94,13 @@ Every plain key is typing, so shortcuts use Ctrl (⌘ on a Mac; either works eve
 ```
 src/
   languages/
-    index.ts            the LANGUAGES registry
+    index.ts            the LANGUAGES registry: every language in full, for tests, the server and the build
+    catalog.ts          what the browser's first load knows (names, sections, snippet names); loadLanguage() fetches the rest
     types.ts            Language, Snippet and HighlightRules types
     snippets.ts         parses snippets files, picks a random snippet
     javascript/
-      index.ts          name, extension, highlighting, auto-close and completion settings
+      meta.ts           id, name, section, extension, aliases (in the first load, through the catalog)
+      index.ts          highlighting, auto-close and completion settings, and the snippets (its own file, loaded on demand)
       snippets.txt      the snippets: "=== name.js" header, then the code
     typescript/         the same for TypeScript (its service lives in lib/ts/)
     python/             the same for Python, plus completions.ts (built-in and stdlib vocabulary)
@@ -146,8 +148,8 @@ src/
 ## Adding a language
 
 1. Create `src/languages/<id>/snippets.txt` with snippets in the format below. Name each file with the language's extension.
-2. Create `src/languages/<id>/index.ts`, using `javascript/index.ts` as a model: set `id`, `name`, `extension`, `indentSize` (and `indentWithTabs` if the language's formatter uses tabs), `highlight` (keywords, comment and string syntax, and optionally a `keyPattern` for languages whose keys should be coloured, like YAML, `types` for built-in type names, `caseInsensitive` for languages like SQL, `identifier` for languages whose names contain other characters (COBOL's hyphens), and `capitalizedTypes: false` where capitals don't mean a type), plus `indentOffset` and `maxLineLength` for fixed-format languages, `autoClosingPairs` and `completion`. Copy `autoClosingPairs` from the language's VS Code `language-configuration.json` so auto-close matches the editor. **Don't copy JavaScript's `completion.service`, `serviceMode` or `triggerCharacters`**: those wire in TypeScript's service. A language without its own service sets `wordChar` and, if useful, vocabulary `packs` (see below).
-3. Add it to `LANGUAGES` in `src/languages/index.ts`.
+2. Create `src/languages/<id>/meta.ts` with its `id`, `name`, `category`, `extension` and `aliases`, and `src/languages/<id>/index.ts`, using `javascript/` as a model: spread `meta`, then set `indentSize` (and `indentWithTabs` if the language's formatter uses tabs), `highlight` (keywords, comment and string syntax, and optionally a `keyPattern` for languages whose keys should be coloured, like YAML, `types` for built-in type names, `caseInsensitive` for languages like SQL, `identifier` for languages whose names contain other characters (COBOL's hyphens), and `capitalizedTypes: false` where capitals don't mean a type), plus `indentOffset` and `maxLineLength` for fixed-format languages, `autoClosingPairs` and `completion`. Copy `autoClosingPairs` from the language's VS Code `language-configuration.json` so auto-close matches the editor. **Don't copy JavaScript's `completion.service`, `serviceMode` or `triggerCharacters`**: those wire in TypeScript's service. A language without its own service sets `wordChar` and, if useful, vocabulary `packs` (see below).
+3. Add it to `LANGUAGES` in `src/languages/index.ts` and to `ORDER` in `src/languages/catalog.ts` (the browser's list; `catalog.test.ts` fails if the two differ). Its rules and snippets become their own file, fetched when someone plays it, so a new language doesn't add to the first load.
 
 It then appears in the language picker, and `npm test` holds it to every language rule (R1–R9 in `CLAUDE.md`, checked by `src/languages/conformance.test.ts`): identity, at least 4 snippets per length, formatting, highlighting, playthroughs with and without its service, and suggestions that save keystrokes. A language with a service also needs a stand-in for it in `TEST_COMPLETERS` (`src/test/harness.ts`).
 

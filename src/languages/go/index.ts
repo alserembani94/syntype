@@ -1,14 +1,11 @@
 import type { Language } from '../types'
+import { meta } from './meta'
 import { parseSnippets } from '../snippets'
 import { packs } from './completions'
 import raw from './snippets.txt?raw'
 
 export const go: Language = {
-  id: 'go',
-  name: 'Go',
-  category: 'Systems',
-  aliases: ['golang'],
-  extension: 'go',
+  ...meta,
   // gofmt indents with tabs; they display 4 columns wide.
   indentWithTabs: true,
   indentSize: 4,

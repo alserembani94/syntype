@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import type { Run } from '../lib/engine'
-import type { HighlightRules } from '../languages'
+import type { HighlightRules } from '../languages/types'
 import { tokenize } from '../lib/tokenize'
 
 const show = (ch: string | undefined) => (ch === '\n' ? '↵' : ch === ' ' ? '␣' : ch)

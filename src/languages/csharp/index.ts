@@ -1,14 +1,11 @@
 import type { Language } from '../types'
+import { meta } from './meta'
 import { parseSnippets } from '../snippets'
 import { packs } from './completions'
 import raw from './snippets.txt?raw'
 
 export const csharp: Language = {
-  id: 'csharp',
-  name: 'C#',
-  category: 'Applications',
-  aliases: ['c#', 'cs', 'dotnet', '.net'],
-  extension: 'cs',
+  ...meta,
   // The .NET convention (and dotnet format's default); braces on their own line (Allman).
   indentSize: 4,
   highlight: {
