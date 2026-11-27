@@ -32,7 +32,12 @@ const FAIL_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22a', 'wcag2
  * the search box (virtual focus, aria-activedescendant), so the list itself
  * needs no tab stop.
  */
-const EXEMPTIONS = [{ rule: 'scrollable-region-focusable', selector: '[data-slot="command-list"]', why: 'virtual focus from the search box' }]
+const EXEMPTIONS = [
+  { rule: 'scrollable-region-focusable', selector: '[data-slot="command-list"]', why: 'virtual focus from the search box' },
+  // The one theme outside WCAG AA (rule T6): One Dark Pro keeps its own comment and error colours (3.73, 4.38 and
+  // 3.97:1 where they fail). Documented in docs/contrast-testing.md; every other theme must have no contrast failure.
+  { rule: 'color-contrast', selector: '[data-syntype-theme="one-dark-pro"]', why: 'One Dark Pro stays faithful to its source colours' },
+]
 
 interface Hit {
   state: string

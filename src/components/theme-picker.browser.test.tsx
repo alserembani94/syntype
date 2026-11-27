@@ -24,7 +24,7 @@ test('AA themes show the badge and say so; the others do neither', async () => {
   await mount(picker())
   await expect.element(page.getByRole('dialog')).toBeVisible()
   const found = rows()
-  expect(AA.length).toBe(8)
+  expect(AA.length).toBe(10)
   for (const name of AA) {
     const row = found.get(name)!
     expect(row.textContent, name).toContain('WCAG AA')

@@ -20,7 +20,7 @@ import { useToast } from './use-toast'
 const PICKER_LIST = { rule: 'scrollable-region-focusable', selector: '[data-slot="command-list"]', why: 'virtual focus from the search box' }
 
 /**
- * Contrast failures left for the contrast round (as KNOWN_FAILURES in
+ * Contrast failures that remain, in One Dark Pro only (as KNOWN_FAILURES in
  * src/themes/themes.test.ts): "<theme> <composite>: <element>". The test fails
  * on anything new, and on a listed failure that now passes.
  */

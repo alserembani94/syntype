@@ -35,11 +35,11 @@ export const THEMES: Theme[] = [
   { id: 'hc-black', name: 'Dark High Contrast', section: 'High contrast', credit: 'VS Code', wcag: 'AA' },
   { id: 'hc-light', name: 'Light High Contrast', section: 'High contrast', credit: 'VS Code', wcag: 'AA' },
   { id: 'one-dark-pro', name: 'One Dark Pro', section: 'Dark', credit: 'Binaryify' },
-  { id: 'github-light', name: 'GitHub Light', section: 'Light', credit: 'GitHub' },
+  { id: 'github-light', name: 'GitHub Light', section: 'Light', credit: 'GitHub', wcag: 'AA' },
   { id: 'protanopia', name: 'Protanopia', section: 'Colour vision', credit: 'red-blind · on GitHub Dark', vision: 'protanopia', wcag: 'AA' },
   { id: 'deuteranopia', name: 'Deuteranopia', section: 'Colour vision', credit: 'green-blind · on GitHub Dark', vision: 'deuteranopia', wcag: 'AA' },
   { id: 'tritanopia', name: 'Tritanopia', section: 'Colour vision', credit: 'blue-blind · on GitHub Dark', vision: 'tritanopia', wcag: 'AA' },
-  { id: 'phosphor', name: 'Green Phosphor', section: 'Retro', credit: 'terminal' },
+  { id: 'phosphor', name: 'Green Phosphor', section: 'Retro', credit: 'terminal', wcag: 'AA' },
 ]
 
 export const getTheme = (id: string): Theme => THEMES.find((t) => t.id === id) ?? THEMES[0]
