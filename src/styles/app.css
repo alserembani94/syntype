@@ -8,6 +8,8 @@
  * whole folder, unused ones would be shipped). src/styles/tailwind.test.ts
  * checks this list against what the site imports.
  */
+/* The privacy and fair-play pages are written by this script, with utility classes in it. */
+@source "../../scripts/build-pages.mjs";
 @source not "../components/ui";
 @source not "../components/composites";
 @source "../components/composites/account-menu.tsx";

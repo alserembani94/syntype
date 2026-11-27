@@ -5,7 +5,7 @@
  * system by adding classes and deleting its legacy rules.
  *   theme       primitives, the theme blocks, Tailwind's theme variables
  *   base        Tailwind's reset, then the defaults legacy still needs back
- *   legacy      today's CSS (index.css, admin.css), deleted screen by screen
+ *   legacy      the old CSS (index.css), deleted screen by screen
  *   components  shadcn's component styles
  *   utilities   Tailwind classes
  */

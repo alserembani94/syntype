@@ -120,20 +120,25 @@ for (const page of pages) {
   html = between(html, 'about', about(home))
   fs.writeFileSync(path.join(dist, runs.file), html)
 }
-// The privacy and fair-play pages: plain reading, no app (src/seo/policies.ts).
-const inline = (text) => esc(text).replace(/\[([^\]]+)\]\((https:[^)\s]+)\)/g, (_, words, href) => `<a href="${href}" rel="noreferrer">${words}</a>`)
+// The privacy and fair-play pages: plain reading, no app (src/seo/policies.ts). Styled with the
+// design system's utility classes, written here; src/styles/app.css scans this file for them.
+const LINK = 'text-primary underline-offset-4 hover:underline'
+const inline = (text) => esc(text).replace(/\[([^\]]+)\]\((https:[^)\s]+)\)/g, (_, words, href) => `<a class="${LINK}" href="${href}" rel="noreferrer">${words}</a>`)
+/** The app header's nav links (src/blocks/Header.tsx), as plain links. */
+const NAV_LINK =
+  'inline-flex h-8 items-center rounded-lg px-2.5 text-sm font-medium text-muted-foreground no-underline outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 aria-[current=page]:bg-accent aria-[current=page]:text-primary'
 function policyHtml(page, all) {
   // The site's head (styles, fonts, saved theme), without the app's scripts.
   const head = between(template, 'seo', head_(page)).match(/<head>[\s\S]*<\/head>/)[0].replace(/\s*<script type="module"[^>]*><\/script>/g, '').replace(/\s*<link rel="modulepreload"[^>]*>/g, '')
   const nav = [{ path: '/', label: 'Typing test' }, { path: '/leaderboard', label: 'Leaderboards' }, ...all.map((p) => ({ path: p.path, label: p.label }))]
-    .map((l) => `<a href="${l.path}"${l.path === page.path ? ' aria-current="page"' : ''}>${esc(l.label)}</a>`)
+    .map((l) => `<a class="${NAV_LINK}" href="${l.path}"${l.path === page.path ? ' aria-current="page"' : ''}>${esc(l.label)}</a>`)
     .join('\n          ')
   const sections = page.sections
     .map((sec) => {
       const blocks = []
       let list = []
       const flush = () => {
-        if (list.length) blocks.push(`<ul>${list.map((i) => `<li>${inline(i)}</li>`).join('')}</ul>`)
+        if (list.length) blocks.push(`<ul class="m-0 grid list-disc gap-1 pl-5">${list.map((i) => `<li>${inline(i)}</li>`).join('')}</ul>`)
         list = []
       }
       for (const line of sec.body) {
@@ -141,28 +146,30 @@ function policyHtml(page, all) {
           list.push(line.slice(2))
         } else {
           flush()
-          blocks.push(`<p>${inline(line)}</p>`)
+          blocks.push(`<p class="m-0">${inline(line)}</p>`)
         }
       }
       flush()
-      return `      <section>\n        <h2>${esc(sec.heading)}</h2>\n        ${blocks.join('\n        ')}\n      </section>`
+      return `      <section class="grid gap-2.5 border-t pt-4">\n        <h2 class="m-0 font-display text-xl font-bold tracking-tight">${esc(sec.heading)}</h2>\n        ${blocks.join('\n        ')}\n      </section>`
     })
     .join('\n')
   return `<!doctype html>
 <html lang="en">
   ${head}
   <body>
-    <main class="policy">
-      <header class="policy-top">
-        <a class="brand-link" href="/"><span class="brand-word">Syn<span>type</span></span></a>
-        <nav aria-label="Site">
+    <div class="mx-auto grid max-w-3xl gap-6 leading-relaxed">
+      <header class="flex flex-wrap items-center gap-3 sm:gap-5">
+        <a class="text-foreground no-underline" href="/"><span class="font-display text-3xl font-bold tracking-tight [text-shadow:var(--code-glow)]">Syn<span class="text-primary">type</span></span></a>
+        <nav aria-label="Site" class="flex flex-wrap gap-1 rounded-lg border bg-card p-1">
           ${nav}
         </nav>
       </header>
-      <h1>${esc(page.heading)}</h1>
-      <p class="lede">${esc(page.intro)}</p>
+      <main class="grid gap-6">
+        <h1 class="m-0 mt-2 font-display text-4xl font-bold tracking-tight text-balance">${esc(page.heading)}</h1>
+        <p class="m-0 text-lg">${esc(page.intro)}</p>
 ${sections}
-    </main>
+      </main>
+    </div>
   </body>
 </html>
 `

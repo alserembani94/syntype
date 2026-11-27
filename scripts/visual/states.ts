@@ -308,7 +308,7 @@ export const STATES: State[] = [
   { id: 'fair-play', area: 'Pages', title: 'Fair play', open: (p) => p.goto('/fair-play').then(() => undefined) },
 
   // ——— Admin (the local-only admin email stands in for Cloudflare Access) ———
-  { id: 'admin-reports', area: 'Admin', title: 'Reports', open: (p) => p.goto('/admin#reports').then(() => p.locator('.admin-card').first().waitFor()) },
+  { id: 'admin-reports', area: 'Admin', title: 'Reports', open: (p) => p.goto('/admin#reports').then(() => p.getByRole('button', { name: 'Resolve' }).first().waitFor()) },
   {
     id: 'admin-players',
     area: 'Admin',
@@ -316,7 +316,7 @@ export const STATES: State[] = [
     open: async (p) => {
       await p.goto('/admin#players')
       await p.getByPlaceholder(/Name, player ID/).fill('LinusFast')
-      await p.locator('.admin-card').first().waitFor()
+      await p.getByRole('button', { name: 'Rename…' }).first().waitFor()
       await p.waitForLoadState('networkidle')
     },
   },

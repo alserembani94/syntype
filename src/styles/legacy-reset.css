@@ -19,7 +19,10 @@ ul, ol {
   padding-inline-start: revert;
 }
 
-/* Links keep their underline unless legacy removes it: in prose, the underline is what shows a link (WCAG 1.4.1). */
-a {
+/*
+ * Links keep their underline unless legacy removes it: in prose, the underline is what shows a
+ * link (WCAG 1.4.1). Not shadcn's components (data-slot): a link styled as a button has none.
+ */
+a:not([data-slot]) {
   text-decoration: revert;
 }

@@ -23,7 +23,6 @@ header.top { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
 .hint.attention { color: var(--primary); }
 .brand h1 { font-family: var(--font-display); font-weight: 700; font-size: 28px; margin: 0; letter-spacing: -0.02em; }
 .brand h1 span { color: var(--primary); }
-.btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
 /* The app's own key caps; shadcn's Kbd (data-slot) styles itself. */
 kbd:not([data-slot]) { font: 600 11px var(--font-mono); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; color: var(--foreground); background: var(--card); }
@@ -279,17 +278,7 @@ svg.chart .er path { stroke: var(--destructive); stroke-width: 2; stroke-linecap
 @media (max-width: 640px) { .about.open .about-columns { grid-template-columns: minmax(0, 1fr); } }
 
 /* My runs: the personal board (RunsView). */
-.btn {
-  font: 500 13px var(--font-sans); padding: 7px 12px; border-radius: 8px; cursor: pointer;
-  border: 1px solid var(--border); background: var(--card); color: var(--foreground);
-}
-.btn:hover { border-color: var(--primary); }
-.btn.accent { border-color: var(--primary); color: var(--primary); }
-.btn.danger { color: var(--destructive); }
-.btn.danger:hover { border-color: var(--destructive); }
 /* The global leaderboards (LeaderboardView). */
-.field textarea { font: 14px var(--font-sans); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--muted); color: var(--foreground); resize: vertical; }
-.field textarea:focus { outline: 2px solid var(--primary); outline-offset: 1px; border-color: var(--primary); }
 .runs-svg { margin-top: 8px; }
 svg.chart .runs-line { fill: none; stroke: var(--muted-foreground); stroke-opacity: .45; stroke-width: 1.5; }
 svg.chart .runs-dot { fill: var(--muted-foreground); }
@@ -299,32 +288,6 @@ svg.chart .runs-dot.best { fill: var(--primary); }
   header.top { gap: 12px; }
 }
 
-/* Admin's form fields and text buttons (until step 13 moves admin onto the system). */
-.field { display: grid; gap: 6px; font: 600 12px var(--font-sans); color: var(--muted-foreground); }
-.field input {
-  font: 16px var(--font-mono); padding: 9px 11px; border-radius: 8px; border: 1px solid var(--border); background: var(--muted); color: var(--foreground);
-}
-.field input:focus { outline: 2px solid var(--primary); outline-offset: 1px; border-color: var(--primary); }
-.field input[aria-invalid="true"] { border-color: var(--destructive); }
-.inline-link { border: 0; padding: 0; background: none; cursor: pointer; color: var(--primary); font: inherit; }
-.inline-link:hover { text-decoration: underline; }
-.inline-link:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 3px; }
 
-/* The privacy and fair-play pages (scripts/build-pages.mjs). */
-.policy { max-width: 720px; margin: 0 auto; display: grid; gap: 22px; line-height: 1.6; }
-.policy-top { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
-.policy-top a.brand-link { text-decoration: none; color: inherit; }
-.policy-top nav { display: flex; gap: 16px; margin-left: auto; font-size: 14px; }
-.policy-top nav a { color: var(--muted-foreground); text-decoration: none; }
-.policy-top nav a:hover, .policy-top nav a[aria-current="page"] { color: var(--primary); }
-.policy h1 { font: 700 34px var(--font-display); letter-spacing: -0.02em; margin: 8px 0 0; text-wrap: balance; }
-.policy h2 { font: 700 19px var(--font-display); margin: 0 0 6px; }
-.policy p, .policy ul { margin: 0 0 10px; }
-.policy ul { padding-left: 20px; display: grid; gap: 4px; }
-.policy a { color: var(--primary); }
-.policy .lede { font-size: 17px; color: var(--foreground); }
-.policy section { padding-top: 14px; border-top: 1px solid var(--border); }
-.brand-word { font: 700 26px var(--font-display); letter-spacing: -0.02em; }
-.brand-word span { color: var(--primary); }
 .about-links { margin: 12px 0 0; font-size: 14px; }
 .about-links a { color: var(--primary); }

@@ -111,3 +111,10 @@ describe('shadcn components in the site\'s CSS', () => {
     expect(listed.sort()).toEqual([...used].sort())
   })
 })
+
+describe('the policy pages', () => {
+  it('the site\'s CSS scans the script that writes them, for their classes', () => {
+    expect(read('./app.css')).toContain('@source "../../scripts/build-pages.mjs";')
+    expect(readFileSync(fileURLToPath(new URL('../../scripts/build-pages.mjs', import.meta.url)), 'utf8')).toMatch(/class="[^"]*font-display/)
+  })
+})
