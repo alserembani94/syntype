@@ -30,14 +30,14 @@ const SHARE_SCORE: ShareScore = {
 }
 
 /** The result screen's share dialog: drawn in the theme it opens in, or still drawing. */
-function ShareDemo({ drawing }: { drawing?: boolean }) {
+function ShareDemo({ drawing, failed }: { drawing?: boolean; failed?: boolean }) {
   const [open, setOpen] = useState(false)
   return (
     <Toaster>
       <Button variant="outline" onPress={() => setOpen(true)}>
-        {drawing ? 'Share (still drawing)' : 'Share score'}
+        {failed ? 'Share (drawing failed)' : drawing ? 'Share (still drawing)' : 'Share score'}
       </Button>
-      {open && <ShareDialog score={SHARE_SCORE} onClose={() => setOpen(false)} image={drawing ? null : undefined} />}
+      {open && <ShareDialog score={SHARE_SCORE} onClose={() => setOpen(false)} image={drawing ? null : undefined} failure={failed ? 'this browser can’t draw images' : undefined} />}
     </Toaster>
   )
 }
@@ -67,6 +67,9 @@ export function Overlays() {
           </State>
           <State label="Share score while the image is drawn: buttons disabled">
             <ShareDemo drawing />
+          </State>
+          <State label="Share score when drawing fails: an alert in place of the image, and Back to results">
+            <ShareDemo failed />
           </State>
           <State label="Text only, no close button">
             <DialogTrigger>

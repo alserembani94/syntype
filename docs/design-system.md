@@ -50,7 +50,7 @@ States: default, focus, invalid, disabled.
 
 ### Overlays
 
-**Dialog** (`ui/dialog.tsx`). Use: a task that needs the person's attention (sign in, your name, Account & data). Default: a `DialogTitle`, close button, `DialogFooter` for the actions; account dialogs go through `AccountDialog` (`AccountDialogs.tsx`), which pins them to the top on phones. `ShareDialog` (result screen, `S`) shows an image preview with its alt text above the footer's actions; its first action takes focus once the image is ready. The backdrop dims 45% (a local edit). Not for: a yes/no about something destructive (`AlertDialog`), a list of actions (`DropdownMenu`), a message (toast).
+**Dialog** (`ui/dialog.tsx`). Use: a task that needs the person's attention (sign in, your name, Account & data). Default: a `DialogTitle`, close button, `DialogFooter` for the actions; account dialogs go through `AccountDialog` (`AccountDialogs.tsx`), which pins them to the top on phones. `ShareDialog` (result screen, `S`) shows an image preview with its alt text above the footer's actions; its first action takes focus once the image is ready. If drawing fails, a destructive `Alert` takes the preview's place and the only action is Back to results. The backdrop dims 45% (a local edit). Not for: a yes/no about something destructive (`AlertDialog`), a list of actions (`DropdownMenu`), a message (toast).
 ✗ A hand-made modal div with its own focus trap (four existed before step 11).
 States: open, with its focus inside; closing returns focus.
 
