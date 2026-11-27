@@ -96,17 +96,16 @@ export function Account({ available, onOpenChange, onMyRuns, onPlayer, history }
         // Until the menu's code arrives, the same button, inert.
         <Suspense
           fallback={
-            <Button variant="outline" aria-label={`Account: ${player.name}`} className="max-sm:px-2" isDisabled>
-              <Avatar name={player.name} label={player.name} />
+            <Button variant="outline" className="max-sm:px-2" isDisabled>
+              <Avatar name={player.name} label={player.name} account />
             </Button>
           }
         >
           <AccountMenu
             name={player.name}
             provider={PROVIDER_NAMES[player.provider]}
-            trigger={<Avatar name={player.name} label={player.name} />}
-            triggerLabel={`Account: ${player.name}`}
-            onAction={onAction}
+            trigger={<Avatar name={player.name} label={player.name} account />}
+              onAction={onAction}
             onOpenChange={setMenu}
             className="max-sm:px-2"
           />
@@ -160,13 +159,14 @@ export function Account({ available, onOpenChange, onMyRuns, onPlayer, history }
 }
 
 /** The initial in a circle, then the name (hidden on phones, where the button shows only the initial). */
-function Avatar({ name, label }: { name: string; label: string }) {
+function Avatar({ name, label, account }: { name: string; label: string; account?: boolean }) {
   return (
     <>
       <span className="grid size-5 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground" aria-hidden="true">
         {name.slice(0, 1).toUpperCase()}
       </span>
       <span className="max-w-40 truncate max-sm:sr-only">{label}</span>
+      {account && <span className="sr-only">, account</span>}
     </>
   )
 }

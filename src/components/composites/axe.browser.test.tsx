@@ -68,8 +68,8 @@ describe.each(THEME_IDS)('%s', (theme) => {
   })
 
   test('account menu', async () => {
-    await mount(<AccountMenu name="Ada Types" provider="GitHub" trigger="Ada Types" triggerLabel="Account: Ada Types" onAction={() => {}} />, theme)
-    await page.getByRole('button', { name: 'Account: Ada Types' }).click()
+    await mount(<AccountMenu name="Ada Types" provider="GitHub" trigger={<>Ada Types<span className="sr-only">, account</span></>} onAction={() => {}} />, theme)
+    await page.getByRole('button', { name: /^Ada Types\s*,\s*account$/ }).click()
     await expect.element(page.getByRole('menu')).toBeVisible()
     expect(await wcagViolations()).toEqual([])
   })

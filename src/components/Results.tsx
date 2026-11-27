@@ -10,6 +10,18 @@ import { Button } from '@/components/ui/button'
 import { Kbd } from '@/components/ui/kbd'
 import { Toggle } from '@/components/ui/toggle'
 import { Tip } from '@/components/composites/tip'
+import { InfoIcon } from 'lucide-react'
+
+/** What a stat means, in a tooltip on a small info button: reachable by keyboard and touch, unlike a title. */
+function Explain({ name, label }: { name: string; label: string }) {
+  return (
+    <Tip label={label}>
+      <Button variant="ghost" size="icon-xs" className="ml-0.5 size-4 align-[-2px] text-muted-foreground" aria-label={`About ${name}`}>
+        <InfoIcon />
+      </Button>
+    </Tip>
+  )
+}
 
 export interface TestInfo {
   language: string
@@ -114,8 +126,11 @@ export function Results({ result: r, isBest, info, run, highlight, onNext, onRet
           <dd className="num">{Math.round(r.rawWpm)}</dd>
         </div>
         <div>
-          <dt>characters</dt>
-          <dd className="num" title="typed right / wrong / from suggestions / auto-inserted">
+          <dt>
+            characters
+            <Explain name="characters" label="Typed right / wrong / from suggestions / auto-inserted" />
+          </dt>
+          <dd className="num">
             {/* <wbr>: on the narrowest screens the count may break after a slash. */}
             {r.correct}/<wbr />
             {r.incorrect}/<wbr />
@@ -125,8 +140,11 @@ export function Results({ result: r, isBest, info, run, highlight, onNext, onRet
           <dd className="sub">right / wrong / suggested / auto</dd>
         </div>
         <div>
-          <dt>consistency</dt>
-          <dd className="num" title="How steady your per-second speed was">
+          <dt>
+            consistency
+            <Explain name="consistency" label="How steady your per-second speed was" />
+          </dt>
+          <dd className="num">
             {pct(r.consistency)}
           </dd>
           {r.consistency === null && <dd className="sub">needs 3s or more</dd>}
@@ -140,14 +158,20 @@ export function Results({ result: r, isBest, info, run, highlight, onNext, onRet
 
       <dl className="r-row secondary">
         <div>
-          <dt>code speed</dt>
-          <dd className="num" title="Every right character on screen, including suggested and auto-inserted text">
+          <dt>
+            code speed
+            <Explain name="code speed" label="Every right character on screen, including suggested and auto-inserted text" />
+          </dt>
+          <dd className="num">
             {Math.round(r.codeWpm)} wpm
           </dd>
         </div>
         <div>
-          <dt>keys saved</dt>
-          <dd className="num" title="Keystrokes saved by accepting suggestions">
+          <dt>
+            keys saved
+            <Explain name="keys saved" label="Keystrokes saved by accepting suggestions" />
+          </dt>
+          <dd className="num">
             {r.keysSaved}
           </dd>
         </div>

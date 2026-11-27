@@ -7,6 +7,8 @@ interface Props {
   currentId: string
   onSelect: (id: string) => void
   onClose: () => void
+  /** What each row says at its end; the number of snippets unless given (My runs shows your run count). */
+  detail?: (lang: Language) => string
 }
 
 /**
@@ -32,7 +34,7 @@ const idOf = (l: Language) => l.id
 const textOf = (l: Language) => l.name
 
 /** A searchable list of languages in a modal, opened from the language button. */
-export function LanguagePicker({ languages, currentId, onSelect, onClose }: Props) {
+export function LanguagePicker({ languages, currentId, onSelect, onClose, detail = (l) => `${l.snippets.length} snippets` }: Props) {
   return (
     <Picker
       label="Choose a language"
@@ -52,7 +54,7 @@ export function LanguagePicker({ languages, currentId, onSelect, onClose }: Prop
           <span className="font-mono">{lang.name}</span>
           <span className="font-mono text-muted-foreground">.{lang.extension}</span>
           {lang.basedOn && <span className="text-xs text-muted-foreground">on {lang.basedOn}</span>}
-          <span className="ml-auto text-xs text-muted-foreground">{lang.snippets.length} snippets</span>
+          <span className="ml-auto text-xs text-muted-foreground">{detail(lang)}</span>
         </>
       )}
     />

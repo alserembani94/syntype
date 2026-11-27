@@ -21,7 +21,8 @@ export function Review({ run, highlight }: { run: Run; highlight: HighlightRules
           <i className="r-auto">a</i> auto-inserted
         </span>
       </div>
-      <pre className="review-code">
+      {/* Focusable, so the keyboard can scroll it sideways when lines are long (axe: scrollable-region-focusable). */}
+      <pre className="review-code" tabIndex={0} role="region" aria-label="Your code, as typed">
         {run.chars.map((ch, i) => {
           const s = run.states[i]
           if (s === 'bad') {

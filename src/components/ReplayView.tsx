@@ -3,7 +3,14 @@ import type { Language, Snippet } from '../languages'
 import type { LogEntry, TypingAids } from '../lib/runcore'
 import { buildReplay, frameAt, type Replay } from '../lib/replay'
 import { duration, speed as runSpeed } from '../lib/format'
+import { PauseIcon, PlayIcon, XIcon } from 'lucide-react'
+import { Choice } from '@/components/composites/choices'
+import { Crumbs } from '@/components/composites/crumbs'
+import { Tip } from '@/components/composites/tip'
+import { Button } from '@/components/ui/button'
+import { Slider } from '@/components/ui/slider'
 import { CodeView } from './CodeView'
+import { Note, ViewHead } from './ViewParts'
 
 interface Props {
   lang: Language
@@ -18,7 +25,7 @@ interface Props {
   onClose: () => void
 }
 
-const SPEEDS = [0.5, 1, 2, 4]
+const SPEEDS = (['0.5', '1', '2', '4'] as const).map((s) => ({ id: s, label: `${s}×` }))
 
 /** Plays a run back in the editor at its own pace, mistakes and all. */
 export function ReplayView({ lang, snippet, run, loadLog, crumbs, by, onClose }: Props) {
@@ -39,6 +46,7 @@ export function ReplayView({ lang, snippet, run, loadLog, crumbs, by, onClose }:
   const [t, setT] = useState(0)
   const [playing, setPlaying] = useState(true)
   const [speed, setSpeed] = useState(1)
+  const when = new Date(run.finishedAt).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
   const last = useRef<number | null>(null)
 
   useEffect(() => {
@@ -71,15 +79,23 @@ export function ReplayView({ lang, snippet, run, loadLog, crumbs, by, onClose }:
   const frame = useMemo(() => (replay && replay !== 'missing' ? frameAt(replay, t) : null), [replay, t])
 
   return (
-    <section className="runs" aria-labelledby="replay-title">
-      <div className="runs-head">
-        <nav className="crumbs" aria-label="Breadcrumb">
-          {crumbs.join(' › ')} › <b id="replay-title">replay{by ? ` of ${by}` : ''} from {new Date(run.finishedAt).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</b>
-        </nav>
-        <button type="button" className="btn" onClick={onClose}>
-          ✕ close
-        </button>
-      </div>
+    <section className="grid min-w-0 gap-4" aria-labelledby="replay-title">
+      <ViewHead
+        action={
+          <Tip label="Close the replay" shortcut="Esc">
+            <Button variant="outline" onPress={onClose}>
+              <XIcon />
+              Close
+            </Button>
+          </Tip>
+        }
+      >
+        <Crumbs
+          trail={crumbs.map((label, i) => ({ label, onPress: i === crumbs.length - 1 ? onClose : undefined }))}
+          currentId="replay-title"
+          current={`replay${by ? ` of ${by}` : ''} from ${when}`}
+        />
+      </ViewHead>
       <div className="pane replay" style={{ '--tab-size': lang.indentSize ?? 2 } as React.CSSProperties}>
         <div className="tabbar">
           <div className="tab">
@@ -91,48 +107,45 @@ export function ReplayView({ lang, snippet, run, loadLog, crumbs, by, onClose }:
           </span>
         </div>
         {replay === 'missing' ? (
-          <p className="runs-note">This run’s keystrokes weren’t kept, so it can’t be replayed.</p>
+          <div className="p-4">
+            <Note title="No replay">This run’s keystrokes weren’t kept, so it can’t be replayed.</Note>
+          </div>
         ) : frame && replay ? (
           <>
             <CodeView code={snippet.code} highlight={lang.highlight} run={frame.run} typing smoothCaret markSuggested />
-            <div className="statusbar replay-controls">
-              <button
-                type="button"
-                className="btn"
-                aria-label={playing ? 'Pause' : 'Play'}
-                onClick={() => {
-                  if (!playing && t >= replay.duration) setT(0)
-                  setPlaying(!playing)
-                }}
-              >
-                {playing ? '❚❚' : '▶'}
-              </button>
-              <span className="speeds" role="group" aria-label="Speed">
-                {SPEEDS.map((s) => (
-                  <button key={s} type="button" className="chip" aria-pressed={speed === s} onClick={() => setSpeed(s)}>
-                    {s}×
-                  </button>
-                ))}
-              </span>
-              <input
-                className="scrub"
-                type="range"
-                min={0}
-                max={Math.max(1, Math.round(replay.duration))}
-                value={Math.round(t)}
+            <div className="flex flex-wrap items-center gap-3 border-t bg-muted px-3 py-2 font-mono text-xs text-muted-foreground">
+              <Tip label={playing ? 'Pause' : 'Play'}>
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  aria-label={playing ? 'Pause' : 'Play'}
+                  onPress={() => {
+                    if (!playing && t >= replay.duration) setT(0)
+                    setPlaying(!playing)
+                  }}
+                >
+                  {playing ? <PauseIcon /> : <PlayIcon />}
+                </Button>
+              </Tip>
+              <Choice label="Speed" options={SPEEDS} value={String(speed) as (typeof SPEEDS)[number]['id']} onChange={(v) => setSpeed(Number(v))} />
+              <Slider
                 aria-label="Position in the replay"
-                onChange={(e) => {
+                className="min-w-32 flex-1"
+                minValue={0}
+                maxValue={Math.max(1, Math.round(replay.duration))}
+                value={Math.round(t)}
+                onChange={(v) => {
                   setPlaying(false)
-                  setT(Number(e.target.value))
+                  setT(v as number)
                 }}
               />
-              <span className="time">
+              <span className="tabular-nums">
                 {duration(t / 1000)} / {duration(replay.duration / 1000)}
               </span>
             </div>
           </>
         ) : (
-          <div aria-busy="true" />
+          <div className="min-h-48" aria-busy="true" aria-label="Loading the replay" />
         )}
       </div>
     </section>

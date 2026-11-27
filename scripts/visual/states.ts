@@ -93,14 +93,17 @@ async function holdReplay(page: Page) {
   await slider.waitFor()
   const pauseButton = page.getByRole('button', { name: 'Pause' })
   if (await pauseButton.count()) await pauseButton.click()
-  const max = Number(await slider.getAttribute('max'))
-  await slider.fill(String(Math.round(max * 0.4)))
+  // React Aria's slider: Home, then four pages of a tenth each.
+  await slider.focus()
+  await page.keyboard.press('Home')
+  for (let i = 0; i < 4; i++) await page.keyboard.press('PageUp')
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
 }
 
 const openAccount = async (page: Page) => {
   await page.goto('/python')
   await fontsLoaded(page)
-  await page.getByRole('button', { name: /^Account: / }).click()
+  await page.getByRole('button', { name: /,\s*account$/ }).click()
   await page.getByRole('menu').waitFor()
 }
 
@@ -279,7 +282,7 @@ export const STATES: State[] = [
     area: 'Leaderboards',
     title: 'A board, with your place below the top 15',
     signedIn: true,
-    open: (p) => p.goto('/leaderboard?lang=python&length=short&snippet=clamp.py').then(() => p.locator('tr.mine').waitFor()),
+    open: (p) => p.goto('/leaderboard?lang=python&length=short&snippet=clamp.py').then(() => p.locator('tr[data-mine]').waitFor()),
   },
   {
     id: 'board-report',

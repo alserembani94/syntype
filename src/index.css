@@ -17,30 +17,13 @@ header.top { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
 .top-actions { margin-left: auto; display: flex; gap: 6px; align-items: center; }
 
 /* The row above the editor: everything that changes the run. */
-.seg { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 4px; }
 
 /* Keyboard hints, under the editor. */
 .hint { margin: -6px 0 0; font: 13px var(--font-sans); color: var(--muted-foreground); }
 .hint.attention { color: var(--primary); }
 .brand h1 { font-family: var(--font-display); font-weight: 700; font-size: 28px; margin: 0; letter-spacing: -0.02em; }
 .brand h1 span { color: var(--primary); }
-
-.chip {
-  font: 500 13px var(--font-sans); color: var(--muted-foreground); background: transparent; border: 0; border-radius: 7px;
-  padding: 6px 10px; cursor: pointer;
-}
-.chip:hover { color: var(--foreground); }
-.chip[aria-pressed="true"] { color: var(--primary); background: var(--accent); }
-.chip:focus-visible, .btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-
-.lang-button {
-  display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 10px; border-radius: 99px;
-  border: 1px solid var(--border); background: var(--card); color: var(--foreground); cursor: pointer;
-  font: 500 14px var(--font-mono);
-}
-.lang-button:hover { border-color: var(--primary); }
-.lang-button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-.lang-button .lang-icon { color: var(--primary); font-weight: 700; font-size: 12px; }
+.btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
 /* The app's own key caps; shadcn's Kbd (data-slot) styles itself. */
 kbd:not([data-slot]) { font: 600 11px var(--font-mono); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; color: var(--foreground); background: var(--card); }
@@ -81,7 +64,15 @@ span.c { color: color-mix(in srgb, var(--tc, var(--foreground)) var(--a), transp
 .kw { --tc: var(--code-keyword); color: var(--tc); } .str { --tc: var(--code-string); color: var(--tc); } .num { --tc: var(--code-number); color: var(--tc); }
 .fn { --tc: var(--code-function); color: var(--tc); } .ty { --tc: var(--code-type); color: var(--tc); } .com { --tc: var(--code-comment); color: var(--tc); font-style: italic; } .pun { --tc: var(--code-punctuation); color: var(--tc); }
 
-.hidden-input { position: absolute; opacity: 0; width: 1px; height: 1px; top: 0; left: 0; border: 0; padding: 0; resize: none; }
+/*
+ * The editor's input sits inside the code area, so keyboard users can reach the area when it
+ * scrolls sideways on a phone (axe: scrollable-region-focusable). Sticky across the whole row,
+ * it stays in the visible corner, so the browser never scrolls the code to show it when it takes
+ * focus or is typed into. The gutter and code are placed explicitly, so it takes no grid cell.
+ */
+.hidden-input { position: sticky; top: 0; left: 0; grid-area: 1 / 1 / 2 / -1; align-self: start; justify-self: start; opacity: 0; width: 1px; height: 1px; margin-bottom: -1px; border: 0; padding: 0; resize: none; }
+.scroller > .gutter { grid-area: 1 / 1; }
+.scroller > .code { grid-area: 1 / 2; }
 
 .statusbar { display: flex; gap: 18px; flex-wrap: wrap; padding: 7px 14px; border-top: 1px solid var(--border); background: var(--muted); font: 12px var(--font-mono); color: var(--muted-foreground); }
 .statusbar .push { margin-left: auto; }
@@ -288,15 +279,6 @@ svg.chart .er path { stroke: var(--destructive); stroke-width: 2; stroke-linecap
 @media (max-width: 640px) { .about.open .about-columns { grid-template-columns: minmax(0, 1fr); } }
 
 /* My runs: the personal board (RunsView). */
-.runs { display: grid; gap: 16px; min-width: 0; }
-.runs h2 { font: 700 24px var(--font-display); margin: 0; letter-spacing: -0.01em; overflow-wrap: anywhere; }
-.runs-sub { margin: 2px 0 0; font-size: 14px; color: var(--muted-foreground); }
-.runs-note { margin: 0; padding: 18px; color: var(--muted-foreground); background: var(--card); border: 1px dashed var(--border); border-radius: 12px; }
-.runs-muted { color: var(--muted-foreground); font-size: 12px; }
-.runs-problem { color: var(--destructive); font-size: 12px; cursor: help; }
-.runs .link { border: 0; padding: 0; background: none; cursor: pointer; color: var(--primary); font: inherit; font-size: 13px; }
-.runs .link:hover { text-decoration: underline; }
-.runs .link:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 3px; }
 .btn {
   font: 500 13px var(--font-sans); padding: 7px 12px; border-radius: 8px; cursor: pointer;
   border: 1px solid var(--border); background: var(--card); color: var(--foreground);
@@ -305,85 +287,14 @@ svg.chart .er path { stroke: var(--destructive); stroke-width: 2; stroke-linecap
 .btn.accent { border-color: var(--primary); color: var(--primary); }
 .btn.danger { color: var(--destructive); }
 .btn.danger:hover { border-color: var(--destructive); }
-.runs .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.runs .card { display: grid; gap: 2px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; min-width: 0; }
-.runs .k { font: 13px var(--font-mono); color: var(--muted-foreground); }
-.runs .v { font: 700 28px var(--font-display); color: var(--primary); font-variant-numeric: tabular-nums; line-height: 1.15; }
-.runs .v.plain { color: var(--foreground); font-size: 22px; }
-.runs .s { font-size: 12px; color: var(--muted-foreground); overflow-wrap: anywhere; }
-.lang-chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.lang-chip {
-  font: 13px var(--font-mono); padding: 5px 11px; border-radius: 999px; cursor: pointer;
-  border: 1px solid var(--border); background: var(--card); color: var(--muted-foreground);
-}
-.lang-chip small { margin-left: 5px; opacity: .75; }
-.lang-chip:hover { color: var(--foreground); }
-.lang-chip[aria-pressed="true"] { border-color: var(--primary); color: var(--primary); background: var(--accent); }
-.lang-chip.more { border-style: dashed; }
-.lang-chip:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-.runs-filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-.aids-filter { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.aids-filter .label { font-size: 13px; color: var(--muted-foreground); }
-.runs-table-wrap { overflow-x: auto; }
-.runs-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-.runs-table th { font: 600 11px var(--font-sans); letter-spacing: .07em; text-transform: uppercase; color: var(--muted-foreground); text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-.runs-table td { padding: 10px 16px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-.runs-table tr:last-child td { border-bottom: 0; }
-.runs-table td.name { font: 14px var(--font-mono); }
-.runs-table td.stat { font: 600 15px var(--font-display); font-variant-numeric: tabular-nums; color: var(--foreground); }
-.runs-table td.best { font: 700 17px var(--font-display); color: var(--primary); font-variant-numeric: tabular-nums; }
-.runs-table td.trend { color: var(--primary); }
-.runs-table tr.clickable { cursor: pointer; }
-.runs-table tr.clickable:hover td { background: var(--muted); }
-.runs-table tr.unplayed td { color: var(--muted-foreground); }
-.best-mark { font: 600 10px var(--font-sans); color: var(--success); border: 1px solid var(--success); border-radius: 999px; padding: 0 6px; margin-left: 6px; vertical-align: 2px; }
-.aid-tags { display: inline-flex; gap: 3px; }
-.aid-tags i { font: 600 10px var(--font-mono); font-style: normal; border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; color: var(--muted-foreground); }
-.aid-tags i.off { opacity: .4; text-decoration: line-through; }
-.spark { display: block; }
-.runs-storage { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted-foreground); }
-.runs-storage .confirm { display: inline-flex; gap: 6px; align-items: center; }
-.runs-message { flex-basis: 100%; color: var(--foreground); }
 /* The global leaderboards (LeaderboardView). */
-.boards .runs-head h2 { margin: 0; }
-.boards .runs-head p { margin: 0; flex-basis: 100%; }
-.runs-note.problem { color: var(--destructive); }
-.board-table td.rank { font: 700 15px var(--font-display); color: var(--muted-foreground); width: 1%; }
-.board-table tr.mine td { background: var(--accent); }
-.board-table tr.gap td { text-align: center; color: var(--muted-foreground); padding: 6px; font-size: 12px; letter-spacing: .02em; }
-.icon-link { border: 0; background: none; cursor: pointer; color: var(--muted-foreground); font-size: 14px; padding: 2px 6px; border-radius: 6px; }
-.icon-link:hover, .icon-link:focus-visible { color: var(--destructive); background: var(--destructive-muted); outline: none; }
-.tag-archived { font: 600 10px var(--font-sans); color: var(--muted-foreground); border: 1px solid var(--border); border-radius: 999px; padding: 1px 7px; margin-left: 8px; }
-.archived h3 { margin: 6px 0 4px; font: 700 15px var(--font-display); }
-.archived p { margin: 0 0 8px; }
-.archived ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
 .field textarea { font: 14px var(--font-sans); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--muted); color: var(--foreground); resize: vertical; }
 .field textarea:focus { outline: 2px solid var(--primary); outline-offset: 1px; border-color: var(--primary); }
-.runs-head { display: flex; gap: 12px; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; }
-.crumbs { font: 13px var(--font-mono); color: var(--muted-foreground); }
-.crumbs b { color: var(--foreground); font-weight: 600; }
-.crumbs .link { font: 13px var(--font-mono); }
-.runs-detail { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 14px; }
-.runs-chart, .runs-summary { padding: 16px; }
-.runs-summary { display: grid; gap: 14px; align-content: start; }
-.runs-summary > div { display: grid; gap: 2px; }
 .runs-svg { margin-top: 8px; }
 svg.chart .runs-line { fill: none; stroke: var(--muted-foreground); stroke-opacity: .45; stroke-width: 1.5; }
 svg.chart .runs-dot { fill: var(--muted-foreground); }
 svg.chart .runs-dot.best { fill: var(--primary); }
 .replay .editor { pointer-events: none; }
-.replay-controls { align-items: center; gap: 12px; font-family: var(--font-mono); }
-.replay-controls .btn { padding: 3px 10px; font-size: 12px; }
-.replay-controls .speeds { display: inline-flex; gap: 2px; }
-.replay-controls .speeds .chip { padding: 2px 8px; font-size: 12px; }
-.replay-controls .scrub { flex: 1; min-width: 120px; accent-color: var(--primary); }
-.replay-controls .time { white-space: nowrap; }
-@media (max-width: 760px) {
-  .runs .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .runs-detail { grid-template-columns: minmax(0, 1fr); }
-  .runs-table .wide { display: none; }
-  .runs-table th, .runs-table td { padding: 9px 10px; }
-}
 @media (max-width: 640px) {
   header.top { gap: 12px; }
 }

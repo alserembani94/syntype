@@ -4,8 +4,8 @@ import { mount } from '@/test/mount'
 import { AccountMenu, type AccountAction } from './account-menu'
 
 const open = (onAction = vi.fn<(a: AccountAction) => void>()) =>
-  mount(<AccountMenu name="Ada Types" provider="GitHub" trigger="Ada Types" triggerLabel="Account: Ada Types" onAction={onAction} />)
-const button = () => page.getByRole('button', { name: 'Account: Ada Types' })
+  mount(<AccountMenu name="Ada Types" provider="GitHub" trigger={<>Ada Types<span className="sr-only">, account</span></>} onAction={onAction} />)
+const button = () => page.getByRole('button', { name: /^Ada Types\s*,\s*account$/ })
 
 describe('AccountMenu', () => {
   test.each(['{Enter}', ' ', '{ArrowDown}'])('opens from the button with %s, focus on the first item', async (key) => {

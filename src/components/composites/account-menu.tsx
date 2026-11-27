@@ -14,10 +14,11 @@ export interface AccountMenuProps {
   /** The player's name, and how they signed in ("GitHub"). */
   name: string
   provider: string
-  /** The button's content: avatar and name. */
+  /**
+   * The button's content: avatar and name. It is the button's accessible name too (no aria-label,
+   * so the name starts with what's visible: WCAG 2.5.3); end it with a screen-reader-only ", account".
+   */
   trigger: ReactNode
-  /** The button's accessible name ("Account: Ada Types"). */
-  triggerLabel: string
   onAction: (action: AccountAction) => void
   /** The menu opened or closed (the game pauses while it's open). */
   onOpenChange?: (open: boolean) => void
@@ -25,10 +26,10 @@ export interface AccountMenuProps {
   className?: string
 }
 
-export function AccountMenu({ name, provider, trigger, triggerLabel, onAction, onOpenChange, className }: AccountMenuProps) {
+export function AccountMenu({ name, provider, trigger, onAction, onOpenChange, className }: AccountMenuProps) {
   return (
     <DropdownMenuTrigger onOpenChange={onOpenChange}>
-      <Button variant="outline" aria-label={triggerLabel} className={className}>
+      <Button variant="outline" className={className}>
         {trigger}
       </Button>
       <DropdownMenu placement="bottom end" className="w-56" onAction={(key) => onAction(key as AccountAction)}>

@@ -136,23 +136,28 @@ export const CodeView = memo(function CodeView({
       ref={editorRef}
       className={`editor${typing ? ' typing' : ''}${overlay ? ' unfocused' : ''}${smoothCaret ? ' smooth' : ''}`}
       onClick={() => inputRef?.current?.focus({ preventScroll: true })}>
-      {!readOnly && (
-        <textarea
-          ref={inputRef}
-          id="type-input"
-          className="hidden-input"
-          // The app's own key handler types for it (src/lib/keyTarget.ts leaves it to the app).
-          data-typing-input=""
-          defaultValue={SENTINEL}
-          onInput={handleInput}
-          autoCapitalize="off"
-          autoComplete="off"
-          autoCorrect="off"
-          spellCheck={false}
-          aria-label="Type the code here"
-        />
-      )}
-      <div className="scroller" ref={scrollerRef}>
+      <div
+        className="scroller"
+        ref={scrollerRef}
+        // A replay has no input inside, so the area itself takes focus for the keyboard to scroll it.
+        {...(readOnly ? { tabIndex: 0, role: 'region', 'aria-label': 'Code' } : {})}
+      >
+        {!readOnly && (
+          <textarea
+            ref={inputRef}
+            id="type-input"
+            className="hidden-input"
+            // The app's own key handler types for it (src/lib/keyTarget.ts leaves it to the app).
+            data-typing-input=""
+            defaultValue={SENTINEL}
+            onInput={handleInput}
+            autoCapitalize="off"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            aria-label="Type the code here"
+          />
+        )}
         <pre className="gutter" aria-hidden="true">
           {Array.from({ length: lineCount }, (_, i) => i + 1).join('\n')}
         </pre>

@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react'
 import { describe, expect, test, vi } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { LabelledCheckbox, LabelledSwitch } from '@/components/composites/labelled'
-import { Tip } from '@/components/composites/tip'
+import { Shortcut, Tip } from '@/components/composites/tip'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { ownsKey } from '@/lib/keyTarget'
@@ -177,5 +177,20 @@ describe('labelled switch and checkbox', () => {
     expect(onChange).toHaveBeenCalledWith(true)
     await page.getByText('Show me on the leaderboards').click()
     await expect.element(page.getByRole('checkbox', { name: 'Show me on the leaderboards' })).not.toBeChecked()
+  })
+})
+
+describe('shortcut keys', () => {
+  test.each([
+    ['Enter', ['Enter']],
+    ['Esc', ['Esc']],
+    ['R', ['R']],
+    ['Ctrl+Shift+L', ['Ctrl', 'Shift', 'L']],
+    ['⌘⇧L', ['⌘', '⇧', 'L']],
+    ['⌘↩', ['⌘', '↩']],
+    ['Ctrl+K, then T', ['Ctrl', 'K', 'T']],
+  ])('%s shows as %j', async (keys, shown) => {
+    await mount(<Shortcut keys={keys} />)
+    expect([...document.querySelectorAll('[data-slot="kbd"]')].map((k) => k.textContent)).toEqual(shown)
   })
 })

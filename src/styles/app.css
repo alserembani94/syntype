@@ -11,6 +11,9 @@
 @source not "../components/ui";
 @source not "../components/composites";
 @source "../components/composites/account-menu.tsx";
+@source "../components/composites/choices.tsx";
+@source "../components/composites/crumbs.tsx";
+@source "../components/composites/data-table.tsx";
 @source "../components/composites/labelled.tsx";
 @source "../components/composites/picker.tsx";
 @source "../components/composites/report-dialog.tsx";
@@ -18,11 +21,16 @@
 @source "../components/composites/toast.tsx";
 @source "../components/composites/use-toast.ts";
 @source "../components/ui/alert.tsx";
+@source "../components/ui/alert-dialog.tsx";
+@source "../components/ui/badge.tsx";
+@source "../components/ui/breadcrumb.tsx";
 @source "../components/ui/button.tsx";
+@source "../components/ui/card.tsx";
 @source "../components/ui/checkbox.tsx";
 @source "../components/ui/command.tsx";
 @source "../components/ui/dialog.tsx";
 @source "../components/ui/dropdown-menu.tsx";
+@source "../components/ui/empty.tsx";
 @source "../components/ui/field.tsx";
 @source "../components/ui/input.tsx";
 @source "../components/ui/input-group.tsx";
@@ -30,6 +38,8 @@
 @source "../components/ui/label.tsx";
 @source "../components/ui/radio-group.tsx";
 @source "../components/ui/separator.tsx";
+@source "../components/ui/skeleton.tsx";
+@source "../components/ui/slider.tsx";
 @source "../components/ui/switch.tsx";
 @source "../components/ui/textarea.tsx";
 @source "../components/ui/toggle.tsx";

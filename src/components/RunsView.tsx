@@ -1,19 +1,28 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { PlayIcon } from 'lucide-react'
+import { Choice, Toggles } from '@/components/composites/choices'
+import { Crumbs } from '@/components/composites/crumbs'
+import { DataTable, DataTableBody, DataTableCell, DataTableHead, DataTableHeader, DataTableRow } from '@/components/composites/data-table'
+import { Tip } from '@/components/composites/tip'
+import { useToast } from '@/components/composites/use-toast'
+import { AlertDialog, AlertDialogCancel, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 import { AidTags } from './AidTags'
+import { LanguagePicker } from './LanguagePicker'
+import { LanguageButton, Mark, Muted, Note, Stat, TableSkeleton, ViewHead, ViewTitle } from './ViewParts'
 import type { Language, SnippetLength } from '../languages'
+import { AIDS } from '../lib/aids'
 import { keepSafe, snippetKey, storageInfo, type History, type StoredRun } from '../lib/history'
 import { fingerprint } from '../lib/runlog'
-import {
-  matchesAids,
-  overview,
-  snippetStats,
-  type AidsFilter,
-} from '../lib/board'
+import { matchesAids, overview, snippetStats, type AidsFilter } from '../lib/board'
 import { duration, runTime, speed, whenPlayed } from '../lib/format'
+import type { TypingAids } from '../lib/runcore'
 import { ReplayView } from './ReplayView'
 import { useAddressPlace, type AddressSpec } from '../hooks/useAddressPlace'
 
-const LENGTHS: SnippetLength[] = ['short', 'medium', 'long']
+const LENGTHS = (['short', 'medium', 'long'] as const).map((l) => ({ id: l, label: l }))
 
 interface Props {
   languages: Language[]
@@ -74,16 +83,22 @@ export function RunsView({ languages, history, language, length, onLanguage, onL
 
   if (store === null) {
     return (
-      <section className="runs">
-        <h2>My runs</h2>
-        <p className="runs-note">
-          This browser isn't letting Syntype save runs on this device (a private window, or storage turned off), so
-          there's nothing to show. Typing still works as usual.
-        </p>
+      <section className="grid min-w-0 gap-4">
+        <ViewTitle>My runs</ViewTitle>
+        <Note title="Nothing saved on this device">
+          This browser isn't letting Syntype save runs on this device (a private window, or storage turned off), so there's nothing to show. Typing still works as usual.
+        </Note>
       </section>
     )
   }
-  if (!runs || store === undefined) return <section className="runs" aria-busy="true" />
+  if (!runs || store === undefined) {
+    return (
+      <section className="grid min-w-0 gap-4">
+        <ViewTitle>My runs</ViewTitle>
+        <TableSkeleton columns={6} />
+      </section>
+    )
+  }
 
   const snippetRuns = (name: string) => {
     const key = prints[name] && snippetKey({ language: lang.id, snippet: name, fingerprint: prints[name] })
@@ -141,46 +156,35 @@ export function RunsView({ languages, history, language, length, onLanguage, onL
   )
 }
 
-function AidsChips({ value, onChange }: { value: AidsFilter; onChange: (f: AidsFilter) => void }) {
+
+const AID_OPTIONS = AIDS.map((a) => ({ id: a.id, label: a.name }))
+const FILTERS = [
+  { id: 'any', label: 'any' },
+  { id: 'on', label: 'all on' },
+  { id: 'off', label: 'all off' },
+  { id: 'custom', label: 'custom' },
+] as const
+
+/** Which runs to count by their typing aids: any, all on, all off, or exactly a chosen set. */
+function AidsFilterBar({ value, onChange }: { value: AidsFilter; onChange: (f: AidsFilter) => void }) {
   const custom = typeof value === 'object' ? value : null
-  const toggle = (k: 'autoIndent' | 'autoClose' | 'autocomplete') => custom && onChange({ ...custom, [k]: !custom[k] })
   return (
-    <div className="aids-filter" role="group" aria-label="Typing aids">
-      <span className="label">typing aids</span>
-      <div className="seg">
-        {(['any', 'on', 'off'] as const).map((f) => (
-          <button key={f} type="button" className="chip" aria-pressed={value === f} onClick={() => onChange(f)}>
-            {f === 'any' ? 'any' : f === 'on' ? 'all on' : 'all off'}
-          </button>
-        ))}
-        <button
-          type="button"
-          className="chip"
-          aria-pressed={!!custom}
-          onClick={() => onChange(custom ?? { autoIndent: true, autoClose: true, autocomplete: false })}
-        >
-          custom
-        </button>
-      </div>
-      {custom && (
-        <div className="seg">
-          <button type="button" className="chip" aria-pressed={custom.autoIndent} onClick={() => toggle('autoIndent')}>
-            auto-indent
-          </button>
-          <button type="button" className="chip" aria-pressed={custom.autoClose} onClick={() => toggle('autoClose')}>
-            auto-close
-          </button>
-          <button type="button" className="chip" aria-pressed={custom.autocomplete} onClick={() => toggle('autocomplete')}>
-            autocomplete
-          </button>
-        </div>
-      )}
+    <div className="flex flex-wrap items-center gap-2">
+      <Muted className="text-sm">typing aids</Muted>
+      <Choice
+        label="Typing aids"
+        outline
+        options={FILTERS}
+        value={custom ? 'custom' : (value as 'any' | 'on' | 'off')}
+        onChange={(f) => onChange(f === 'custom' ? { autoIndent: true, autoClose: true, autocomplete: false } : f)}
+      />
+      {custom && <Toggles label="Exactly these aids" options={AID_OPTIONS} on={custom} onToggle={(id: keyof TypingAids) => onChange({ ...custom, [id]: !custom[id] })} />}
     </div>
   )
 }
 
 function Sparkline({ values }: { values: number[] }) {
-  if (values.length < 2) return <span className="runs-muted">{values.length ? 'one run' : ''}</span>
+  if (values.length < 2) return <Muted>{values.length ? 'one run' : ''}</Muted>
   const w = 90
   const h = 22
   const lo = Math.min(...values)
@@ -188,11 +192,15 @@ function Sparkline({ values }: { values: number[] }) {
   const y = (v: number) => (hi === lo ? h / 2 : h - 3 - ((v - lo) / (hi - lo)) * (h - 6))
   const pts = values.map((v, i) => `${((i / (values.length - 1)) * w).toFixed(1)},${y(v).toFixed(1)}`).join(' ')
   return (
-    <svg className="spark" width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-label={`last ${values.length} runs: ${values.map(Math.round).join(', ')} wpm`}>
+    <svg className="block text-primary" width={w} height={h} viewBox={`0 0 ${w} ${h}`} role="img" aria-label={`last ${values.length} runs: ${values.map(Math.round).join(', ')} wpm`}>
       <polyline points={pts} fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
     </svg>
   )
 }
+
+/** The figures in a table: the best in the brand colour, the rest plain. */
+const BEST = 'font-display text-base font-bold text-primary'
+const FIGURE = 'font-display text-[0.9375rem] font-semibold'
 
 interface OverviewProps {
   languages: Language[]
@@ -210,19 +218,17 @@ interface OverviewProps {
 
 function Overview({ languages, lang, length, runs, snippetRuns, store, onLanguage, onLength, onOpen, onType, onChanged }: OverviewProps) {
   const [aids, setAids] = useState<AidsFilter>('any')
-  const [showAll, setShowAll] = useState(false)
+  const [picking, setPicking] = useState(false)
   const o = overview(runs, length)
   const counts = useMemo(() => {
     const c = new Map<string, number>()
     for (const r of runs) c.set(r.language, (c.get(r.language) ?? 0) + 1)
     return c
   }, [runs])
-  const played = languages.filter((l) => counts.has(l.id)).sort((a, b) => counts.get(b.id)! - counts.get(a.id)!)
-  const unplayed = languages.filter((l) => !counts.has(l.id))
-  const shown = showAll ? [...played, ...unplayed] : played.includes(lang) ? played : [...played, lang]
   const since = runs.length ? runs.reduce((a, r) => (r.finishedAt < a ? r.finishedAt : a), runs[0].finishedAt) : null
   const bestLang = o.best && languages.find((l) => l.id === o.best!.language)
   const change = o.last10 !== null && o.previous10 !== null ? o.last10 - o.previous10 : null
+  const first = lang.snippets.find((s) => s.length === length)!.name
 
   const rows = lang.snippets
     .filter((s) => s.length === length)
@@ -230,124 +236,116 @@ function Overview({ languages, lang, length, runs, snippetRuns, store, onLanguag
     .sort((a, b) => (b.stats?.best?.wpm ?? -1) - (a.stats?.best?.wpm ?? -1) || (b.stats ? 1 : 0) - (a.stats ? 1 : 0) || a.name.localeCompare(b.name))
 
   return (
-    <section className="runs" aria-labelledby="runs-title">
-      <div>
-        <h2 id="runs-title">My runs</h2>
-        <p className="runs-sub">
+    <section className="grid min-w-0 gap-4" aria-labelledby="runs-title">
+      <ViewHead>
+        <ViewTitle id="runs-title">My runs</ViewTitle>
+        <p className="m-0 text-sm text-muted-foreground">
           Saved in this browser only.
           {since && ` ${runs.length} ${runs.length === 1 ? 'run' : 'runs'} since ${new Date(since).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}.`}
         </p>
-      </div>
+      </ViewHead>
 
       {runs.length === 0 ? (
-        <p className="runs-note">
-          No runs yet. Every snippet you finish is saved here, with its speed, accuracy and a replay. <button type="button" className="link" onClick={() => onType(lang.snippets.find((s) => s.length === length)!.name)}>Start typing</button>
-        </p>
+        <Note title="No runs yet" action={<Button onPress={() => onType(first)}>Start typing</Button>}>
+          Every snippet you finish is saved here, with its speed, accuracy and a replay.
+        </Note>
       ) : (
-        <div className="cards">
-          <div className="card">
-            <span className="k">runs</span>
-            <span className="v">{o.runs}</span>
-            <span className="s">across {o.languages} {o.languages === 1 ? 'language' : 'languages'}</span>
-          </div>
-          <div className="card">
-            <span className="k">time typing</span>
-            <span className="v">{duration(o.seconds)}</span>
-            <span className="s">pauses not counted</span>
-          </div>
-          <div className="card">
-            <span className="k">best ({length})</span>
-            <span className="v">{o.best ? `${Math.round(o.best.wpm)} wpm` : '–'}</span>
-            <span className="s">{o.best ? `${o.best.snippet} · ${bestLang?.name ?? o.best.language}` : `no accurate ${length} run yet`}</span>
-          </div>
-          <div className="card">
-            <span className="k">last 10 runs</span>
-            <span className="v">{o.last10 !== null ? `${Math.round(o.last10)} wpm` : '–'}</span>
-            <span className="s">
-              {change === null ? 'compared once you have 20 runs' : `${change >= 0 ? 'up' : 'down'} ${Math.abs(Math.round(change))} from the 10 before`}
-            </span>
-          </div>
+        <div className="grid grid-cols-4 gap-3 max-md:grid-cols-2">
+          <Stat label="runs" value={o.runs} note={`across ${o.languages} ${o.languages === 1 ? 'language' : 'languages'}`} />
+          <Stat label="time typing" value={duration(o.seconds)} note="pauses not counted" />
+          <Stat label={`best (${length})`} value={o.best ? `${Math.round(o.best.wpm)} wpm` : '–'} note={o.best ? `${o.best.snippet} · ${bestLang?.name ?? o.best.language}` : `no accurate ${length} run yet`} />
+          <Stat
+            label="last 10 runs"
+            value={o.last10 !== null ? `${Math.round(o.last10)} wpm` : '–'}
+            note={change === null ? 'compared once you have 20 runs' : `${change >= 0 ? 'up' : 'down'} ${Math.abs(Math.round(change))} from the 10 before`}
+          />
         </div>
       )}
 
-      <div className="lang-chips" role="group" aria-label="Language">
-        {shown.map((l) => (
-          <button key={l.id} type="button" className="lang-chip" aria-pressed={l.id === lang.id} onClick={() => onLanguage(l.id)}>
-            {l.name}
-            {counts.has(l.id) && <small>{counts.get(l.id)}</small>}
-          </button>
-        ))}
-        {!showAll && unplayed.length > (played.includes(lang) ? 0 : 1) && (
-          <button type="button" className="lang-chip more" onClick={() => setShowAll(true)}>
-            + {unplayed.length - (played.includes(lang) ? 0 : 1)} not played
-          </button>
-        )}
+      <div className="flex flex-wrap items-center gap-2">
+        <LanguageButton name={lang.name} onPress={() => setPicking(true)} />
+        <Choice label="Length" options={LENGTHS} value={length} onChange={onLength} />
+        <AidsFilterBar value={aids} onChange={setAids} />
       </div>
+      {picking && (
+        <LanguagePicker
+          languages={languages}
+          currentId={lang.id}
+          detail={(l) => {
+            const n = counts.get(l.id)
+            return n ? `${n} ${n === 1 ? 'run' : 'runs'}` : ''
+          }}
+          onSelect={(id) => {
+            setPicking(false)
+            onLanguage(id)
+          }}
+          onClose={() => setPicking(false)}
+        />
+      )}
 
-      <div className="runs-filters">
-        <div className="seg" role="group" aria-label="Length">
-          {LENGTHS.map((l) => (
-            <button key={l} type="button" className="chip" aria-pressed={l === length} onClick={() => onLength(l)}>
-              {l}
-            </button>
-          ))}
-        </div>
-        <AidsChips value={aids} onChange={setAids} />
-      </div>
-
-      <div className="pane runs-table-wrap">
-        <table className="runs-table">
-          <thead>
+      <Card className="py-0">
+        <DataTable>
+          <DataTableHeader>
             <tr>
-              <th>Snippet</th>
-              <th>Best</th>
-              <th>Average</th>
-              <th>Accuracy</th>
-              <th>Runs</th>
-              <th className="wide">Trend</th>
-              <th className="wide">Last played</th>
-              <th aria-label="Action" />
+              <DataTableHead>Snippet</DataTableHead>
+              <DataTableHead numeric>Best</DataTableHead>
+              <DataTableHead numeric>Average</DataTableHead>
+              <DataTableHead numeric>Accuracy</DataTableHead>
+              <DataTableHead numeric>Runs</DataTableHead>
+              <DataTableHead className="max-sm:hidden">Trend</DataTableHead>
+              <DataTableHead className="max-sm:hidden">Last played</DataTableHead>
+              <DataTableHead>
+                <span className="sr-only">Action</span>
+              </DataTableHead>
             </tr>
-          </thead>
-          <tbody>
+          </DataTableHeader>
+          <DataTableBody>
             {rows.map(({ name, stats }) =>
               stats ? (
-                <tr key={name} className="clickable" onClick={() => onOpen(name)}>
-                  <td className="name">{name}</td>
-                  <td className="best">{stats.best ? Math.round(stats.best.wpm) : '–'}</td>
-                  <td className="stat">{Math.round(stats.averageWpm)}</td>
-                  <td className="stat">{Math.round(stats.averageAccuracy)}%</td>
-                  <td className="stat">{stats.runs}</td>
-                  <td className="wide trend">
+                <DataTableRow key={name} onOpen={() => onOpen(name)}>
+                  <DataTableCell className="font-mono">{name}</DataTableCell>
+                  <DataTableCell numeric className={BEST}>
+                    {stats.best ? Math.round(stats.best.wpm) : '–'}
+                  </DataTableCell>
+                  <DataTableCell numeric className={FIGURE}>
+                    {Math.round(stats.averageWpm)}
+                  </DataTableCell>
+                  <DataTableCell numeric className={FIGURE}>
+                    {Math.round(stats.averageAccuracy)}%
+                  </DataTableCell>
+                  <DataTableCell numeric className={FIGURE}>
+                    {stats.runs}
+                  </DataTableCell>
+                  <DataTableCell className="max-sm:hidden">
                     <Sparkline values={stats.trend} />
-                  </td>
-                  <td className="wide">{whenPlayed(stats.lastPlayed)}</td>
-                  <td>
-                    <button type="button" className="link" onClick={(e) => (e.stopPropagation(), onOpen(name))}>
+                  </DataTableCell>
+                  <DataTableCell className="max-sm:hidden">{whenPlayed(stats.lastPlayed)}</DataTableCell>
+                  <DataTableCell className="text-right">
+                    <Button variant="link" size="sm" className="h-auto p-0" aria-label={`Open ${name}`} onPress={() => onOpen(name)}>
                       open ›
-                    </button>
-                  </td>
-                </tr>
+                    </Button>
+                  </DataTableCell>
+                </DataTableRow>
               ) : (
-                <tr key={name} className="unplayed">
-                  <td className="name">{name}</td>
-                  <td>–</td>
-                  <td>–</td>
-                  <td>–</td>
-                  <td>0</td>
-                  <td className="wide" />
-                  <td className="wide">{aids === 'any' ? 'not played yet' : 'none with these aids'}</td>
-                  <td>
-                    <button type="button" className="link" onClick={() => onType(name)}>
+                <DataTableRow key={name} className="text-muted-foreground">
+                  <DataTableCell className="font-mono">{name}</DataTableCell>
+                  <DataTableCell numeric>–</DataTableCell>
+                  <DataTableCell numeric>–</DataTableCell>
+                  <DataTableCell numeric>–</DataTableCell>
+                  <DataTableCell numeric>0</DataTableCell>
+                  <DataTableCell className="max-sm:hidden" />
+                  <DataTableCell className="max-sm:hidden">{aids === 'any' ? 'not played yet' : 'none with these aids'}</DataTableCell>
+                  <DataTableCell className="text-right">
+                    <Button variant="link" size="sm" className="h-auto p-0" aria-label={`Type it: ${name}`} onPress={() => onType(name)}>
                       type it ›
-                    </button>
-                  </td>
-                </tr>
+                    </Button>
+                  </DataTableCell>
+                </DataTableRow>
               ),
             )}
-          </tbody>
-        </table>
-      </div>
+          </DataTableBody>
+        </DataTable>
+      </Card>
 
       <StorageRow store={store} language={lang} onChanged={onChanged} />
     </section>
@@ -356,9 +354,9 @@ function Overview({ languages, lang, length, runs, snippetRuns, store, onLanguag
 
 function StorageRow({ store, language, onChanged }: { store: History; language: Language; onChanged: () => void }) {
   const [info, setInfo] = useState<{ bytes: number | null; persisted: boolean } | null>(null)
-  const [message, setMessage] = useState<string | null>(null)
   const [confirming, setConfirming] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const toast = useToast()
   useEffect(() => {
     storageInfo().then(setInfo)
   }, [])
@@ -373,52 +371,53 @@ function StorageRow({ store, language, onChanged }: { store: History; language: 
     a.download = `syntype-history-${new Date().toISOString().slice(0, 10)}.json`
     a.click()
     URL.revokeObjectURL(url)
-    setMessage(`Exported ${data.runs.length} runs.`)
+    toast.show(`Exported ${data.runs.length} runs.`)
   }
 
   const importFile = async (file: File) => {
     try {
       const { added, skipped } = await store.importAll(JSON.parse(await file.text()))
-      setMessage(`Imported ${added} ${added === 1 ? 'run' : 'runs'}${skipped ? `; ${skipped} already here or unreadable` : ''}.`)
+      toast.show(`Imported ${added} ${added === 1 ? 'run' : 'runs'}${skipped ? `; ${skipped} already here or unreadable` : ''}.`)
       onChanged()
     } catch (err) {
-      setMessage(err instanceof SyntaxError ? 'That file isn’t a Syntype history file.' : (err as Error).message)
+      toast.show(err instanceof SyntaxError ? 'That file isn’t a Syntype history file.' : (err as Error).message, { tone: 'error' })
     }
   }
 
   const clear = async (lang?: string) => {
     await store.clear(lang)
     setConfirming(false)
-    setMessage(lang ? `Cleared your ${language.name} runs.` : 'Cleared all runs on this device.')
+    toast.show(lang ? `Cleared your ${language.name} runs.` : 'Cleared all runs on this device.')
     onChanged()
   }
 
   return (
-    <div className="runs-storage">
-      <span>
+    <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+      <span className="mr-1">
         Saved in this browser{info?.bytes != null && ` · ${size(info.bytes)}`}
         {info?.persisted && ' · kept safe ✓'}
       </span>
       {info && !info.persisted && (
-        <button
-          type="button"
-          className="btn accent"
-          title="Ask the browser not to delete this site's data when the disk fills up"
-          onClick={async () => {
-            const kept = await keepSafe()
-            setInfo({ ...info, persisted: kept })
-            setMessage(kept ? 'Your browser will keep your history.' : 'Your browser didn’t agree this time. Export a copy to be sure.')
-          }}
-        >
-          Keep my history safe
-        </button>
+        <Tip label="Ask the browser not to delete this site’s data when the disk fills up">
+          <Button
+            variant="outline"
+            size="sm"
+            onPress={async () => {
+              const kept = await keepSafe()
+              setInfo({ ...info, persisted: kept })
+              toast.show(kept ? 'Your browser will keep your history.' : 'Your browser didn’t agree this time. Export a copy to be sure.')
+            }}
+          >
+            Keep my history safe
+          </Button>
+        </Tip>
       )}
-      <button type="button" className="btn" onClick={exportFile}>
+      <Button variant="outline" size="sm" onPress={exportFile}>
         Export
-      </button>
-      <button type="button" className="btn" onClick={() => fileRef.current?.click()}>
+      </Button>
+      <Button variant="outline" size="sm" onPress={() => fileRef.current?.click()}>
         Import
-      </button>
+      </Button>
       <input
         ref={fileRef}
         type="file"
@@ -430,29 +429,24 @@ function StorageRow({ store, language, onChanged }: { store: History; language: 
           e.target.value = ''
         }}
       />
-      {confirming ? (
-        <span className="confirm" role="group" aria-label="Clear history">
-          Clear
-          <button type="button" className="btn danger" onClick={() => clear(language.id)}>
-            {language.name} runs
-          </button>
-          <button type="button" className="btn danger" onClick={() => clear()}>
-            everything
-          </button>
-          <button type="button" className="btn" onClick={() => setConfirming(false)}>
-            Cancel
-          </button>
-        </span>
-      ) : (
-        <button type="button" className="btn danger" onClick={() => setConfirming(true)}>
-          Clear…
-        </button>
-      )}
-      {message && (
-        <span className="runs-message" role="status">
-          {message}
-        </span>
-      )}
+      <Button variant="destructive" size="sm" onPress={() => setConfirming(true)}>
+        Clear…
+      </Button>
+      <AlertDialog isOpen={confirming} onOpenChange={setConfirming} isDismissable>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Clear runs on this device?</AlertDialogTitle>
+          <AlertDialogDescription>Runs, their replays and your bests here are deleted. Runs on the leaderboards stay. Export a copy first if you want to keep them.</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="sm:flex-wrap">
+          <AlertDialogCancel autoFocus>Cancel</AlertDialogCancel>
+          <Button variant="destructive" onPress={() => clear(language.id)}>
+            Clear {language.name} runs
+          </Button>
+          <Button variant="destructive" onPress={() => clear()}>
+            Clear everything
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialog>
     </div>
   )
 }
@@ -474,99 +468,102 @@ function SnippetRuns({ lang, name, length, runs, onBack, onType, onReplay }: Sni
   const newestFirst = [...shown].sort((a, b) => b.finishedAt.localeCompare(a.finishedAt))
   const anySubmitted = newestFirst.some((r) => r.submission)
   return (
-    <section className="runs" aria-labelledby="snippet-title">
-      <div className="runs-head">
-        <div>
-          <nav className="crumbs" aria-label="Breadcrumb">
-            <button type="button" className="link" onClick={onBack}>
-              My runs
-            </button>{' '}
-            › {lang.name} › {length} › <b>{name}</b>
-          </nav>
-          <h2 id="snippet-title">{name}</h2>
-        </div>
-        <button type="button" className="btn accent" onClick={onType}>
-          Type this snippet
-        </button>
-      </div>
+    <section className="grid min-w-0 gap-4" aria-labelledby="snippet-title">
+      <ViewHead action={<Button onPress={onType}>Type this snippet</Button>}>
+        <Crumbs trail={[{ label: 'My runs', onPress: onBack }, { label: lang.name }, { label: length }]} current={name} />
+        <ViewTitle id="snippet-title">{name}</ViewTitle>
+      </ViewHead>
 
       {stats ? (
-        <div className="runs-detail">
-          <div className="pane runs-chart">
-            <span className="k">WPM per run · best so far highlighted</span>
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,16rem)] gap-3 max-md:grid-cols-1">
+          <Card size="sm" className="min-w-0 gap-2 px-4">
+            <span className="font-mono text-sm text-muted-foreground">WPM per run · best so far highlighted</span>
             <RunsChart runs={[...shown].sort((a, b) => a.finishedAt.localeCompare(b.finishedAt))} best={stats.best} />
-          </div>
-          <div className="pane runs-summary">
-            <div>
-              <span className="k">best</span>
-              <span className="v">{stats.best ? `${Math.round(stats.best.wpm)} wpm` : '–'}</span>
-              <span className="s">{stats.best ? `${Math.round(stats.best.accuracy)}% accuracy · ${whenPlayed(stats.best.finishedAt)}` : 'no run accurate enough yet'}</span>
-            </div>
-            <div>
-              <span className="k">average of {stats.runs}</span>
-              <span className="v plain">{Math.round(stats.averageWpm)} wpm</span>
-              <span className="s">{stats.averageAccuracy.toFixed(1)}% accuracy</span>
-            </div>
+          </Card>
+          <div className="grid content-start gap-3">
+            <Stat
+              label="best"
+              value={stats.best ? `${Math.round(stats.best.wpm)} wpm` : '–'}
+              note={stats.best ? `${Math.round(stats.best.accuracy)}% accuracy · ${whenPlayed(stats.best.finishedAt)}` : 'no run accurate enough yet'}
+            />
+            <Stat label={`average of ${stats.runs}`} plain value={`${Math.round(stats.averageWpm)} wpm`} note={`${stats.averageAccuracy.toFixed(1)}% accuracy`} />
           </div>
         </div>
       ) : (
-        <p className="runs-note">{runs.length ? 'No runs with these typing aids.' : 'You haven’t typed this snippet yet.'}</p>
+        <Note title={runs.length ? 'No runs with these typing aids' : 'Not typed yet'} action={!runs.length && <Button onPress={onType}>Type it now</Button>}>
+          {runs.length ? 'Try another filter.' : 'Your runs of this snippet will show here.'}
+        </Note>
       )}
 
-      {runs.length > 0 && (
-        <div className="runs-filters">
-          <AidsChips value={aids} onChange={setAids} />
-        </div>
-      )}
+      {runs.length > 0 && <AidsFilterBar value={aids} onChange={setAids} />}
 
       {newestFirst.length > 0 && (
-        <div className="pane runs-table-wrap">
-          <table className="runs-table">
-            <thead>
+        <Card className="py-0">
+          <DataTable>
+            <DataTableHeader>
               <tr>
-                <th>When</th>
-                <th>WPM</th>
-                <th>Raw</th>
-                <th>Accuracy</th>
-                <th>Time</th>
-                <th className="wide">Typing aids</th>
-                {anySubmitted && <th>Leaderboard</th>}
-                <th>Replay</th>
+                <DataTableHead>When</DataTableHead>
+                <DataTableHead numeric>WPM</DataTableHead>
+                <DataTableHead numeric>Raw</DataTableHead>
+                <DataTableHead numeric>Accuracy</DataTableHead>
+                <DataTableHead numeric>Time</DataTableHead>
+                <DataTableHead className="max-sm:hidden">Typing aids</DataTableHead>
+                {anySubmitted && <DataTableHead>Leaderboard</DataTableHead>}
+                <DataTableHead>Replay</DataTableHead>
               </tr>
-            </thead>
-            <tbody>
+            </DataTableHeader>
+            <DataTableBody>
               {newestFirst.map((r) => (
-                <tr key={r.id}>
-                  <td>{runTime(r.finishedAt)}</td>
-                  <td className={r.id === stats?.best?.id ? 'best' : 'stat'}>
+                <DataTableRow key={r.id}>
+                  <DataTableCell>{runTime(r.finishedAt)}</DataTableCell>
+                  <DataTableCell numeric className={r.id === stats?.best?.id ? BEST : FIGURE}>
                     {Math.round(r.wpm)}
-                    {r.id === stats?.best?.id && <span className="best-mark">best</span>}
-                  </td>
-                  <td className="stat">{Math.round(r.rawWpm)}</td>
-                  <td className="stat">{Math.round(r.accuracy)}%</td>
-                  <td className="stat">{duration(r.seconds)}</td>
-                  <td className="wide">
+                    {r.id === stats?.best?.id && <Mark>best</Mark>}
+                  </DataTableCell>
+                  <DataTableCell numeric className={FIGURE}>
+                    {Math.round(r.rawWpm)}
+                  </DataTableCell>
+                  <DataTableCell numeric className={FIGURE}>
+                    {Math.round(r.accuracy)}%
+                  </DataTableCell>
+                  <DataTableCell numeric className={FIGURE}>
+                    {duration(r.seconds)}
+                  </DataTableCell>
+                  <DataTableCell className="max-sm:hidden">
                     <AidTags aids={r.aids} />
-                  </td>
-                  {anySubmitted && <td>{boardCell(r)}</td>}
-                  <td>
+                  </DataTableCell>
+                  {anySubmitted && <DataTableCell>{boardCell(r)}</DataTableCell>}
+                  <DataTableCell>
                     {r.hasLog ? (
-                      <button type="button" className="link play" onClick={() => onReplay(r.id)}>
-                        ▶ replay
-                      </button>
+                      <Button variant="link" size="sm" className="h-auto p-0" aria-label={`Replay the run from ${runTime(r.finishedAt)}`} onPress={() => onReplay(r.id)}>
+                        <PlayIcon className="fill-current" />
+                        replay
+                      </Button>
                     ) : (
-                      <span className="runs-muted" title="Logs are kept for each snippet's best 3 runs and your last 10">
-                        log not kept
-                      </span>
+                      <Explained label="Logs are kept for each snippet's best 3 runs and your last 10">log not kept</Explained>
                     )}
-                  </td>
-                </tr>
+                  </DataTableCell>
+                </DataTableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </DataTableBody>
+          </DataTable>
+        </Card>
       )}
     </section>
+  )
+}
+
+/**
+ * Text with an explanation in a tooltip. Focusable, so keyboard users can read
+ * the explanation too (a title attribute only shows on hover).
+ */
+function Explained({ label, children, problem }: { label: string; children: React.ReactNode; problem?: boolean }) {
+  return (
+    <Tip label={label}>
+      <Button variant="ghost" size="xs" className={cn('h-auto cursor-help px-0 font-normal underline decoration-dotted underline-offset-4 hover:bg-transparent', problem ? 'text-destructive' : 'text-muted-foreground')}>
+        {children}
+      </Button>
+    </Tip>
   )
 }
 
@@ -603,25 +600,17 @@ function RunsChart({ runs, best }: { runs: StoredRun[]; best: StoredRun | null }
 /** What happened to a run on the leaderboard, for its row in the run list. */
 function boardCell(r: StoredRun) {
   const sub = r.submission
-  if (!sub) return <span className="runs-muted">–</span>
+  if (!sub) return <Muted>–</Muted>
   switch (sub.status) {
     case 'accepted':
-      return (
-        <span className="stat" title={sub.best ? 'A new best on the leaderboard when it was sent' : 'Accepted; an earlier run was your best'}>
-          {sub.best ? `#${sub.rank}` : 'accepted'}
-        </span>
-      )
+      return <Explained label={sub.best ? 'A new best on the leaderboard when it was sent' : 'Accepted; an earlier run was your best'}>{sub.best ? `#${sub.rank}` : 'accepted'}</Explained>
     case 'rejected':
       return (
-        <span className="runs-problem" title={sub.message}>
+        <Explained label={sub.message} problem>
           rejected
-        </span>
+        </Explained>
       )
     case 'failed':
-      return (
-        <span className="runs-muted" title={sub.message}>
-          not sent
-        </span>
-      )
+      return <Explained label={sub.message}>not sent</Explained>
   }
 }

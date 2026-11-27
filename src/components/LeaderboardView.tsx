@@ -15,13 +15,23 @@ import { fingerprint } from '../lib/runlog'
 import { whenPlayed } from '../lib/format'
 import { ReplayView } from './ReplayView'
 import { LanguagePicker } from './LanguagePicker'
-import { FlagIcon } from 'lucide-react'
+import { FlagIcon, PlayIcon } from 'lucide-react'
+import { Choice, Toggles } from '@/components/composites/choices'
+import { Crumbs } from '@/components/composites/crumbs'
+import { DataTable, DataTableBody, DataTableCell, DataTableHead, DataTableHeader, DataTableRow } from '@/components/composites/data-table'
 import { Tip } from '@/components/composites/tip'
+import { Card } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
+import { LanguageButton, Mark, Muted, Note, TableSkeleton, ViewHead, ViewTitle } from './ViewParts'
 import { ReportDialog } from '@/components/composites/report-dialog'
 import { useToast } from '@/components/composites/use-toast'
 import { Button } from '@/components/ui/button'
 
-const LENGTHS: SnippetLength[] = ['short', 'medium', 'long']
+const LENGTHS = (['short', 'medium', 'long'] as const).map((l) => ({ id: l, label: l }))
+const AID_OPTIONS = AIDS.map((a) => ({ id: a.id, label: a.name }))
+/** The figures in a table: the best in the brand colour, the rest plain. */
+const BEST = 'font-display text-base font-bold text-primary'
+const FIGURE = 'font-display text-[0.9375rem] font-semibold'
 
 interface Place {
   language: string
@@ -132,26 +142,15 @@ function LanguageOverview({
   const archived = boards?.archived.filter((a) => a.length === length) ?? []
 
   return (
-    <section className="runs boards" aria-labelledby="boards-title">
-      <div className="runs-head">
-        <h2 id="boards-title">Leaderboards</h2>
-        <p className="runs-muted">Each snippet has its own board: signed-in players’ best runs, at least 75% accurate, checked by replaying their keystrokes.</p>
-      </div>
+    <section className="grid min-w-0 gap-4" aria-labelledby="boards-title">
+      <ViewHead>
+        <ViewTitle id="boards-title">Leaderboards</ViewTitle>
+        <p className="m-0 text-sm text-muted-foreground">Each snippet has its own board: signed-in players’ best runs, at least 75% accurate, checked by replaying their keystrokes.</p>
+      </ViewHead>
       {/* The game's own language button and picker (search, sections), so the list can keep growing. */}
-      <div className="settings boards-settings">
-        <button type="button" className="lang-button" onClick={() => setPicking(true)} aria-haspopup="dialog" title="Change language">
-          <span className="lang-icon" aria-hidden="true">
-            {'</>'}
-          </span>
-          {lang.name}
-        </button>
-        <div className="seg" role="group" aria-label="Length">
-          {LENGTHS.map((l) => (
-            <button key={l} type="button" className="chip" aria-pressed={l === length} onClick={() => onLength(l)}>
-              {l}
-            </button>
-          ))}
-        </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <LanguageButton name={lang.name} onPress={() => setPicking(true)} />
+        <Choice label="Length" options={LENGTHS} value={length} onChange={onLength} />
       </div>
       {picking && (
         <LanguagePicker
@@ -165,56 +164,57 @@ function LanguageOverview({
         />
       )}
       {loaded && 'error' in loaded ? (
-        <p className="runs-note problem">{loaded.error}</p>
+        <Note title="The boards couldn’t be loaded" problem>
+          {loaded.error}
+        </Note>
+      ) : !boards ? (
+        <TableSkeleton columns={4} rows={snippets.length || 5} />
       ) : (
-        <div className="pane runs-table-wrap" aria-busy={!boards}>
-          <table className="runs-table">
-            <thead>
+        <Card className="py-0">
+          <DataTable>
+            <DataTableHeader>
               <tr>
-                <th>Snippet</th>
-                <th>Top WPM</th>
-                <th>Held by</th>
-                <th aria-label="Open" />
+                <DataTableHead>Snippet</DataTableHead>
+                <DataTableHead numeric>Top WPM</DataTableHead>
+                <DataTableHead>Held by</DataTableHead>
+                <DataTableHead>
+                  <span className="sr-only">Open</span>
+                </DataTableHead>
               </tr>
-            </thead>
-            <tbody>
+            </DataTableHeader>
+            <DataTableBody>
               {snippets.map((s) => {
                 const top = byName.get(s.name)?.top
                 return (
-                  <tr key={s.name} className="clickable" onClick={() => onOpen(s.name, null)}>
-                    <td className="name">{s.name}</td>
-                    <td className={top ? 'best' : ''}>{top ? Math.round(top.wpm) : boards ? '–' : ''}</td>
-                    <td>{top ? top.name : boards ? <span className="runs-muted">no runs yet</span> : ''}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="link"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onOpen(s.name, null)
-                        }}
-                      >
+                  <DataTableRow key={s.name} onOpen={() => onOpen(s.name, null)}>
+                    <DataTableCell className="font-mono">{s.name}</DataTableCell>
+                    <DataTableCell numeric className={top ? BEST : undefined}>
+                      {top ? Math.round(top.wpm) : '–'}
+                    </DataTableCell>
+                    <DataTableCell>{top ? top.name : <Muted>no runs yet</Muted>}</DataTableCell>
+                    <DataTableCell className="text-right">
+                      <Button variant="link" size="sm" className="h-auto p-0" aria-label={`${s.name} board`} onPress={() => onOpen(s.name, null)}>
                         board ›
-                      </button>
-                    </td>
-                  </tr>
+                      </Button>
+                    </DataTableCell>
+                  </DataTableRow>
                 )
               })}
-            </tbody>
-          </table>
-        </div>
+            </DataTableBody>
+          </DataTable>
+        </Card>
       )}
       {archived.length > 0 && (
-        <div className="archived">
-          <h3>Older versions</h3>
-          <p className="runs-muted">These snippets have since changed, so their boards are closed. Their runs and replays stay.</p>
-          <ul>
+        <div className="grid gap-1.5">
+          <h3 className="m-0 text-xs font-semibold tracking-wider text-muted-foreground uppercase">Older versions</h3>
+          <Muted>These snippets have since changed, so their boards are closed. Their runs and replays stay.</Muted>
+          <ul className="m-0 grid list-none gap-1 p-0 text-sm">
             {archived.map((a) => (
               <li key={a.fingerprint}>
-                <button type="button" className="link" onClick={() => onOpen(a.name, a.fingerprint)}>
+                <Button variant="link" size="sm" className="h-auto p-0 font-mono" onPress={() => onOpen(a.name, a.fingerprint)}>
                   {a.name}
-                </button>{' '}
-                <span className="runs-muted">first played {whenPlayed(a.since)}</span>
+                </Button>{' '}
+                <Muted>first played {whenPlayed(a.since)}</Muted>
               </li>
             ))}
           </ul>
@@ -276,11 +276,10 @@ function SnippetBoard({
 
   if (!snippet && !version) {
     return (
-      <section className="runs">
-        <p className="runs-note">There’s no snippet called {name} in {lang.name}.</p>
-        <button type="button" className="btn" onClick={onBack}>
-          ‹ {lang.name} boards
-        </button>
+      <section className="grid min-w-0 gap-4">
+        <Note title="No such snippet" action={<Button variant="outline" onPress={onBack}>‹ {lang.name} boards</Button>}>
+          There’s no snippet called {name} in {lang.name}.
+        </Note>
       </section>
     )
   }
@@ -291,116 +290,126 @@ function SnippetBoard({
   const custom = aids !== 'any' ? aidsOf(aids) : null
 
   return (
-    <section className="runs boards" aria-labelledby="board-title">
-      <div className="runs-head">
-        <nav className="crumbs" aria-label="Breadcrumb">
-          <button type="button" className="link" onClick={onBack}>
-            Leaderboards › {lang.name}
-          </button>{' '}
-          › <b id="board-title">{name}</b>
-          {archived && <span className="tag-archived">older version</span>}
-        </nav>
-        {!archived && snippet && (
-          <button type="button" className="btn accent" onClick={onType}>
-            Type this snippet
-          </button>
-        )}
-      </div>
+    <section className="grid min-w-0 gap-4" aria-labelledby="board-title">
+      <ViewHead
+        action={
+          !archived &&
+          snippet && <Button onPress={onType}>Type this snippet</Button>
+        }
+      >
+        <Crumbs
+          trail={[{ label: 'Leaderboards', onPress: onBack }, { label: lang.name, onPress: onBack }]}
+          currentId="board-title"
+          current={
+            <>
+              {name}
+              {archived && <Mark tone="muted">older version</Mark>}
+            </>
+          }
+        />
+      </ViewHead>
 
-      <div className="aids-filter" role="group" aria-label="Typing aids">
-        <span className="label">typing aids</span>
-        <div className="seg">
-          <button type="button" className="chip" aria-pressed={aids === 'any'} onClick={() => onAids('any')}>
-            any
-          </button>
-          <button type="button" className="chip" aria-pressed={!!custom} onClick={() => onAids(custom ? aids : '110')}>
-            exactly
-          </button>
-        </div>
-        {custom && (
-          <div className="seg">
-            {AIDS.map(({ id, name }) => (
-              <button key={id} type="button" className="chip" aria-pressed={custom[id]} onClick={() => onAids(aidsKey({ ...custom, [id]: !custom[id] }))}>
-                {name}
-              </button>
-            ))}
-          </div>
-        )}
+      <div className="flex flex-wrap items-center gap-2">
+        <Muted className="text-sm">typing aids</Muted>
+        <Choice
+          label="Typing aids"
+          outline
+          options={[
+            { id: 'any', label: 'any' },
+            { id: 'exactly', label: 'exactly', tip: 'Only runs with exactly the aids you choose' },
+          ]}
+          value={custom ? 'exactly' : 'any'}
+          onChange={(v) => onAids(v === 'any' ? 'any' : '110')}
+        />
+        {custom && <Toggles label="Exactly these aids" options={AID_OPTIONS} on={custom} onToggle={(id) => onAids(aidsKey({ ...custom, [id]: !custom[id] }))} />}
       </div>
 
       {data?.error ? (
-        <p className="runs-note problem">{data.error}</p>
+        <Note title="The board couldn’t be loaded" problem>
+          {data.error}
+        </Note>
+      ) : !data ? (
+        <TableSkeleton columns={6} />
+      ) : board && board.rows.length === 0 ? (
+        <Note title="No runs yet">{aids === 'any' ? 'No runs on this board yet. Sign in and type it to be the first.' : 'No runs with exactly these typing aids yet.'}</Note>
       ) : (
-        <div className="pane runs-table-wrap" aria-busy={!data}>
-          {data && board && board.rows.length === 0 ? (
-            <p className="runs-note">{aids === 'any' ? 'No runs on this board yet. Sign in and type it to be the first.' : 'No runs with exactly these typing aids yet.'}</p>
-          ) : (
-            <table className="runs-table board-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Player</th>
-                  <th>WPM</th>
-                  <th>Accuracy</th>
-                  <th className="wide">Typing aids</th>
-                  <th className="wide">When</th>
-                  <th>Replay</th>
-                  <th aria-label="Report" />
-                </tr>
-              </thead>
-              <tbody>
-                {board?.rows.map((r) => (
-                  <Row key={r.runId} row={r} mine={r.player.id === player?.id} canReport={!!player?.name && r.player.id !== player.id} onReplay={onReplay} onReported={onReported} />
-                ))}
-                {mine && !inTop && (
-                  <>
-                    {/* How far down "you" are: the players between the top 15 and you. */}
-                    <tr className="gap">
-                      <td colSpan={8}>
-                        {mine.rank - (board?.rows.length ?? 0) > 1
-                          ? `⋯ ${mine.rank - (board?.rows.length ?? 0) - 1} more ${mine.rank - (board?.rows.length ?? 0) - 1 === 1 ? 'player' : 'players'} ⋯`
-                          : '⋯'}
-                      </td>
-                    </tr>
-                    <Row row={mine} mine canReport={false} onReplay={onReplay} onReported={onReported} />
-                  </>
-                )}
-              </tbody>
-            </table>
-          )}
-        </div>
+        <Card className="py-0">
+          <DataTable>
+            <DataTableHeader>
+              <tr>
+                <DataTableHead numeric>#</DataTableHead>
+                <DataTableHead>Player</DataTableHead>
+                <DataTableHead numeric>WPM</DataTableHead>
+                <DataTableHead numeric>Accuracy</DataTableHead>
+                <DataTableHead className="max-sm:hidden">Typing aids</DataTableHead>
+                <DataTableHead className="max-sm:hidden">When</DataTableHead>
+                <DataTableHead>Replay</DataTableHead>
+                <DataTableHead>
+                  <span className="sr-only">Report</span>
+                </DataTableHead>
+              </tr>
+            </DataTableHeader>
+            <DataTableBody>
+              {board?.rows.map((r) => (
+                <Row key={r.runId} row={r} mine={r.player.id === player?.id} canReport={!!player?.name && r.player.id !== player.id} onReplay={onReplay} onReported={onReported} />
+              ))}
+              {mine && !inTop && (
+                <>
+                  {/* How far down "you" are: the players between the top 15 and you. */}
+                  <DataTableRow>
+                    <DataTableCell colSpan={8} className="py-1 text-center text-xs text-muted-foreground">
+                      {mine.rank - (board?.rows.length ?? 0) > 1
+                        ? `⋯ ${mine.rank - (board?.rows.length ?? 0) - 1} more ${mine.rank - (board?.rows.length ?? 0) - 1 === 1 ? 'player' : 'players'} ⋯`
+                        : '⋯'}
+                    </DataTableCell>
+                  </DataTableRow>
+                  <Row row={mine} mine canReport={false} onReplay={onReplay} onReported={onReported} />
+                </>
+              )}
+            </DataTableBody>
+          </DataTable>
+        </Card>
       )}
-      {!player && <p className="runs-muted">Sign in to put your own runs on the boards.</p>}
+      {!player && <Muted className="text-sm">Sign in to put your own runs on the boards.</Muted>}
     </section>
   )
 }
 
 function Row({ row: r, mine, canReport, onReplay, onReported }: { row: BoardRow; mine: boolean; canReport: boolean; onReplay: (id: string) => void; onReported: () => void }) {
   return (
-    <tr className={mine ? 'mine' : undefined}>
-      <td className="rank">{r.rank}</td>
-      <td className="name">
+    <DataTableRow className={cn(mine && 'bg-accent/60')} data-mine={mine || undefined}>
+      <DataTableCell numeric className="text-muted-foreground">
+        {r.rank}
+      </DataTableCell>
+      <DataTableCell className="font-mono">
         {r.player.name}
-        {mine && <span className="best-mark">you</span>}
-      </td>
-      <td className="best">{Math.round(r.wpm)}</td>
-      <td className="stat">{Math.round(r.accuracy)}%</td>
-      <td className="wide">
+        {mine && <Mark>you</Mark>}
+      </DataTableCell>
+      <DataTableCell numeric className={BEST}>
+        {Math.round(r.wpm)}
+      </DataTableCell>
+      <DataTableCell numeric className={FIGURE}>
+        {Math.round(r.accuracy)}%
+      </DataTableCell>
+      <DataTableCell className="max-sm:hidden">
         <AidTags aids={aidsOf(r.aids)} />
-      </td>
-      <td className="wide">{whenPlayed(r.finishedAt)}</td>
-      <td>
+      </DataTableCell>
+      <DataTableCell className="max-sm:hidden">{whenPlayed(r.finishedAt)}</DataTableCell>
+      <DataTableCell>
         {r.hasLog ? (
-          <button type="button" className="link play" onClick={() => onReplay(r.runId)}>
-            ▶ replay
-          </button>
+          <Button variant="link" size="sm" className="h-auto p-0" aria-label={`Replay ${r.player.name}’s run`} onPress={() => onReplay(r.runId)}>
+            <PlayIcon className="fill-current" />
+            replay
+          </Button>
         ) : (
-          <span className="runs-muted" title="Replays are kept for each board’s top 20">
-            –
-          </span>
+          <Tip label="Replays are kept for each board’s top 20">
+            <Button variant="ghost" size="xs" className="h-auto cursor-help px-0 text-muted-foreground hover:bg-transparent" aria-label="No replay: replays are kept for each board’s top 20">
+              –
+            </Button>
+          </Tip>
         )}
-      </td>
-      <td>
+      </DataTableCell>
+      <DataTableCell>
         {canReport && (
           <ReportDialog
             playerName={r.player.name}
@@ -415,8 +424,8 @@ function Row({ row: r, mine, canReport, onReplay, onReported }: { row: BoardRow;
             onSent={onReported}
           />
         )}
-      </td>
-    </tr>
+      </DataTableCell>
+    </DataTableRow>
   )
 }
 
@@ -445,15 +454,14 @@ function BoardReplayView({ languages, runId, admin, onClose }: { languages: Lang
 
   if (loaded && 'error' in loaded) {
     return (
-      <section className="runs">
-        <p className="runs-note problem">{loaded.error}</p>
-        <button type="button" className="btn" onClick={onClose}>
-          ‹ Back
-        </button>
+      <section className="grid min-w-0 gap-4">
+        <Note title="The replay couldn’t be loaded" problem action={<Button variant="outline" onPress={onClose}>‹ Back</Button>}>
+          {loaded.error}
+        </Note>
       </section>
     )
   }
-  if (!replay || !parts) return <section className="runs" aria-busy="true" />
+  if (!replay || !parts) return <section className="grid min-w-0 gap-4" aria-busy="true" aria-label="Loading the replay" />
   return (
     <ReplayView
       lang={parts.lang}
