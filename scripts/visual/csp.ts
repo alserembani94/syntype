@@ -39,6 +39,10 @@ try {
     if (path === '/admin/gallery') {
       await page.getByRole('button', { name: 'Change name' }).click()
       await page.getByRole('dialog').waitFor()
+      await page.keyboard.press('Escape')
+      // The share dialog previews its image as a data: URL, drawn from a canvas.
+      await page.getByRole('button', { name: 'Share score', exact: true }).first().click()
+      await page.getByRole('dialog').getByRole('img').and(page.locator('img')).waitFor()
     }
     // And on a language page, the site's own overlays: the language picker, then About.
     if (path === '/python') {

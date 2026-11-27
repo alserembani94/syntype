@@ -1,5 +1,5 @@
 import type { SubmitView } from '../hooks/useSubmission'
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import type { Result } from '../lib/stats'
 import type { Run } from '../lib/engine'
 import type { HighlightRules } from '../languages'
@@ -12,6 +12,10 @@ import { Toggle } from '@/components/ui/toggle'
 import { Tip } from '@/components/composites/tip'
 import { cn } from '@/lib/utils'
 import { InfoIcon } from 'lucide-react'
+import type { ShareScore } from '../lib/shareImage'
+
+/** Loaded when someone shares, never with the typing screen. */
+const ShareDialog = lazy(() => import('./ShareDialog').then((m) => ({ default: m.ShareDialog })))
 
 /** What a stat means, in a tooltip on a small info button: reachable by keyboard and touch, unlike a title. */
 function Explain({ name, label }: { name: string; label: string }) {
@@ -26,6 +30,8 @@ function Explain({ name, label }: { name: string; label: string }) {
 
 interface TestInfo {
   language: string
+  /** The language's id, for its page in the share image's link. */
+  languageId: string
   length: string
   snippet: string
   assists: string[]
@@ -64,20 +70,37 @@ const ICONS = {
   next: 'M9 5l7 7-7 7',
   retry: 'M4 12a8 8 0 1 0 2.4-5.7M4 4v5h5',
   review: 'M4 6h16M4 12h16M4 18h10',
+  share: 'M12 15V3M8 7l4-4 4 4M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7',
 }
 
 export function Results({ result: r, isBest, info, run, highlight, onNext, onRetry, leaderboard, onResubmit }: Props) {
   const nextRef = useRef<HTMLButtonElement>(null)
   const [reviewing, setReviewing] = useState(false)
+  /** When Share was opened (the image's date), or null while it's closed. */
+  const [sharedAt, setSharedAt] = useState<Date | null>(null)
   useEffect(() => nextRef.current?.focus({ preventScroll: true }), [])
+  // Kept stable while the dialog is open, so the image is drawn once.
+  // The app passes a new `info` on every render, so this depends on its values.
+  const { language, languageId, length, snippet } = info
+  const aids = info.assists.join('\n')
+  const score = useMemo<ShareScore | null>(
+    () => sharedAt && { wpm: r.wpm, accuracy: r.accuracy, language, languageId, length, snippet, aids: aids ? aids.split('\n') : [], isBest, date: sharedAt },
+    [r.wpm, r.accuracy, language, languageId, length, snippet, aids, isBest, sharedAt],
+  )
+  const share = () => setSharedAt((at) => at ?? new Date())
 
-  // V toggles the review; Enter and R are handled by the app.
+  // V toggles the review and S opens sharing; Enter and R are handled by the app.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof Element && e.target.closest('[role="dialog"]')) return
-      if (e.key.toLowerCase() === 'v' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      if (e.ctrlKey || e.metaKey || e.altKey) return
+      const key = e.key.toLowerCase()
+      if (key === 'v') {
         e.preventDefault()
         setReviewing((v) => !v)
+      } else if (key === 's') {
+        e.preventDefault()
+        share()
       }
     }
     document.addEventListener('keydown', onKey)
@@ -226,10 +249,20 @@ export function Results({ result: r, isBest, info, run, highlight, onNext, onRet
             <Icon d={ICONS.review} />
           </Toggle>
         </Tip>
+        <Tip label="Share score" shortcut="S">
+          <Button variant="ghost" size="icon-lg" aria-label="Share score" onPress={share}>
+            <Icon d={ICONS.share} />
+          </Button>
+        </Tip>
       </div>
       <p className="m-0 -mt-2 flex items-center justify-center gap-1.5 text-xs text-muted-foreground max-sm:hidden">
-        <Kbd>Enter</Kbd> next · <Kbd>R</Kbd> retry · <Kbd>V</Kbd> review
+        <Kbd>Enter</Kbd> next · <Kbd>R</Kbd> retry · <Kbd>V</Kbd> review · <Kbd>S</Kbd> share
       </p>
+      {score && (
+        <Suspense fallback={null}>
+          <ShareDialog score={score} onClose={() => setSharedAt(null)} />
+        </Suspense>
+      )}
       {/* Below the actions, so the stats and buttons never move when it fills. */}
       <AdSlot slot="results" />
     </div>

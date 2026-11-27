@@ -9,9 +9,38 @@ import { Kbd } from '@/components/ui/kbd'
 import { Popover, PopoverDescription, PopoverHeader, PopoverTitle, PopoverTrigger } from '@/components/ui/popover'
 import { Sheet, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Tooltip, TooltipTrigger } from '@/components/ui/tooltip'
+import { useState } from 'react'
+import { Toaster } from '@/components/composites/toast'
+import { ShareDialog } from '../../components/ShareDialog'
+import type { ShareScore } from '../../lib/shareImage'
 import { Section, State, States } from '../Section'
 
 const OVERLAY_NOTE = 'Open each to see it. In compare mode, each theme gets its own trigger.'
+
+const SHARE_SCORE: ShareScore = {
+  wpm: 87,
+  accuracy: 98,
+  language: 'C#',
+  languageId: 'csharp',
+  length: 'long',
+  snippet: 'OrderService.cs',
+  aids: ['auto-indent', 'auto-close', 'autocomplete'],
+  isBest: true,
+  date: new Date(2026, 10, 27),
+}
+
+/** The result screen's share dialog: drawn in the theme it opens in, or still drawing. */
+function ShareDemo({ drawing }: { drawing?: boolean }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <Toaster>
+      <Button variant="outline" onPress={() => setOpen(true)}>
+        {drawing ? 'Share (still drawing)' : 'Share score'}
+      </Button>
+      {open && <ShareDialog score={SHARE_SCORE} onClose={() => setOpen(false)} image={drawing ? null : undefined} />}
+    </Toaster>
+  )
+}
 
 export function Overlays() {
   return (
@@ -32,6 +61,12 @@ export function Overlays() {
                 </DialogFooter>
               </Dialog>
             </DialogTrigger>
+          </State>
+          <State label="Share score: the image, Copy and Download (Share too where the browser can share files)">
+            <ShareDemo />
+          </State>
+          <State label="Share score while the image is drawn: buttons disabled">
+            <ShareDemo drawing />
           </State>
           <State label="Text only, no close button">
             <DialogTrigger>

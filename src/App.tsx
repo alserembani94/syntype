@@ -583,6 +583,7 @@ export default function App() {
                   isBest={isBest}
                   info={{
                     language: language.name,
+                    languageId: language.id,
                     length,
                     snippet: snippet.name,
                     assists: aidNames({ autoIndent, autoClose, autocomplete }),

@@ -75,6 +75,7 @@ function head(page) {
 const faq = [
   ['How is WPM counted?', 'Correct characters you typed yourself, divided by five, per minute. Text you accept from a suggestion or that the editor inserts for you counts toward a separate code speed, not your WPM.'],
   ['Can I turn the editor help off?', 'Yes. Auto-indent, auto-close and autocomplete each have a switch, and personal bests are kept apart depending on whether auto-close and autocomplete were on.'],
+  ['Can I share my score?', 'Yes. On the results screen, the share button (or S) makes a square image of your run in your theme: speed, accuracy, language, snippet, the typing aids that were on and the date. Share it from your device, copy it to paste into a post, or download it. The image is made in your browser and never uploaded.'],
   ['Is it free? Do I need an account?', 'It is free, and you can play without an account: everything runs in your browser, and your settings, personal bests and run history stay on your device. Signing in with GitHub or Google is optional, and only gives you a name for the leaderboards.'],
 ]
 
