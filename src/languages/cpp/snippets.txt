@@ -1,0 +1,243 @@
+=== square.cpp
+constexpr int square(int x) {
+    return x * x;
+}
+=== greet.cpp
+#include <string>
+
+std::string greet(const std::string& name) {
+    return "Hello, " + name + "!";
+}
+=== max_of.cpp
+template <typename T>
+T max_of(T a, T b) {
+    return a < b ? b : a;
+}
+=== point.cpp
+struct Point {
+    int x = 0;
+    int y = 0;
+
+    bool operator==(const Point&) const = default;
+};
+=== is_even.cpp
+#include <concepts>
+
+bool is_even(std::integral auto n) {
+    return n % 2 == 0;
+}
+=== average.cpp
+#include <numeric>
+#include <vector>
+
+double average(const std::vector<double>& values) {
+    if (values.empty()) {
+        return 0.0;
+    }
+    double total = std::accumulate(values.begin(), values.end(), 0.0);
+    return total / values.size();
+}
+=== sort_people.cpp
+#include <algorithm>
+#include <string>
+#include <vector>
+
+struct Person {
+    std::string name;
+    int age;
+};
+
+void sort_by_age(std::vector<Person>& people) {
+    std::ranges::sort(people, {}, &Person::age);
+}
+=== first_negative.cpp
+#include <algorithm>
+#include <optional>
+#include <vector>
+
+std::optional<int> first_negative(const std::vector<int>& values) {
+    auto it = std::ranges::find_if(values, [](int v) { return v < 0; });
+    if (it == values.end()) {
+        return std::nullopt;
+    }
+    return *it;
+}
+=== make_widget.cpp
+#include <memory>
+#include <string>
+#include <utility>
+
+struct Widget {
+    explicit Widget(std::string n) : name(std::move(n)) {}
+    std::string name;
+};
+
+std::unique_ptr<Widget> make_widget(std::string name) {
+    return std::make_unique<Widget>(std::move(name));
+}
+=== format_price.cpp
+#include <format>
+#include <string>
+
+std::string format_price(const std::string& item, double price) {
+    return std::format("{:<12}{:>8.2f}", item, price);
+}
+=== stack.cpp
+#include <cstddef>
+#include <stdexcept>
+#include <utility>
+#include <vector>
+
+template <typename T>
+class Stack {
+public:
+    void push(T value) {
+        items_.push_back(std::move(value));
+    }
+
+    T pop() {
+        if (items_.empty()) {
+            throw std::out_of_range("pop from an empty stack");
+        }
+        T value = std::move(items_.back());
+        items_.pop_back();
+        return value;
+    }
+
+    const T& top() const {
+        if (items_.empty()) {
+            throw std::out_of_range("top of an empty stack");
+        }
+        return items_.back();
+    }
+
+    bool empty() const { return items_.empty(); }
+    std::size_t size() const { return items_.size(); }
+
+private:
+    std::vector<T> items_;
+};
+=== shapes.cpp
+#include <memory>
+#include <numbers>
+#include <vector>
+
+class Shape {
+public:
+    virtual ~Shape() = default;
+    virtual double area() const = 0;
+};
+
+class Circle : public Shape {
+public:
+    explicit Circle(double r) : r_(r) {}
+    double area() const override { return std::numbers::pi * r_ * r_; }
+
+private:
+    double r_;
+};
+
+class Rect : public Shape {
+public:
+    Rect(double w, double h) : w_(w), h_(h) {}
+    double area() const override { return w_ * h_; }
+
+private:
+    double w_;
+    double h_;
+};
+
+double total_area(const std::vector<std::unique_ptr<Shape>>& shapes) {
+    double total = 0.0;
+    for (const auto& shape : shapes) {
+        total += shape->area();
+    }
+    return total;
+}
+=== read_lines.cpp
+#include <fstream>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+std::vector<std::string> read_lines(const std::string& path) {
+    std::ifstream file(path);
+    if (!file) {
+        throw std::runtime_error("cannot open " + path);
+    }
+    std::vector<std::string> lines;
+    std::string line;
+    while (std::getline(file, line)) {
+        if (!line.empty()) {
+            lines.push_back(line);
+        }
+    }
+    return lines;
+}
+=== word_freq.cpp
+#include <algorithm>
+#include <cstddef>
+#include <sstream>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+using Count = std::pair<std::string, int>;
+
+std::vector<Count> top_words(const std::string& text, std::size_t n) {
+    std::unordered_map<std::string, int> counts;
+    std::istringstream in(text);
+    std::string word;
+    while (in >> word) {
+        ++counts[word];
+    }
+    std::vector<Count> sorted(counts.begin(), counts.end());
+    std::ranges::sort(sorted, [](const Count& a, const Count& b) {
+        return a.second > b.second;
+    });
+    if (sorted.size() > n) {
+        sorted.resize(n);
+    }
+    return sorted;
+}
+=== lru_cache.cpp
+#include <cstddef>
+#include <list>
+#include <optional>
+#include <string>
+#include <unordered_map>
+#include <utility>
+
+class LruCache {
+public:
+    explicit LruCache(std::size_t capacity) : capacity_(capacity) {}
+
+    std::optional<std::string> get(int key) {
+        auto it = index_.find(key);
+        if (it == index_.end()) {
+            return std::nullopt;
+        }
+        items_.splice(items_.begin(), items_, it->second);
+        return it->second->second;
+    }
+
+    void put(int key, std::string value) {
+        if (auto it = index_.find(key); it != index_.end()) {
+            items_.erase(it->second);
+            index_.erase(it);
+        }
+        items_.emplace_front(key, std::move(value));
+        index_[key] = items_.begin();
+        if (items_.size() > capacity_) {
+            index_.erase(items_.back().first);
+            items_.pop_back();
+        }
+    }
+
+private:
+    using Item = std::pair<int, std::string>;
+    std::size_t capacity_;
+    std::list<Item> items_;
+    std::unordered_map<int, std::list<Item>::iterator> index_;
+};

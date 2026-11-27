@@ -20,6 +20,7 @@ export const BLURBS: Record<string, string> = {
   typescript: 'interfaces, generics and an LRU cache, with type-aware autocomplete',
   python: 'list comprehensions, dataclasses and async functions',
   c: 'pointers, structs, malloc and realloc, file I/O, qsort and a hash table',
+  cpp: 'classes and RAII, templates, smart pointers, ranges and an LRU cache',
   rust: 'structs, impl blocks, Result and iterators',
   go: 'structs, slices, interfaces and error handling',
   assembly: 'NASM syntax, syscalls, loops, string functions and a bubble sort',
