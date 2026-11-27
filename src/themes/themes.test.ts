@@ -7,10 +7,12 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { SYSTEM_THEME, THEME_SECTIONS, THEMES } from '.'
 import { contrast, difference } from '../test/colour'
+import { analyse, editorDims } from './pairs'
 
 // Read from disk: Vitest stubs out CSS imports, even with ?raw.
 const css = readFileSync(new URL('./themes.css', import.meta.url), 'utf8')
 const primitivesCss = readFileSync(new URL('../design/primitives.css', import.meta.url), 'utf8')
+const dims = editorDims(readFileSync(new URL('../styles/editor.css', import.meta.url), 'utf8'))
 
 /** Every colour role a theme sets (shadcn's names, plus success, overlay, shadow-color, the code colours and the tab marker). */
 export const ROLES = [
@@ -42,6 +44,122 @@ const KNOWN_FAILURES = new Set([
   'light: primary-foreground on primary',
   'one-dark-pro: destructive on destructive-muted',
   'phosphor: chart colours apart',
+])
+
+/**
+ * T6 failures in themes flagged `wcag: 'AA'`, known when the flag went on
+ * (contrast round, November 2026), each as "<theme>: <pair>" from pairs.ts,
+ * with "(as seen)" for a colour vision theme's simulated view, and T4's
+ * success check. Each later step takes its share off; the list may only shrink.
+ */
+const KNOWN_AA_FAILURES = new Set<string>([
+  'light: Typing-aid tag that is off',
+  'light: Primary text on the page',
+  'light: Primary text on cards',
+  'light: Primary text in dialogs',
+  'light: Selected chip or nav label',
+  'light: Button label on primary',
+  'light: Suggestion detail on the highlighted row',
+  'light: Success text',
+  'light: Error text on the page',
+  'light: Destructive button label',
+  'light: Comment',
+  'light: Mistake on its tint',
+  'light: Untyped plain text',
+  'light: Untyped keyword',
+  'light: Untyped comment',
+  'light: Next character',
+  'light: Auto-inserted text',
+  'light: Line numbers',
+  'light: Inactive tab label',
+  'light: Ad placeholder size',
+  'light: Text field border',
+  'light: Text field border in a dialog',
+  'light: Focus ring (ring/50)',
+  'light: Focus ring in a dialog',
+  'dark: Typing-aid tag that is off',
+  'dark: Suggestion detail on the highlighted row',
+  'dark: Comment',
+  'dark: Untyped plain text',
+  'dark: Untyped keyword',
+  'dark: Untyped comment',
+  'dark: Line numbers',
+  'dark: Ad placeholder size',
+  'dark: Text field border',
+  'dark: Text field border in a dialog',
+  'dark: Focus ring in a dialog',
+  'hc-black: Typing-aid tag that is off',
+  'hc-black: Untyped plain text',
+  'hc-black: Untyped keyword',
+  'hc-black: Untyped comment',
+  'hc-black: Line numbers',
+  'hc-black: Focus ring (ring/50)',
+  'hc-black: Focus ring in a dialog',
+  'protanopia: Typing-aid tag that is off',
+  'protanopia: Typing-aid tag that is off (as seen)',
+  'protanopia: Untyped plain text',
+  'protanopia: Untyped plain text (as seen)',
+  'protanopia: Untyped keyword',
+  'protanopia: Untyped keyword (as seen)',
+  'protanopia: Untyped comment',
+  'protanopia: Untyped comment (as seen)',
+  'protanopia: Line numbers',
+  'protanopia: Line numbers (as seen)',
+  'protanopia: Ad placeholder size',
+  'protanopia: Ad placeholder size (as seen)',
+  'protanopia: Text field border',
+  'protanopia: Text field border (as seen)',
+  'protanopia: Text field border in a dialog',
+  'protanopia: Text field border in a dialog (as seen)',
+  'protanopia: Focus ring (ring/50)',
+  'protanopia: Focus ring (ring/50) (as seen)',
+  'protanopia: Focus ring in a dialog',
+  'protanopia: Focus ring in a dialog (as seen)',
+  'protanopia: success apart from code colours as seen',
+  'deuteranopia: Typing-aid tag that is off',
+  'deuteranopia: Typing-aid tag that is off (as seen)',
+  'deuteranopia: Untyped plain text',
+  'deuteranopia: Untyped plain text (as seen)',
+  'deuteranopia: Untyped keyword',
+  'deuteranopia: Untyped keyword (as seen)',
+  'deuteranopia: Untyped comment',
+  'deuteranopia: Untyped comment (as seen)',
+  'deuteranopia: Line numbers',
+  'deuteranopia: Line numbers (as seen)',
+  'deuteranopia: Ad placeholder size',
+  'deuteranopia: Ad placeholder size (as seen)',
+  'deuteranopia: Text field border',
+  'deuteranopia: Text field border (as seen)',
+  'deuteranopia: Text field border in a dialog',
+  'deuteranopia: Text field border in a dialog (as seen)',
+  'deuteranopia: Focus ring (ring/50)',
+  'deuteranopia: Focus ring (ring/50) (as seen)',
+  'deuteranopia: Focus ring in a dialog',
+  'deuteranopia: Focus ring in a dialog (as seen)',
+  'deuteranopia: success apart from code colours as seen',
+  'deuteranopia: success apart from code colours with normal vision',
+  'tritanopia: Typing-aid tag that is off',
+  'tritanopia: Typing-aid tag that is off (as seen)',
+  'tritanopia: Destructive button label (as seen)',
+  'tritanopia: Untyped plain text',
+  'tritanopia: Untyped plain text (as seen)',
+  'tritanopia: Untyped keyword',
+  'tritanopia: Untyped keyword (as seen)',
+  'tritanopia: Untyped comment',
+  'tritanopia: Untyped comment (as seen)',
+  'tritanopia: Line numbers',
+  'tritanopia: Line numbers (as seen)',
+  'tritanopia: Ad placeholder size',
+  'tritanopia: Ad placeholder size (as seen)',
+  'tritanopia: Text field border',
+  'tritanopia: Text field border (as seen)',
+  'tritanopia: Text field border in a dialog',
+  'tritanopia: Text field border in a dialog (as seen)',
+  'tritanopia: Focus ring (ring/50)',
+  'tritanopia: Focus ring (ring/50) (as seen)',
+  'tritanopia: Focus ring in a dialog',
+  'tritanopia: Focus ring in a dialog (as seen)',
+  'tritanopia: success apart from code colours as seen',
 ])
 
 /** Names retired by the move to roles: no stylesheet, component or script may use them. */
@@ -90,7 +208,7 @@ const colourOf = (decls: Record<string, string> | null) => (role: string) => {
 
 /** Checks that a theme meets `ok`, unless the failure is known; and that a known failure still fails. */
 function expectUnlessKnown(theme: string, check: string, ok: boolean, detail: string) {
-  const known = KNOWN_FAILURES.has(`${theme}: ${check}`)
+  const known = KNOWN_FAILURES.has(`${theme}: ${check}`) || KNOWN_AA_FAILURES.has(`${theme}: ${check}`)
   expect(ok, known ? `${theme}: ${check} now passes; take it off KNOWN_FAILURES` : `${theme}: ${detail}`).toBe(!known)
 }
 
@@ -222,5 +340,60 @@ describe.each(THEMES.filter((t) => t.vision).map((t) => [t.name, t] as const))('
     expect(contrast(color('foreground'), color('card'), vision)).toBeGreaterThanOrEqual(MIN_CONTRAST.text)
     for (const ui of ['primary', 'destructive', 'success'])
       expect(contrast(color(ui), color('card'), vision), ui).toBeGreaterThanOrEqual(MIN_CONTRAST.ui)
+  })
+})
+
+describe('T6 · themes flagged as meeting WCAG AA', () => {
+  it('System is flagged only if Syntype Light and Dark both are', () => {
+    const flagged = (id: string) => THEMES.find((t) => t.id === id)?.wcag === 'AA'
+    if (flagged(SYSTEM_THEME)) for (const id of ['light', 'dark']) expect(flagged(id), id).toBe(true)
+  })
+
+  it('every known failure names a flagged theme and a pair it draws', () => {
+    const names = new Set<string>()
+    for (const t of THEMES.filter((t) => t.wcag && t.id !== SYSTEM_THEME)) {
+      const color = colourOf(declsOf(t.id))
+      for (const r of analyse(Object.fromEntries(ROLES.map((x) => [x, color(x)])), 'light', dims).concat(analyse(Object.fromEntries(ROLES.map((x) => [x, color(x)])), 'dark', dims))) {
+        names.add(`${t.id}: ${r.name}`)
+        names.add(`${t.id}: ${r.name} (as seen)`)
+      }
+      for (const v of ['as seen', 'with normal vision']) names.add(`${t.id}: success apart from code colours ${v}`)
+    }
+    expect([...KNOWN_AA_FAILURES].filter((k) => !names.has(k))).toEqual([])
+  })
+})
+
+describe.each(THEMES.filter((t) => t.wcag && t.id !== SYSTEM_THEME).map((t) => [t.name, t] as const))('%s', (_, theme) => {
+  const decls = declsOf(theme.id)
+  const color = colourOf(decls)
+  const roles = Object.fromEntries(ROLES.map((r) => [r, color(r)]))
+
+  it('T6 · every colour pair it draws meets WCAG AA (4.5:1 text, 3:1 large and non-text)', () => {
+    const problems: string[] = []
+    for (const r of analyse(roles, decls!['color-scheme'] as 'light' | 'dark', dims, theme.vision)) {
+      if (r.status === 'exempt') continue
+      const views: [string, number][] = [[r.name, r.ratio]]
+      if (theme.vision) views.push([`${r.name} (as seen)`, r.seenRatio!])
+      for (const [name, ratio] of views) {
+        const key = `${theme.id}: ${name}`
+        const known = KNOWN_AA_FAILURES.has(key)
+        if (ratio >= r.need && known) problems.push(`${key} now passes; take it off KNOWN_AA_FAILURES`)
+        if (ratio < r.need && !known) problems.push(`${key}: ${ratio}:1, needs ${r.need}:1 (${r.fgLabel} ${r.fg} on ${r.bgLabel} ${r.bg}; ${r.where})`)
+      }
+    }
+    expect(problems).toEqual([])
+  })
+})
+
+describe.each(THEMES.filter((t) => t.vision).map((t) => [t.name, t] as const))('%s', (_, theme) => {
+  const color = colourOf(declsOf(theme.id))
+  it.each([
+    ['as seen', theme.vision],
+    ['with normal vision', undefined],
+  ] as const)('T4 · success stays apart from the code colours %s', (view, seenWith) => {
+    const close = ['code-keyword', 'code-string', 'code-number', 'code-function', 'code-type']
+      .map((c) => ({ c, diff: difference(color('success'), color(c), seenWith) }))
+      .filter((x) => x.diff < MIN_DIFFERENCE.distinct)
+    expectUnlessKnown(theme.id, `success apart from code colours ${view}`, close.length === 0, close.map((x) => `--success vs --${x.c}: ${x.diff.toFixed(1)}`).join(', '))
   })
 })

@@ -12,9 +12,10 @@ its findings and the colour vision study are in the contrast round's report.
 | 1.4.11 Non-text contrast | input borders, focus rings, selected and checked states, chart marks, the caret | 3:1 against what's next to it | — |
 | 1.4.1 Use of colour | anything that means something | never colour alone | — |
 
-Exempt by WCAG: disabled controls, decoration, logos, and text that's hidden
-from everyone (`aria-hidden` and visual-only, like the gutter's line numbers).
-An exemption here always carries its reason in the script that grants it.
+Exempt by WCAG: disabled controls, pure decoration, logos, and text no one
+can see. `aria-hidden` doesn't make text exempt: sighted players still read
+it, so the gutter's line numbers count. An exemption carries its reason in
+`pairs.ts` (`exempt`).
 
 Ratios are WCAG's relative luminance formula. A translucent colour is
 measured as drawn: composited over its real background first (Tailwind's
@@ -23,7 +24,8 @@ compositing).
 
 ## Two measurements, because neither is enough alone
 
-1. **Role pairs** (`scripts/design/contrast-roles.ts`). Every pair of roles the
+1. **Role pairs** (`src/themes/pairs.ts`, run by
+   `scripts/design/contrast-roles.ts`). Every pair of roles the
    app draws, resolved through `themes.css` and `primitives.css` for every
    theme, with its WCAG threshold and where it appears. This covers what a
    page test can't: the editor's code (axe skips single-character spans as
@@ -48,6 +50,21 @@ theme. Take the report's screenshots first:
 For colour vision themes, `scripts/design/cvd-study.ts` adds the simulated
 view (below).
 
+## Which themes meet WCAG AA
+
+Themes come in two tiers. Those flagged `wcag: 'AA'` in `THEMES` (System,
+Syntype Light and Dark, Dark High Contrast and the three colour vision
+themes) are held to WCAG 2.2 AA in every pair by rule T6 in
+`src/themes/themes.test.ts`, using the pair list in `src/themes/pairs.ts`. The
+others (One Dark Pro, GitHub Light, Green Phosphor) stay faithful to their
+sources: they meet the floor in T3, and the report shows their WCAG results
+for information.
+
+Failures known when the flag went on are listed in `KNOWN_AA_FAILURES`, one
+line per theme and pair (`"light: Comment"`, with `(as seen)` for a colour
+vision theme's simulated view). A new failure fails the test, and so does a
+listed pair that now passes, until it's taken off. The list may only shrink.
+
 ## Adding or changing a theme
 
 1. Add its block (`themes.css`) and primitives as the theme rules say.
@@ -58,9 +75,11 @@ view (below).
    look at `reviews` for anything axe couldn't measure, and check those by
    eye in the screenshots.
 4. When a role pair is new (a new component draws a new combination), add it
-   to `PAIRS` in `contrast-roles.ts` with where it appears, so later themes
-   are held to it too.
-5. For a colour vision theme, also run the study and meet T4.
+   to `src/themes/pairs.ts` with where it appears, so every flagged theme is
+   held to it.
+5. To flag a theme as meeting AA, set `wcag: 'AA'`; it must pass T6 with no
+   entries in the known list.
+6. For a colour vision theme, also run the study and meet T4.
 
 ### When a borrowed palette falls short
 

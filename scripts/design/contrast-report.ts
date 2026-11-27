@@ -21,7 +21,7 @@ const OUT = resolve(opt('out', join(DIR, 'report')))
 const SHOT_STATES = ['typing-mid-run', 'typing-results'] as const
 
 type Row = { group: string; name: string; where: string; kind: 'text' | 'large' | 'ui'; fgLabel: string; bgLabel: string; fg: string; bg: string; ratio: number; need: number; aaa?: number; status: 'pass' | 'fail' | 'exempt'; exempt?: string; seenRatio?: number }
-type Theme = { id: string; name: string; roles: Record<string, string>; rows: Row[] }
+type Theme = { id: string; name: string; wcag?: 'AA'; roles: Record<string, string>; rows: Row[] }
 type PagePair = { fg: string; bg: string; ratio: number; need: number; size: string; weight: string; result: 'pass' | 'fail'; count: number; examples: { state: string; viewport: string; text: string; target: string }[] }
 type Page = { theme: string; pairs: PagePair[]; reviews: { why: string; count: number }[] }
 
@@ -75,7 +75,7 @@ const OVERVIEW: { severity: Severity; title: string; body: string }[] = [
   {
     severity: 'minor',
     title: 'Line numbers, near misses, and the aid tags that are off',
-    body: 'Line numbers in the gutter are 2.2–3.4:1. They are hidden from assistive tech and not needed to play, so this report treats them as decoration. That is a judgement call, since WCAG\'s exemption is for decoration, not for <code>aria-hidden</code>; raising them is cheap. Several pairs land within 10% of 4.5:1: success and error text in Syntype Light, error text in One Dark Pro\'s dialogs, and the destructive button labels. Typing-aid tags that are off are drawn at half the muted colour (2.0–3.0:1). They are struck through and spelled out for screen readers, but sighted players still need to read them.',
+    body: 'Line numbers in the gutter are 2.2–3.4:1. They are hidden from assistive tech, but sighted players still read them, and WCAG\'s exemption is for decoration, not <code>aria-hidden</code>, so they count. Several pairs land within 10% of 4.5:1: success and error text in Syntype Light, error text in One Dark Pro\'s dialogs, and the destructive button labels. Typing-aid tags that are off are drawn at half the muted colour (2.0–3.0:1). They are struck through and spelled out for screen readers, but sighted players still need to read them.',
   },
 ]
 
@@ -174,9 +174,7 @@ function shots(id: string) {
 function pageSummary(id: string) {
   const p = pages.find((x) => x.theme === id)
   if (!p) return `<p class="muted">The in-browser measurement for this theme isn't in this report.</p>`
-  const decorative = (x: PagePair) => x.examples.every((e) => /gutter/.test(e.target))
-  const fails = p.pairs.filter((x) => x.result === 'fail' && !decorative(x))
-  const gutter = p.pairs.filter((x) => x.result === 'fail' && decorative(x))
+  const fails = p.pairs.filter((x) => x.result === 'fail')
   const elements = p.pairs.reduce((n, x) => n + x.count, 0)
   const reviews = p.reviews.reduce((n, r) => n + r.count, 0)
   const list = fails.length
@@ -187,8 +185,7 @@ function pageSummary(id: string) {
         )
         .join('')}</tbody></table>`
     : `<p><span class="pill pass"><i aria-hidden="true">✓</i>No text below AA</span> that axe could measure.</p>`
-  const gutterNote = gutter.length ? `<p class="small">Not listed: the gutter's line numbers (${gutter.map((g) => g.ratio.toFixed(2)).filter((v, i, a) => a.indexOf(v) === i).join(', ')}:1), treated as decorative.</p>` : ''
-  return `<p class="stat-line"><b>${elements.toLocaleString('en')}</b> text elements measured in the browser, <b>${p.pairs.length}</b> distinct colour pairs, <b>${fails.length}</b> below AA. axe couldn't judge <b>${reviews.toLocaleString('en')}</b> elements (${p.reviews.map((r) => `${esc(r.why)}: ${r.count}`).join(', ') || 'none'}); the editor's code is among them, which is why the role pairs above cover it.</p>${list}${gutterNote}`
+  return `<p class="stat-line"><b>${elements.toLocaleString('en')}</b> text elements measured in the browser, <b>${p.pairs.length}</b> distinct colour pairs, <b>${fails.length}</b> below AA. axe couldn't judge <b>${reviews.toLocaleString('en')}</b> elements (${p.reviews.map((r) => `${esc(r.why)}: ${r.count}`).join(', ') || 'none'}); the editor's code is among them, which is why the role pairs above cover it.</p>${list}`
 }
 
 function mixTable(t: Theme) {
@@ -340,7 +337,7 @@ const html = `<title>Syntype Contrast Round</title>
 <nav class="toc" aria-label="Themes"><div class="tw"><table class="overview"><thead><tr><th>Theme</th><th class="num">Role pairs passing</th><th>Failures</th><th class="num">Browser: text below AA</th></tr></thead><tbody>${totals
   .map(({ t, pass, total, crit, major, minor }) => {
     const p = pages.find((x) => x.theme === t.id)
-    return `<tr><td><a href="#t-${t.id}"><span class="tdot" style="background:${t.roles.background};border-color:${t.roles.primary}"></span>${esc(t.name)}</a></td><td class="num"><span class="ratio">${pass}/${total}</span></td><td class="fails"><span class="sev critical">${crit} critical</span><span class="sev major">${major} major</span><span class="sev minor">${minor} minor</span></td><td class="num">${p ? p.pairs.filter((x) => x.result === 'fail').length + ' pairs' : '—'}</td></tr>`
+    return `<tr><td><a href="#t-${t.id}"><span class="tdot" style="background:${t.roles.background};border-color:${t.roles.primary}"></span>${esc(t.name)}</a>${t.wcag ? ' <span class="pill pass">AA flag</span>' : ''}</td><td class="num"><span class="ratio">${pass}/${total}</span></td><td class="fails"><span class="sev critical">${crit} critical</span><span class="sev major">${major} major</span><span class="sev minor">${minor} minor</span></td><td class="num">${p ? p.pairs.filter((x) => x.result === 'fail').length + ' pairs' : '—'}</td></tr>`
   })
   .join('')}</tbody></table></div><p class="small"><a href="#cvd">Colour vision study</a> · <a href="#method">How this was measured</a></p></nav>
 
@@ -367,7 +364,7 @@ ${cvdSection()}
 <tr><td>Primary used as text</td><td>1.4.3</td><td class="num">4.5:1</td><td class="num"><span class="low">3:1</span></td></tr>
 <tr><td>Borders, focus, states, charts</td><td>1.4.11</td><td class="num">3:1</td><td class="num">3:1 (charts, primary)</td></tr>
 </tbody></table></div>
-<p class="small">Exempt by WCAG and marked as such: disabled controls, decoration, and the gutter's line numbers (hidden from assistive tech and not needed to play). AAA (7:1) is recorded for each pair but not required.</p>
+<p class="small">Exempt by WCAG and marked as such: disabled controls and pure decoration. Text hidden from assistive tech still counts, since sighted players read it. AAA (7:1) is recorded for each pair but not required.</p>
 </section>
 </div>`
 writeFileSync(join(OUT, 'index.html'), html)

@@ -20,6 +20,8 @@ export interface Theme {
   swatches?: string[]
   /** Made for this colour vision deficiency; rule T4 checks its colours stay apart for it. */
   vision?: Deficiency
+  /** Meets WCAG 2.2 AA in every colour pair it draws; rule T6 checks it (src/themes/pairs.ts). */
+  wcag?: 'AA'
 }
 
 export type Deficiency = 'protanopia' | 'deuteranopia' | 'tritanopia'
@@ -27,15 +29,15 @@ export type Deficiency = 'protanopia' | 'deuteranopia' | 'tritanopia'
 export const SYSTEM_THEME = 'system'
 
 export const THEMES: Theme[] = [
-  { id: SYSTEM_THEME, name: 'System', section: 'Syntype', credit: 'light or dark, as your computer is', swatches: ['light', 'dark'] },
-  { id: 'light', name: 'Syntype Light', section: 'Syntype' },
-  { id: 'dark', name: 'Syntype Dark', section: 'Syntype' },
-  { id: 'hc-black', name: 'Dark High Contrast', section: 'Black', credit: 'VS Code' },
+  { id: SYSTEM_THEME, name: 'System', section: 'Syntype', credit: 'light or dark, as your computer is', swatches: ['light', 'dark'], wcag: 'AA' },
+  { id: 'light', name: 'Syntype Light', section: 'Syntype', wcag: 'AA' },
+  { id: 'dark', name: 'Syntype Dark', section: 'Syntype', wcag: 'AA' },
+  { id: 'hc-black', name: 'Dark High Contrast', section: 'Black', credit: 'VS Code', wcag: 'AA' },
   { id: 'one-dark-pro', name: 'One Dark Pro', section: 'Dark', credit: 'Binaryify' },
   { id: 'github-light', name: 'GitHub Light', section: 'Light', credit: 'GitHub' },
-  { id: 'protanopia', name: 'Protanopia', section: 'Colour vision', credit: 'red-blind · on GitHub Dark', vision: 'protanopia' },
-  { id: 'deuteranopia', name: 'Deuteranopia', section: 'Colour vision', credit: 'green-blind · on GitHub Dark', vision: 'deuteranopia' },
-  { id: 'tritanopia', name: 'Tritanopia', section: 'Colour vision', credit: 'blue-blind · on GitHub Dark', vision: 'tritanopia' },
+  { id: 'protanopia', name: 'Protanopia', section: 'Colour vision', credit: 'red-blind · on GitHub Dark', vision: 'protanopia', wcag: 'AA' },
+  { id: 'deuteranopia', name: 'Deuteranopia', section: 'Colour vision', credit: 'green-blind · on GitHub Dark', vision: 'deuteranopia', wcag: 'AA' },
+  { id: 'tritanopia', name: 'Tritanopia', section: 'Colour vision', credit: 'blue-blind · on GitHub Dark', vision: 'tritanopia', wcag: 'AA' },
   { id: 'phosphor', name: 'Green Phosphor', section: 'Retro', credit: 'terminal' },
 ]
 
