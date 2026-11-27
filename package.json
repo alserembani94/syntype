@@ -22,6 +22,7 @@
     "check:controls": "node scripts/visual/run.mjs scripts/visual/controls.ts",
     "check:csp": "node scripts/visual/run.mjs scripts/visual/csp.ts",
     "report:size": "node scripts/visual/run.mjs scripts/visual/size.ts",
+    "report:bundle": "rm -rf .visual/bundle && ANALYZE=1 vite build --outDir .visual/bundle/dist && ANALYZE=1 vite build --config vite.admin.config.ts --outDir .visual/bundle/dist",
     "bench:restyle": "node scripts/visual/run.mjs scripts/visual/restyle.ts",
     "bench:renders": "node scripts/visual/run.mjs scripts/visual/renders.ts",
     "report:contrast": "node scripts/visual/run.mjs scripts/design/contrast-roles.ts --out .visual/contrast/roles.json && node scripts/visual/run.mjs scripts/design/cvd-study.ts --out .visual/contrast/cvd.json && node scripts/visual/run.mjs scripts/visual/contrast.ts && node scripts/visual/run.mjs scripts/design/contrast-report.ts"
@@ -52,6 +53,7 @@
     "playwright": "1.63.0",
     "pngjs": "7.0.0",
     "react-aria": "3.53.1",
+    "rollup-plugin-visualizer": "7.1.3",
     "shadcn": "4.23.0",
     "tailwindcss": "4.3.5",
     "tw-animate-css": "1.4.0",
