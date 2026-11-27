@@ -104,7 +104,8 @@ span.c { color: color-mix(in srgb, var(--tc, var(--foreground)) var(--a), transp
 }
 
 /* A theme's glow (the retro terminal's) on the code. */
-.code, .gutter { text-shadow: var(--code-glow); transition: text-shadow 0.7s ease; }
+.code, .gutter { text-shadow: var(--code-glow); transition: text-shadow var(--duration-theme) ease; }
+@media (prefers-reduced-motion: reduce) { .code, .gutter { transition: none; } }
 
 /* Tab-indented languages (Go) show tabs at the language's indent width. */
 .code, .review-code { tab-size: var(--tab-size, 4); }

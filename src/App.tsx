@@ -38,7 +38,7 @@ import { Kbd } from '@/components/ui/kbd'
 import { cn } from '@/lib/utils'
 
 /** An ad rail: hidden unless the window is wide and tall enough for both beside the column. */
-const RAIL = 'fixed top-1/2 hidden -translate-y-1/2 transition-opacity duration-300 min-[1360px]:grid [@media(max-height:680px)]:hidden!'
+const RAIL = 'fixed top-1/2 hidden -translate-y-1/2 transition-opacity duration-(--duration-slow) motion-reduce:transition-none min-[1360px]:grid [@media(max-height:680px)]:hidden!'
 
 interface Settings {
   languageId: string
