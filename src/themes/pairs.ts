@@ -86,6 +86,7 @@ export const pairs = (d: EditorDims): Pair[] => [
   { group: 'Accent text', name: 'Selected chip or nav label', fg: 'primary', bg: 'accent', kind: 'text', where: 'length, aids, Type / My runs / Leaderboard' },
   { group: 'Accent text', name: 'Big numbers (large)', fg: 'primary', bg: 'card', kind: 'large', where: 'results WPM and accuracy, stat values' },
   { group: 'Accent text', name: 'Button label on primary', fg: 'primary-foreground', bg: 'primary', kind: 'text', where: 'default buttons (Type this snippet, Resolve)' },
+  { group: 'Text', name: 'Secondary text on your leaderboard row', fg: 'muted-foreground', bg: m('accent', 0.6, 'card'), kind: 'text', where: 'your row on a snippet\'s leaderboard (bg-accent/60), aid tags included' },
   { group: 'Text', name: 'Suggestion detail on the highlighted row', fg: 'accent-foreground', bg: 'accent', kind: 'text', where: 'the suggestion list while typing' },
   { group: 'Accent text', name: 'Label on a hovered item', fg: 'accent-foreground', bg: 'accent', kind: 'text', where: 'hovered menu items, highlighted rows' },
   { group: 'Accent text', name: 'Label on secondary', fg: 'secondary-foreground', bg: 'secondary', kind: 'text', where: 'secondary buttons and badges' },

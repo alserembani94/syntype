@@ -51,9 +51,10 @@ const KNOWN_FAILURES = new Set([
  * (contrast round, November 2026), each as "<theme>: <pair>" from pairs.ts,
  * with "(as seen)" for a colour vision theme's simulated view, and T4's
  * success check. Each later step takes its share off; the list may only shrink.
- * AC 2 added five pairs it newly measures, all drawn in palette colours AC 4
+ * AC 2 added six pairs it newly measures, all drawn in palette colours AC 4
  * fixes (the comment colour, Syntype Light's orange, string and number on the
- * highlighted suggestion row).
+ * highlighted suggestion row, Syntype Dark's secondary text on your
+ * leaderboard row).
  */
 const KNOWN_AA_FAILURES = new Set<string>([
   'light: Primary text on the page',
@@ -74,6 +75,7 @@ const KNOWN_AA_FAILURES = new Set<string>([
   'light: Text field border in a dialog',
   'dark: Comment',
   'dark: Next character in a comment',
+  'dark: Secondary text on your leaderboard row',
   'dark: Text field border',
   'dark: Text field border in a dialog',
   'protanopia: Text field border',
