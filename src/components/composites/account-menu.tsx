@@ -19,12 +19,16 @@ export interface AccountMenuProps {
   /** The button's accessible name ("Account: Ada Types"). */
   triggerLabel: string
   onAction: (action: AccountAction) => void
+  /** The menu opened or closed (the game pauses while it's open). */
+  onOpenChange?: (open: boolean) => void
+  /** Classes for the button (the header's compact phone layout). */
+  className?: string
 }
 
-export function AccountMenu({ name, provider, trigger, triggerLabel, onAction }: AccountMenuProps) {
+export function AccountMenu({ name, provider, trigger, triggerLabel, onAction, onOpenChange, className }: AccountMenuProps) {
   return (
-    <DropdownMenuTrigger>
-      <Button variant="outline" aria-label={triggerLabel}>
+    <DropdownMenuTrigger onOpenChange={onOpenChange}>
+      <Button variant="outline" aria-label={triggerLabel} className={className}>
         {trigger}
       </Button>
       <DropdownMenu placement="bottom end" className="w-56" onAction={(key) => onAction(key as AccountAction)}>

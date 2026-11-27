@@ -26,6 +26,13 @@ const axeSource = readFileSync(createRequire(import.meta.url).resolve('axe-core/
 
 /** The WCAG levels we fail on (our bar: WCAG 2.2 AA). */
 const FAIL_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22a', 'wcag22aa']
+/**
+ * Findings that aren't failures, each with its reason (as in src/test/axe.ts).
+ * The pickers' list is a combobox's popup: the keyboard moves through it from
+ * the search box (virtual focus, aria-activedescendant), so the list itself
+ * needs no tab stop.
+ */
+const EXEMPTIONS = [{ rule: 'scrollable-region-focusable', selector: '[data-slot="command-list"]', why: 'virtual focus from the search box' }]
 
 interface Hit {
   state: string
@@ -66,16 +73,22 @@ try {
     await page.evaluate(() => {
       const finish = () => document.getAnimations().forEach((a) => a.effect?.getComputedTiming().endTime !== Infinity && a.finish())
       finish()
-      getComputedStyle(document.body).color
+      void getComputedStyle(document.body).color // a style pass, so the finished state takes effect
       finish()
     })
     // evaluate() runs outside the page's CSP, so axe needs no script tag.
     await page.evaluate(axeSource)
-    const result = await page.evaluate(async (tags) => {
-      const axe = (window as unknown as { axe: { run: (ctx: Document, opts: object) => Promise<{ violations: { id: string; help: string; helpUrl: string; impact: string | null; tags: string[]; nodes: { target: string[] }[] }[] }> } }).axe
-      const r = await axe.run(document, { runOnly: { type: 'tag', values: [...tags, 'best-practice'] }, resultTypes: ['violations'] })
-      return r.violations.map((v) => ({ id: v.id, help: v.help, helpUrl: v.helpUrl, impact: v.impact, tags: v.tags, targets: v.nodes.map((n) => n.target.join(' ')) }))
-    }, FAIL_TAGS)
+    const result = await page.evaluate(
+      async ({ tags, exemptions }) => {
+        const axe = (window as unknown as { axe: { run: (ctx: Document, opts: object) => Promise<{ violations: { id: string; help: string; helpUrl: string; impact: string | null; tags: string[]; nodes: { target: string[] }[] }[] }> } }).axe
+        const r = await axe.run(document, { runOnly: { type: 'tag', values: [...tags, 'best-practice'] }, resultTypes: ['violations'] })
+        const exempt = (rule: string, target: string) => exemptions.some((e) => e.rule === rule && document.querySelector(target)?.closest(e.selector))
+        return r.violations
+          .map((v) => ({ id: v.id, help: v.help, helpUrl: v.helpUrl, impact: v.impact, tags: v.tags, targets: v.nodes.map((n) => n.target.join(' ')).filter((t) => !exempt(v.id, t)) }))
+          .filter((v) => v.targets.length)
+      },
+      { tags: FAIL_TAGS, exemptions: EXEMPTIONS },
+    )
     checked++
     for (const v of result) {
       const rule = rules.get(v.id) ?? {

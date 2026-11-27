@@ -3,6 +3,7 @@
  * search and the action log. docs/leaderboard.md, "Moderation", has the rules.
  */
 import { date, dateTime } from '../lib/format'
+import { useToast, type ToastTone } from '@/components/composites/use-toast'
 import { PROVIDER_NAMES, REPORT_REASON_LABELS } from '../lib/labels'
 import { aidNames, aidsOf } from '../lib/aids'
 import { useCallback, useEffect, useState } from 'react'
@@ -46,6 +47,9 @@ const when = dateTime
 const day = date
 const message = (err: unknown) => (err instanceof Error ? err.message : String(err))
 
+/** Shows a confirmation, or (tone 'error') a problem that stays until dismissed. */
+type Notify = (text: string, tone?: ToastTone) => void
+
 export function Admin() {
   const [email, setEmail] = useState<string | null>(null)
   const [denied, setDenied] = useState<string | null>(null)
@@ -53,7 +57,9 @@ export function Admin() {
     const hash = location.hash.slice(1)
     return TABS.some((t) => t.id === hash) ? (hash as Tab) : 'reports'
   })
-  const [notice, setNotice] = useState<string | null>(null)
+  const toast = useToast()
+  // Stable, as the lists reload when it changes.
+  const notify = useCallback<Notify>((text, tone) => toast.show(text, { tone }), [toast])
 
   useEffect(() => {
     whoAmI().then(
@@ -105,32 +111,21 @@ export function Admin() {
       ) : !email ? (
         <p className="admin-empty">Checking access…</p>
       ) : tab === 'reports' ? (
-        <Reports onNotice={setNotice} />
+        <Reports onNotice={notify} />
       ) : tab === 'players' ? (
-        <Players onNotice={setNotice} />
+        <Players onNotice={notify} />
       ) : (
         <Activity />
-      )}
-
-      {notice && (
-        <div className="toast" role="status">
-          {notice}
-          <button type="button" className="toast-close" aria-label="Dismiss" onClick={() => setNotice(null)}>
-            ✕
-          </button>
-        </div>
       )}
     </div>
   )
 }
 
-type Notify = (text: string) => void
-
 function Reports({ onNotice }: { onNotice: Notify }) {
   const [status, setStatus] = useState<'open' | 'closed'>('open')
   const [groups, setGroups] = useState<ReportGroup[] | null>(null)
   const load = useCallback(() => {
-    reportQueue(status).then(setGroups, (err) => onNotice(message(err)))
+    reportQueue(status).then(setGroups, (err) => onNotice(message(err), 'error'))
   }, [status, onNotice])
   useEffect(load, [load])
 
@@ -141,7 +136,7 @@ function Reports({ onNotice }: { onNotice: Notify }) {
       onNotice(`${how === 'resolved' ? 'Resolved' : 'Dismissed'} ${closed} report${closed === 1 ? '' : 's'}.`)
       load()
     } catch (err) {
-      onNotice(message(err))
+      onNotice(message(err), 'error')
     }
   }
   const updated = (p: AdminPlayer) => setGroups((gs) => gs?.map((g) => (g.player?.id === p.id ? { ...g, player: p } : g)) ?? null)
@@ -214,7 +209,7 @@ function Players({ onNotice }: { onNotice: Notify }) {
       () =>
         findPlayers(q).then(
           (ps) => live && setPlayers(ps),
-          (err) => onNotice(message(err)),
+          (err) => onNotice(message(err), 'error'),
         ),
       q ? 250 : 0,
     )
@@ -283,7 +278,7 @@ function PlayerTools({ player, onChange, onNotice }: { player: AdminPlayer; onCh
       if (done) onNotice(done)
       return true
     } catch (err) {
-      onNotice(message(err))
+      onNotice(message(err), 'error')
       return false
     } finally {
       setBusy(false)
@@ -423,7 +418,7 @@ function RunTools({ runId, playerId, hasLog, onRemoved, onNotice }: { runId: str
             onNotice('The run is off the leaderboards. Resolve the reports when you’re done.')
             onRemoved()
           } catch (err) {
-            onNotice(message(err))
+            onNotice(message(err), 'error')
           } finally {
             setBusy(false)
           }
@@ -456,7 +451,7 @@ function RunLine({ info }: { info: RunInfo | null }) {
 function PlayerRuns({ player, onNotice }: { player: AdminPlayer; onNotice: Notify }) {
   const [entries, setEntries] = useState<Entry[] | null>(null)
   const [open, setOpen] = useState(false)
-  const load = () => playerRuns(player.id).then(setEntries, (err) => onNotice(message(err)))
+  const load = () => playerRuns(player.id).then(setEntries, (err) => onNotice(message(err), 'error'))
   if (!open) {
     return (
       <div>

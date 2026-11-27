@@ -203,7 +203,8 @@ function CommandItem<T extends object>({
       {composeRenderProps(children, (children) => (
         <>
           {children}
-          <CheckIcon className="ml-auto opacity-0 group-has-data-[slot=command-shortcut]/command-item:hidden group-data-[checked=true]/command-item:opacity-100" />
+          {/* Local edit: React Aria marks a chosen row data-selected (cmdk's was data-checked), so the check shows for it too (design system step 11). */}
+          <CheckIcon className="ml-auto opacity-0 group-has-data-[slot=command-shortcut]/command-item:hidden group-data-[checked=true]/command-item:opacity-100 group-data-selected/command-item:opacity-100" />
         </>
       ))}
     </MenuItem>

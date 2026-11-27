@@ -42,37 +42,6 @@ header.top { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
 .lang-button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .lang-button .lang-icon { color: var(--primary); font-weight: 700; font-size: 12px; }
 
-/* language picker */
-.modal-backdrop {
-  position: fixed; inset: 0; z-index: 20; display: flex; justify-content: center; align-items: flex-start;
-  padding: max(10vh, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 16px max(16px, env(safe-area-inset-left, 0px));
-  background: color-mix(in srgb, var(--overlay) 45%, transparent); backdrop-filter: blur(3px);
-}
-.picker {
-  width: min(560px, 100%); max-height: min(70vh, 560px); display: flex; flex-direction: column;
-  background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
-  box-shadow: 0 20px 60px color-mix(in srgb, var(--shadow-color) 28%, transparent);
-}
-.picker-search { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border); color: var(--muted-foreground); }
-.picker-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--foreground); font: 16px var(--font-mono); }
-.picker-search input::placeholder { color: var(--muted-foreground); }
-.picker-list { list-style: none; margin: 0; padding: 6px; overflow-y: auto; }
-.picker-list .section { display: block; padding: 0; cursor: default; }
-.picker-list .section + .section { margin-top: 4px; }
-.picker-list .section-label { display: block; padding: 8px 10px 4px; font: 600 11px var(--font-sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted-foreground); }
-.picker-list .section ul { list-style: none; margin: 0; padding: 0; }
-.picker-list li[role="option"] { display: flex; align-items: baseline; gap: 10px; padding: 9px 10px; border-radius: 7px; cursor: pointer; font: 14px var(--font-mono); }
-.picker-list li.active { background: var(--accent); }
-.picker-list .check { width: 14px; color: var(--primary); font-weight: 700; }
-.picker-list .name { color: var(--foreground); }
-/* Theme swatches: each is scoped to its theme, so these variables are that theme's. */
-.picker-list .swatches { margin-left: auto; display: flex; gap: 6px; align-self: center; }
-.swatch { display: inline-flex; gap: 3px; padding: 4px 6px; border-radius: 6px; background: var(--card); border: 1px solid var(--border); }
-.swatch i { width: 9px; height: 9px; border-radius: 50%; }
-.picker-list .ext { color: var(--muted-foreground); }
-.picker-list .based { color: var(--muted-foreground); font: 12px var(--font-sans); }
-.picker-list .count { margin-left: auto; color: var(--muted-foreground); font-size: 12px; }
-.picker-list li.empty { cursor: default; color: var(--muted-foreground); justify-content: center; }
 /* The app's own key caps; shadcn's Kbd (data-slot) styles itself. */
 kbd:not([data-slot]) { font: 600 11px var(--font-mono); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; color: var(--foreground); background: var(--card); }
 
@@ -206,7 +175,6 @@ svg.chart .er path { stroke: var(--destructive); stroke-width: 2; stroke-linecap
   .r-row, .r-row.secondary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 20px; }
   .r-row .test, .r-row .missed { grid-column: 1 / -1; }
   .hint { display: none; }
-  .modal-backdrop { padding-top: max(16px, env(safe-area-inset-top, 0px)); }
   .results { padding: 20px 16px; }
 }
 /*
@@ -313,19 +281,11 @@ svg.chart .er path { stroke: var(--destructive); stroke-width: 2; stroke-linecap
 
 /* Once the app runs, the about section leaves the page and opens as a dialog (AboutDialog). */
 .app-ready .about:not(.open) { display: none; }
-.about.open {
-  position: fixed; z-index: 21; left: 50%; top: max(6vh, env(safe-area-inset-top, 0px)); transform: translateX(-50%);
-  width: min(820px, calc(100vw - 32px)); max-height: min(86vh, 760px); overflow-y: auto; margin: 0;
-  padding: 28px 32px 24px; background: var(--card); border: 1px solid var(--border); border-radius: 12px;
-  box-shadow: 0 20px 60px color-mix(in srgb, var(--shadow-color) 28%, transparent); outline: none;
-}
-.about-backdrop { position: fixed; inset: 0; z-index: 20; background: color-mix(in srgb, var(--overlay) 45%, transparent); backdrop-filter: blur(3px); }
-.about-close { position: absolute; top: 18px; right: 18px; padding: 4px; border: 0; background: transparent; cursor: pointer; }
-.about-close:hover kbd, .about-close:focus-visible kbd { border-color: var(--primary); color: var(--primary); }
-.about.open h2 { padding-right: 56px; }
+/* Open, the section sits inside AboutDialog's modal, which gives it its panel and padding. */
+.about.open { margin: 0; padding: 0; border: 0; max-width: none; }
+.about.open h2 { padding-right: 40px; }
 .about.open .about-columns { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 @media (max-width: 640px) { .about.open .about-columns { grid-template-columns: minmax(0, 1fr); } }
-@media (max-width: 640px) { .about.open { padding: 22px 18px 18px; top: max(16px, env(safe-area-inset-top, 0px)); max-height: calc(100vh - 32px); } }
 
 /* My runs: the personal board (RunsView). */
 .runs { display: grid; gap: 16px; min-width: 0; }
@@ -397,10 +357,6 @@ svg.chart .er path { stroke: var(--destructive); stroke-width: 2; stroke-linecap
 .archived h3 { margin: 6px 0 4px; font: 700 15px var(--font-display); }
 .archived p { margin: 0 0 8px; }
 .archived ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
-.reasons { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; }
-.reason-option { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border: 1px solid var(--border); border-radius: 9px; cursor: pointer; }
-.reason-option:has(input:checked) { border-color: var(--primary); background: var(--accent); }
-.reason-option > span { display: grid; gap: 2px; font-size: 14px; }
 .field textarea { font: 14px var(--font-sans); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--muted); color: var(--foreground); resize: vertical; }
 .field textarea:focus { outline: 2px solid var(--primary); outline-offset: 1px; border-color: var(--primary); }
 .runs-head { display: flex; gap: 12px; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; }
@@ -432,90 +388,16 @@ svg.chart .runs-dot.best { fill: var(--primary); }
   header.top { gap: 12px; }
 }
 
-/* The theme picker's footer: the smooth caret switch. */
-.picker-footer { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--border); }
-.picker-footer .footer-label { display: grid; gap: 2px; font: 500 14px var(--font-sans); color: var(--foreground); margin-right: auto; }
-.picker-footer small { font: 12px var(--font-sans); color: var(--muted-foreground); }
-.switch {
-  min-width: 52px; padding: 5px 12px; border-radius: 999px; cursor: pointer; font: 600 12px var(--font-sans);
-  border: 1px solid var(--border); background: var(--muted); color: var(--muted-foreground);
-}
-.switch[aria-checked="true"] { background: var(--accent); color: var(--primary); border-color: var(--primary); }
-.switch:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-
-/* Signing in (Account): the header button, dialogs, the account menu and notices. */
-.account-button {
-  display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border-radius: 9px; cursor: pointer;
-  border: 1px solid var(--border); background: var(--card); color: var(--foreground); font: 500 13px var(--font-sans); max-width: 220px;
-}
-.account-button:hover, .account-button:focus-visible { border-color: var(--primary); }
-.account-button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-.account-button.attention { border-color: var(--primary); color: var(--primary); background: var(--accent); }
-.account-button .avatar {
-  width: 22px; height: 22px; margin-left: -5px; border-radius: 50%; display: grid; place-items: center; flex: none;
-  background: var(--primary); color: var(--primary-foreground); font: 700 12px var(--font-sans);
-}
-.account-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dialog {
-  width: min(420px, 100%); padding: 22px 22px 18px; display: grid; gap: 12px; align-self: start;
-  background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 20px 60px color-mix(in srgb, var(--shadow-color) 28%, transparent); color: var(--foreground);
-}
-.dialog form { display: grid; gap: 12px; }
-.dialog h2 { margin: 0; font: 700 20px var(--font-display); letter-spacing: -0.01em; }
-.dialog-text { margin: 0; font-size: 14px; color: var(--muted-foreground); line-height: 1.5; }
-.dialog-note { margin: 0; font-size: 12px; color: var(--muted-foreground); }
-.dialog-note.problem { color: var(--destructive); }
-.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
-.dialog .btn:disabled { opacity: .5; cursor: default; }
-.signin-options { display: grid; gap: 8px; }
-.signin-option {
-  display: flex; align-items: center; justify-content: center; gap: 10px; padding: 11px 14px; border-radius: 9px; cursor: pointer;
-  border: 1px solid var(--border); background: var(--muted); color: var(--foreground); font: 600 14px var(--font-sans);
-}
-.signin-option:hover, .signin-option:focus-visible { border-color: var(--primary); }
-.signin-option:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+/* Admin's form fields and text buttons (until step 13 moves admin onto the system). */
 .field { display: grid; gap: 6px; font: 600 12px var(--font-sans); color: var(--muted-foreground); }
 .field input {
   font: 16px var(--font-mono); padding: 9px 11px; border-radius: 8px; border: 1px solid var(--border); background: var(--muted); color: var(--foreground);
 }
 .field input:focus { outline: 2px solid var(--primary); outline-offset: 1px; border-color: var(--primary); }
 .field input[aria-invalid="true"] { border-color: var(--destructive); }
-.account-menu { width: min(300px, 100%); gap: 4px; padding: 14px; }
-.menu-who { margin: 0 0 6px; padding: 0 6px 10px; display: grid; gap: 2px; border-bottom: 1px solid var(--border); }
-.menu-who strong { font: 600 15px var(--font-sans); }
-.menu-who span { font-size: 12px; color: var(--muted-foreground); }
-.menu-item { text-align: left; padding: 9px 10px; border: 0; border-radius: 7px; background: transparent; color: var(--foreground); font: 14px var(--font-sans); cursor: pointer; }
-.menu-item:hover, .menu-item:focus-visible { background: var(--accent); color: var(--primary); outline: none; }
-.toast {
-  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 30; display: flex; gap: 12px; align-items: center;
-  padding: 10px 12px 10px 16px; border-radius: 10px; background: var(--foreground); color: var(--background); font-size: 14px; box-shadow: 0 10px 30px color-mix(in srgb, var(--shadow-color) 25%, transparent);
-  max-width: calc(100vw - 32px);
-}
-.toast-close { border: 0; background: transparent; color: inherit; cursor: pointer; font-size: 13px; opacity: .7; }
-@media (max-width: 640px) { .account-label { display: none; } .account-button { padding: 0 8px; } .account-button .avatar { margin-left: 0; } }
-/* Account & data (AccountSettings). */
-.dialog.account-settings { width: min(560px, 100%); max-height: calc(100vh - 48px); overflow-y: auto; }
-.settings-block { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
-.settings-block h3 { margin: 0; font: 600 13px var(--font-sans); letter-spacing: .06em; text-transform: uppercase; color: var(--muted-foreground); }
-.danger-zone h3 { color: var(--destructive); }
-.switch-row { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; cursor: pointer; }
-.switch-row input { margin-top: 3px; accent-color: var(--primary); }
-.switch-row > span { display: grid; gap: 2px; }
 .inline-link { border: 0; padding: 0; background: none; cursor: pointer; color: var(--primary); font: inherit; }
 .inline-link:hover { text-decoration: underline; }
 .inline-link:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 3px; }
-.entries { list-style: none; margin: 0; padding: 0; display: grid; max-height: 220px; overflow-y: auto; border: 1px solid var(--border); border-radius: 9px; }
-.entries li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 4px 12px; align-items: center; padding: 8px 12px; font-size: 13px; }
-.entries li + li { border-top: 1px solid var(--border); }
-.entry-name { font-family: var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.entry-stat { color: var(--muted-foreground); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.entry-actions { display: flex; gap: 6px; }
-.entry-actions .btn { padding: 4px 9px; font-size: 12px; }
-.delete-form { display: grid; gap: 10px; }
-.dialog-actions.spread { justify-content: space-between; align-items: center; }
-.policy-links { display: flex; gap: 14px; font-size: 13px; }
-.policy-links a, .dialog-text a { color: var(--primary); }
-@media (max-width: 520px) { .entries li { grid-template-columns: minmax(0, 1fr) auto; } .entry-stat { grid-column: 1; } }
 
 /* The privacy and fair-play pages (scripts/build-pages.mjs). */
 .policy { max-width: 720px; margin: 0 auto; display: grid; gap: 22px; line-height: 1.6; }
@@ -535,4 +417,3 @@ svg.chart .runs-dot.best { fill: var(--primary); }
 .brand-word span { color: var(--primary); }
 .about-links { margin: 12px 0 0; font-size: 14px; }
 .about-links a { color: var(--primary); }
-.dialog-note a { color: var(--primary); }

@@ -9,7 +9,16 @@ import { deleteAccount, deleteEntry, downloadData, fetchEntries, setHidden, sign
 import { speed, whenPlayed } from '../lib/format'
 import { PROVIDER_NAMES as PROVIDERS } from '../lib/labels'
 import { POLICY_LINKS } from '../seo/policyLinks'
-import { Dialog } from './Account'
+import { LabelledCheckbox } from '@/components/composites/labelled'
+import { Button } from '@/components/ui/button'
+import { DialogFooter } from '@/components/ui/dialog'
+import { Field, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { AccountDialog } from './AccountDialogs'
+
+/** A text button inside a sentence (Change name, delete). */
+const INLINE = 'h-auto p-0 align-baseline'
+const NOTE = 'text-xs text-muted-foreground'
 
 /** Where players remove Syntype from the apps connected to their account. */
 const CONNECTED_APPS = { github: 'https://github.com/settings/applications', google: 'https://myaccount.google.com/connections' }
@@ -51,45 +60,49 @@ export function AccountSettings({ player, onClose, onRename, onPlayer, onDeleted
 
   if (deleted) {
     return (
-      <Dialog label="Account deleted" onClose={onClose} className="account-settings">
-        <h2>Your account is deleted</h2>
-        <p className="dialog-text">
+      <AccountDialog title="Your account is deleted" onClose={onClose}>
+        <p className="text-muted-foreground">
           Your name, scores and replays are off Syntype’s leaderboards and out of its database. Backups that still hold them are gone within 30 days at most.
         </p>
-        <p className="dialog-text">
+        <p className="text-muted-foreground">
           To finish, you can remove Syntype from the apps connected to your {PROVIDERS[player.provider]} account:{' '}
-          <a href={CONNECTED_APPS[player.provider]} target="_blank" rel="noreferrer">
+          <a href={CONNECTED_APPS[player.provider]} target="_blank" rel="noreferrer" className="text-primary">
             {PROVIDERS[player.provider]} settings ↗
           </a>
         </p>
-        <div className="dialog-actions">
-          <button type="button" className="btn accent" data-autofocus onClick={onClose}>
+        <DialogFooter>
+          <Button autoFocus slot="close">
             Done
-          </button>
-        </div>
-      </Dialog>
+          </Button>
+        </DialogFooter>
+      </AccountDialog>
     )
   }
 
   return (
-    <Dialog label="Account and data" onClose={onClose} className="account-settings">
-      <h2>Account &amp; data</h2>
-      <p className="dialog-text">
-        Signed in with {PROVIDERS[player.provider]} as <b>{name}</b>.{' '}
-        <button type="button" className="inline-link" onClick={onRename}>
-          Change name
-        </button>
-      </p>
+    <AccountDialog
+      title="Account & data"
+      description={
+        <>
+          Signed in with {PROVIDERS[player.provider]} as <b className="text-foreground">{name}</b>.{' '}
+          <Button variant="link" className={INLINE} onPress={onRename}>
+            Change name
+          </Button>
+        </>
+      }
+      onClose={onClose}
+      className="sm:max-w-xl"
+    >
 
-      <section className="settings-block" aria-labelledby="acct-boards">
-        <h3 id="acct-boards">Leaderboards</h3>
-        <label className="switch-row">
-          <input
-            type="checkbox"
-            checked={!hidden}
-            onChange={async (e) => {
+      <section className="grid gap-2 border-t pt-3" aria-labelledby="acct-boards">
+        <h3 id="acct-boards" className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Leaderboards</h3>
+        <LabelledCheckbox
+          label="Show me on the leaderboards"
+          aria-describedby="acct-boards-hint"
+          isSelected={!hidden}
+          onChange={async (shown) => {
               // Moves at once; moves back if the server says no.
-              const hide = !e.target.checked
+              const hide = !shown
               setHiddenNow(hide)
               const r = await setHidden(hide)
               if (r.ok) onPlayer(r.body.player)
@@ -98,42 +111,38 @@ export function AccountSettings({ player, onClose, onRename, onPlayer, onDeleted
                 setProblem(r.error)
               }
             }}
-          />
-          <span>
-            Show me on the leaderboards
-            <span className="dialog-note">
-              {hidden ? 'Hidden: nobody else sees your runs or name. Your runs are still kept, and you still see your own place.' : 'Your name and best runs are public on each snippet’s board.'}
-            </span>
-          </span>
-        </label>
-        {player.hiddenByModerator && <p className="dialog-note problem">A moderator has hidden you from the leaderboards, so you stay hidden whatever this switch says.</p>}
+        />
+        <p id="acct-boards-hint" className={NOTE}>
+          {hidden ? 'Hidden: nobody else sees your runs or name. Your runs are still kept, and you still see your own place.' : 'Your name and best runs are public on each snippet’s board.'}
+        </p>
+        {player.hiddenByModerator && <p className="text-xs text-destructive">A moderator has hidden you from the leaderboards, so you stay hidden whatever this switch says.</p>}
       </section>
 
-      <section className="settings-block" aria-labelledby="acct-entries">
-        <h3 id="acct-entries">Your entries</h3>
+      <section className="grid gap-2 border-t pt-3" aria-labelledby="acct-entries">
+        <h3 id="acct-entries" className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Your entries</h3>
         {entries === null ? (
-          <p className="dialog-note">Loading…</p>
+          <p className={NOTE}>Loading…</p>
         ) : entries === 'error' ? (
-          <p className="dialog-note problem">Your entries couldn’t be loaded.</p>
+          <p className="text-xs text-destructive">Your entries couldn’t be loaded.</p>
         ) : entries.length === 0 ? (
-          <p className="dialog-note">No runs on the leaderboards yet.</p>
+          <p className={NOTE}>No runs on the leaderboards yet.</p>
         ) : (
-          <ul className="entries">
+          <ul className="m-0 grid max-h-56 list-none divide-y overflow-y-auto rounded-lg border p-0">
             {entries.map((e) => (
-              <li key={e.runId}>
-                <span className="entry-name">
+              <li key={e.runId} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-3 py-2 text-xs sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+                <span className="truncate font-mono">
                   {langName(e.language)} · {e.snippet}
                 </span>
-                <span className="entry-stat">
+                <span className="whitespace-nowrap text-muted-foreground tabular-nums max-sm:col-start-1">
                   {speed(e)} · {whenPlayed(e.finishedAt)}
                 </span>
                 {confirming === e.runId ? (
-                  <span className="entry-actions">
-                    <button
-                      type="button"
-                      className="btn danger"
-                      disabled={busy}
-                      onClick={async () => {
+                  <span className="flex gap-1.5">
+                    <Button
+                      variant="destructive"
+                      size="xs"
+                      isDisabled={busy}
+                      onPress={async () => {
                         setBusy(true)
                         const r = await deleteEntry(e.runId)
                         setBusy(false)
@@ -143,32 +152,31 @@ export function AccountSettings({ player, onClose, onRename, onPlayer, onDeleted
                       }}
                     >
                       Delete
-                    </button>
-                    <button type="button" className="btn" onClick={() => setConfirming(null)}>
+                    </Button>
+                    <Button variant="outline" size="xs" onPress={() => setConfirming(null)}>
                       Keep
-                    </button>
+                    </Button>
                   </span>
                 ) : (
-                  <button type="button" className="inline-link" onClick={() => setConfirming(e.runId)} aria-label={`Delete your ${e.snippet} run`}>
+                  <Button variant="link" className={INLINE} onPress={() => setConfirming(e.runId)} aria-label={`Delete your ${e.snippet} run`}>
                     delete
-                  </button>
+                  </Button>
                 )}
               </li>
             ))}
           </ul>
         )}
-        <p className="dialog-note">Deleting a run takes it off its board. If you have a run on the same snippet with other typing aids, that one takes its place.</p>
+        <p className={NOTE}>Deleting a run takes it off its board. If you have a run on the same snippet with other typing aids, that one takes its place.</p>
       </section>
 
-      <section className="settings-block" aria-labelledby="acct-sessions">
-        <h3 id="acct-sessions">Devices</h3>
-        <p className="dialog-note">Signs you out on every device and browser where you’re signed in, this one included. Use it if you signed in somewhere you no longer use.</p>
+      <section className="grid gap-2 border-t pt-3" aria-labelledby="acct-sessions">
+        <h3 id="acct-sessions" className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Devices</h3>
+        <p className={NOTE}>Signs you out on every device and browser where you’re signed in, this one included. Use it if you signed in somewhere you no longer use.</p>
         <div>
-          <button
-            type="button"
-            className="btn"
-            disabled={busy}
-            onClick={async () => {
+          <Button
+            variant="outline"
+            isDisabled={busy}
+            onPress={async () => {
               setBusy(true)
               const r = await signOutEverywhere()
               setBusy(false)
@@ -177,41 +185,40 @@ export function AccountSettings({ player, onClose, onRename, onPlayer, onDeleted
             }}
           >
             Sign out everywhere
-          </button>
+          </Button>
         </div>
       </section>
 
-      <section className="settings-block" aria-labelledby="acct-data">
-        <h3 id="acct-data">Your data</h3>
-        <p className="dialog-note">A file with everything Syntype keeps about you: your account, best scores, kept keystroke logs, the reports you sent, and reports and moderator actions about you (without other people’s details). Your run history stays on this device (My runs has its own export).</p>
+      <section className="grid gap-2 border-t pt-3" aria-labelledby="acct-data">
+        <h3 id="acct-data" className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Your data</h3>
+        <p className={NOTE}>A file with everything Syntype keeps about you: your account, best scores, kept keystroke logs, the reports you sent, and reports and moderator actions about you (without other people’s details). Your run history stays on this device (My runs has its own export).</p>
         <div>
-          <button
-            type="button"
-            className="btn"
-            onClick={async () => {
+          <Button
+            variant="outline"
+            onPress={async () => {
               const r = await downloadData()
               if (r) setProblem(r)
             }}
           >
             Download my data
-          </button>
+          </Button>
         </div>
       </section>
 
-      <section className="settings-block danger-zone" aria-labelledby="acct-delete">
-        <h3 id="acct-delete">Delete account</h3>
+      <section className="grid gap-2 border-t pt-3" aria-labelledby="acct-delete">
+        <h3 id="acct-delete" className="text-xs font-semibold tracking-wider text-destructive uppercase">Delete account</h3>
         {!deleting ? (
           <>
-            <p className="dialog-note">Deletes your name, scores and replays from Syntype at once. Reports you sent stay, without your name.</p>
+            <p className={NOTE}>Deletes your name, scores and replays from Syntype at once. Reports you sent stay, without your name.</p>
             <div>
-              <button type="button" className="btn danger" onClick={() => setDeleting(true)}>
+              <Button variant="destructive" onPress={() => setDeleting(true)}>
                 Delete my account…
-              </button>
+              </Button>
             </div>
           </>
         ) : (
           <form
-            className="delete-form"
+            className="grid gap-2.5"
             onSubmit={async (e) => {
               e.preventDefault()
               setBusy(true)
@@ -225,45 +232,42 @@ export function AccountSettings({ player, onClose, onRename, onPlayer, onDeleted
               setDeleted(true)
             }}
           >
-            <label className="field">
-              <span>
+            <Field>
+              <FieldLabel htmlFor="acct-confirm">
                 Type <b>{name}</b> to confirm
-              </span>
-              <input value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" spellCheck={false} />
-            </label>
-            <label className="switch-row">
-              <input type="checkbox" checked={clearLocal} onChange={(e) => setClearLocal(e.target.checked)} />
-              <span>Also clear my run history on this device</span>
-            </label>
-            <div className="dialog-actions">
-              <button type="button" className="btn" onClick={() => setDeleting(false)}>
+              </FieldLabel>
+              <Input id="acct-confirm" value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" spellCheck={false} autoFocus />
+            </Field>
+            <LabelledCheckbox label="Also clear my run history on this device" isSelected={clearLocal} onChange={setClearLocal} />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onPress={() => setDeleting(false)}>
                 Cancel
-              </button>
-              <button type="submit" className="btn danger" disabled={busy || typed.trim().toLowerCase() !== name.toLowerCase()}>
+              </Button>
+              <Button type="submit" variant="destructive" isDisabled={busy || typed.trim().toLowerCase() !== name.toLowerCase()}>
                 Delete my account
-              </button>
+              </Button>
             </div>
           </form>
         )}
       </section>
 
       {problem && (
-        <p className="dialog-note problem" role="alert">
+        <p className="text-sm text-destructive" role="alert">
           {problem}
         </p>
       )}
-      <div className="dialog-actions spread">
-        <span className="policy-links">
+      <DialogFooter className="items-center sm:justify-between">
+        <span className="flex gap-3.5 text-sm">
           {POLICY_LINKS.map((l) => (
-            <a key={l.path} href={l.path} target="_blank" rel="noreferrer">
+            <a key={l.path} href={l.path} target="_blank" rel="noreferrer" className="text-primary">
               {l.label}
             </a>
           ))}
         </span>
-        <button type="button" className="btn" onClick={onClose}>
+        <Button variant="outline" slot="close">
           Close
-        </button>
-      </div>
-    </Dialog>
+        </Button>
+      </DialogFooter>
+    </AccountDialog>
   )
 }

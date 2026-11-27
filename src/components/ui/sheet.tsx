@@ -45,11 +45,13 @@ function SheetOverlay({
   children: React.ReactNode
 }) {
   return (
+    // Local edit: the backdrop dims the page 45% (Nova: 10%), as the site always has;
+    // the coloured code behind would otherwise compete with the dialog (design system step 11).
     <ModalOverlayPrimitive
       data-slot="sheet-overlay"
       isDismissable
       className={cn(
-        "fixed inset-0 z-50 bg-overlay/10 transition-opacity duration-150 data-entering:opacity-0 data-exiting:opacity-0 supports-backdrop-filter:backdrop-blur-xs",
+        "fixed inset-0 z-50 bg-overlay/45 transition-opacity duration-150 data-entering:opacity-0 data-exiting:opacity-0 supports-backdrop-filter:backdrop-blur-xs",
         className
       )}
       {...props}

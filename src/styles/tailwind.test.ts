@@ -92,7 +92,8 @@ describe('shadcn components in the site\'s CSS', () => {
 
   it('app.css lists exactly the shadcn components and composites the site uses', () => {
     const src = fileURLToPath(new URL('../', import.meta.url))
-    const IMPORT = /from ['"](?:@\/components\/|(?:\.{1,2}\/)+(?:components\/)?)(ui|composites)\/([\w-]+)['"]/g
+    // Static and lazy imports alike: `from '…'` and `import('…')`.
+    const IMPORT = /(?:from |import\()['"](?:@\/components\/|(?:\.{1,2}\/)+(?:components\/)?)(ui|composites)\/([\w-]+)['"]/g
     const used = new Set<string>()
     const add = (text: string) => {
       for (const m of text.matchAll(IMPORT)) used.add(`${m[1]}/${m[2]}`)

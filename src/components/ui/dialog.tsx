@@ -45,10 +45,12 @@ function DialogOverlay({
   children: React.ReactNode
 }) {
   return (
+    // Local edit: the backdrop dims the page 45% (Nova: 10%), as the site always has;
+    // the coloured code behind would otherwise compete with the dialog (design system step 11).
     <ModalOverlayPrimitive
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 isolate z-50 bg-overlay/10 duration-100 data-entering:animate-in data-entering:fade-in-0 data-exiting:animate-out data-exiting:fade-out-0 supports-backdrop-filter:backdrop-blur-xs",
+        "fixed inset-0 isolate z-50 bg-overlay/45 duration-100 data-entering:animate-in data-entering:fade-in-0 data-exiting:animate-out data-exiting:fade-out-0 supports-backdrop-filter:backdrop-blur-xs",
         className
       )}
       {...props}

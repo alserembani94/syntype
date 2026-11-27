@@ -78,14 +78,12 @@ export async function fontsLoaded(page: Page) {
 }
 
 /**
- * Redoes the picker's own scroll to its current row once the layout is final
- * (walk.ts calls it after the layout settles). Opening scrolls it into view
- * while the search field is still growing, so the offset could vary by a pixel or two.
+ * Puts the picker's list back at the top once the layout is final (walk.ts
+ * calls it after the layout settles), so the frame is the same every time.
  */
 export async function settlePicker(page: Page) {
-  await page.locator('.picker-list').evaluate((list) => {
+  await page.locator('[data-slot="command-list"]').evaluate((list) => {
     list.scrollTop = 0
-    list.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' })
   })
 }
 
@@ -102,8 +100,8 @@ async function holdReplay(page: Page) {
 const openAccount = async (page: Page) => {
   await page.goto('/python')
   await fontsLoaded(page)
-  // By class: on phones the name is hidden and the button's name falls back to its title.
-  await page.locator('.account-button').click()
+  await page.getByRole('button', { name: /^Account: / }).click()
+  await page.getByRole('menu').waitFor()
 }
 
 const AIDS_110 = { autoIndent: true, autoClose: true, autocomplete: false }
@@ -210,8 +208,10 @@ export const STATES: State[] = [
     signedIn: true,
     open: async (p) => {
       await openAccount(p)
-      await p.getByRole('button', { name: 'Change name' }).click()
-      await p.getByRole('dialog').waitFor()
+      await p.getByRole('menuitem', { name: 'Change name' }).click()
+      // By name: the menu's popover is a dialog too while it fades out.
+      await p.getByRole('dialog', { name: 'Change your name' }).waitFor()
+      await p.getByRole('menu').waitFor({ state: 'detached' })
     },
   },
   {
@@ -221,9 +221,10 @@ export const STATES: State[] = [
     signedIn: true,
     open: async (p) => {
       await openAccount(p)
-      await p.getByRole('button', { name: 'Account & data' }).click()
+      await p.getByRole('menuitem', { name: 'Account & data' }).click()
       await p.getByText('Your entries').waitFor()
-      await p.locator('.entries').waitFor()
+      await p.getByRole('menu').waitFor({ state: 'detached' })
+      await p.getByRole('dialog').getByRole('list').waitFor()
     },
   },
   {
@@ -233,9 +234,9 @@ export const STATES: State[] = [
     signedIn: true,
     open: async (p) => {
       await openAccount(p)
-      await p.getByRole('button', { name: 'Account & data' }).click()
+      await p.getByRole('menuitem', { name: 'Account & data' }).click()
       await p.getByRole('button', { name: 'Delete my account…' }).click()
-      await p.locator('.delete-form').scrollIntoViewIfNeeded()
+      await p.getByRole('button', { name: 'Delete my account', exact: true }).scrollIntoViewIfNeeded()
     },
   },
   {
@@ -244,7 +245,7 @@ export const STATES: State[] = [
     title: 'A toast',
     open: async (p) => {
       await p.goto('/python?signin=expired')
-      await p.locator('.toast').waitFor()
+      await p.locator('[data-slot="toast"]').waitFor()
     },
   },
 

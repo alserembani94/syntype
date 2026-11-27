@@ -84,7 +84,7 @@ async function settle(page: Page) {
     if (after === before) break
     before = after
   }
-  if (await page.locator('.picker-list').count()) await settlePicker(page)
+  if (await page.locator('[data-slot="command-list"]').count()) await settlePicker(page)
   await page.waitForTimeout(100)
 }
 

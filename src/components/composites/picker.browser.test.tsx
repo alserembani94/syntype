@@ -85,6 +85,28 @@ describe('Picker', () => {
     expect(onSelect).toHaveBeenCalledWith('dark')
   })
 
+  // React Aria highlights the first match a moment after each keystroke; a fast
+  // typist's Enter can land before that, and must still choose it.
+  test('typing then Enter at once chooses the first match', async () => {
+    const { open, onSelect } = setup()
+    await open()
+    const input = page.getByRole('searchbox').element() as HTMLInputElement
+    for (const key of 'pro') {
+      input.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
+      input.value += key
+      input.dispatchEvent(new InputEvent('input', { bubbles: true, data: key, inputType: 'insertText' }))
+    }
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    await vi.waitFor(() => expect(onSelect).toHaveBeenCalledWith('one-dark-pro'))
+  })
+
+  test('↓ then Enter chooses the highlighted row, not the first', async () => {
+    const { open, onSelect } = setup()
+    await open()
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}{Enter}')
+    expect(onSelect).toHaveBeenCalledWith('dark')
+  })
+
   test('shows the empty message when nothing matches', async () => {
     const { open } = setup()
     await open()
@@ -96,6 +118,23 @@ describe('Picker', () => {
     const { open } = setup('one-dark-pro')
     await open()
     await expect.element(page.getByRole('menuitemradio', { name: 'One Dark Pro' })).toHaveAttribute('aria-checked', 'true')
+  })
+
+  // The current row is selected, and React Aria's collections take Esc to clear a
+  // selection by default, so it never reached the dialog from the search box.
+  test('Esc in the search box closes it', async () => {
+    const { open, onClose } = setup()
+    await open()
+    await expect.element(page.getByRole('searchbox')).toHaveFocus()
+    await userEvent.keyboard('{Escape}')
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  test('Esc after typing closes it too (one press)', async () => {
+    const { open, onClose } = setup()
+    await open()
+    await userEvent.keyboard('dark{Escape}')
+    expect(onClose).toHaveBeenCalled()
   })
 
   test('Tab reaches the footer, and Esc closes', async () => {

@@ -1,6 +1,6 @@
 import { CATEGORIES, type Language } from '../languages'
 import { fuzzyMatch } from '../lib/suggest'
-import { Picker } from './Picker'
+import { Picker } from '@/components/composites/picker'
 
 interface Props {
   languages: Language[]
@@ -29,6 +29,7 @@ function matches(lang: Language, query: string): boolean {
 
 const sectionOf = (l: Language) => l.category
 const idOf = (l: Language) => l.id
+const textOf = (l: Language) => l.name
 
 /** A searchable list of languages in a modal, opened from the language button. */
 export function LanguagePicker({ languages, currentId, onSelect, onClose }: Props) {
@@ -40,17 +41,18 @@ export function LanguagePicker({ languages, currentId, onSelect, onClose }: Prop
       sections={CATEGORIES}
       sectionOf={sectionOf}
       idOf={idOf}
+      textOf={textOf}
       matches={matches}
       currentId={currentId}
       onSelect={onSelect}
       onClose={onClose}
-      empty={(q) => <>No language matches “{q}”</>}
+      empty="No language matches."
       renderItem={(lang) => (
         <>
-          <span className="name">{lang.name}</span>
-          <span className="ext">.{lang.extension}</span>
-          {lang.basedOn && <span className="based">on {lang.basedOn}</span>}
-          <span className="count">{lang.snippets.length} snippets</span>
+          <span className="font-mono">{lang.name}</span>
+          <span className="font-mono text-muted-foreground">.{lang.extension}</span>
+          {lang.basedOn && <span className="text-xs text-muted-foreground">on {lang.basedOn}</span>}
+          <span className="ml-auto text-xs text-muted-foreground">{lang.snippets.length} snippets</span>
         </>
       )}
     />

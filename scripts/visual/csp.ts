@@ -40,6 +40,15 @@ try {
       await page.getByRole('button', { name: 'Change name' }).click()
       await page.getByRole('dialog').waitFor()
     }
+    // And on a language page, the site's own overlays: the language picker, then About.
+    if (path === '/python') {
+      await page.keyboard.press('Control+Shift+L')
+      await page.getByRole('dialog').waitFor()
+      await page.keyboard.press('Escape')
+      await page.getByRole('button', { name: 'About Syntype' }).click()
+      await page.getByRole('dialog').waitFor()
+      await page.keyboard.press('Escape')
+    }
     // Violations seen by the page itself, with their source, including ones the console may not show.
     await page.waitForTimeout(500)
     const seen = await page.evaluate(() => (window as unknown as { __csp: string[] }).__csp)

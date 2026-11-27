@@ -4,19 +4,22 @@
  * snippet's board (top 15, by typing aids, with your own place), replays of
  * the kept runs, and reports. The data comes from /api/boards (worker/lib/boards.ts).
  */
-import { REPORT_REASON_LABELS } from '../lib/labels'
-import { REPORT_REASONS } from '../lib/apiTypes'
 import { useAddressPlace, type AddressSpec } from '../hooks/useAddressPlace'
 import { useEffect, useMemo, useState } from 'react'
 import type { Language, Snippet, SnippetLength } from '../languages'
 import type { Player } from '../lib/account'
 import { AIDS, aidsKey, aidsOf } from '../lib/aids'
 import { AidTags } from './AidTags'
-import { fetchBoard, fetchLanguageBoards, fetchMyPlace, fetchReplay, sendReport, type Board, type BoardReplay, type BoardRow, type LanguageBoards, type ReportReason } from '../lib/boards'
+import { fetchBoard, fetchLanguageBoards, fetchMyPlace, fetchReplay, sendReport, type Board, type BoardReplay, type BoardRow, type LanguageBoards } from '../lib/boards'
 import { fingerprint } from '../lib/runlog'
 import { whenPlayed } from '../lib/format'
 import { ReplayView } from './ReplayView'
 import { LanguagePicker } from './LanguagePicker'
+import { FlagIcon } from 'lucide-react'
+import { Tip } from '@/components/composites/tip'
+import { ReportDialog } from '@/components/composites/report-dialog'
+import { useToast } from '@/components/composites/use-toast'
+import { Button } from '@/components/ui/button'
 
 const LENGTHS: SnippetLength[] = ['short', 'medium', 'long']
 
@@ -268,8 +271,8 @@ function SnippetBoard({
     }
   }, [fp, aids, player])
   const data = loaded?.key === key ? loaded : null
-  const [reporting, setReporting] = useState<BoardRow | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
+  const toast = useToast()
+  const onReported = () => toast.show('Thanks. The report was sent to the moderator.')
 
   if (!snippet && !version) {
     return (
@@ -347,7 +350,7 @@ function SnippetBoard({
               </thead>
               <tbody>
                 {board?.rows.map((r) => (
-                  <Row key={r.runId} row={r} mine={r.player.id === player?.id} canReport={!!player?.name && r.player.id !== player.id} onReplay={onReplay} onReport={setReporting} />
+                  <Row key={r.runId} row={r} mine={r.player.id === player?.id} canReport={!!player?.name && r.player.id !== player.id} onReplay={onReplay} onReported={onReported} />
                 ))}
                 {mine && !inTop && (
                   <>
@@ -359,7 +362,7 @@ function SnippetBoard({
                           : '⋯'}
                       </td>
                     </tr>
-                    <Row row={mine} mine canReport={false} onReplay={onReplay} onReport={setReporting} />
+                    <Row row={mine} mine canReport={false} onReplay={onReplay} onReported={onReported} />
                   </>
                 )}
               </tbody>
@@ -368,29 +371,11 @@ function SnippetBoard({
         </div>
       )}
       {!player && <p className="runs-muted">Sign in to put your own runs on the boards.</p>}
-      {reporting && (
-        <ReportDialog
-          row={reporting}
-          onClose={() => setReporting(null)}
-          onSent={() => {
-            setReporting(null)
-            setNotice('Thanks. The report was sent to the moderator.')
-          }}
-        />
-      )}
-      {notice && (
-        <div className="toast" role="status">
-          {notice}
-          <button type="button" className="toast-close" aria-label="Dismiss" onClick={() => setNotice(null)}>
-            ✕
-          </button>
-        </div>
-      )}
     </section>
   )
 }
 
-function Row({ row: r, mine, canReport, onReplay, onReport }: { row: BoardRow; mine: boolean; canReport: boolean; onReplay: (id: string) => void; onReport: (r: BoardRow) => void }) {
+function Row({ row: r, mine, canReport, onReplay, onReported }: { row: BoardRow; mine: boolean; canReport: boolean; onReplay: (id: string) => void; onReported: () => void }) {
   return (
     <tr className={mine ? 'mine' : undefined}>
       <td className="rank">{r.rank}</td>
@@ -417,78 +402,21 @@ function Row({ row: r, mine, canReport, onReplay, onReport }: { row: BoardRow; m
       </td>
       <td>
         {canReport && (
-          <button type="button" className="icon-link" aria-label={`Report ${r.player.name}’s run`} title="Report" onClick={() => onReport(r)}>
-            ⚑
-          </button>
+          <ReportDialog
+            playerName={r.player.name}
+            trigger={
+              <Tip label="Report">
+                <Button variant="ghost" size="icon-sm" aria-label={`Report ${r.player.name}’s run`}>
+                  <FlagIcon />
+                </Button>
+              </Tip>
+            }
+            onSend={({ reason, note }) => sendReport({ player: r.player.id, run: reason === 'name' ? undefined : r.runId, reason, note })}
+            onSent={onReported}
+          />
         )}
       </td>
     </tr>
-  )
-}
-
-const REASON_HINTS: Record<ReportReason, string> = {
-  cheating: 'The run looks automated or faked.',
-  name: 'The player’s name is abusive or inappropriate.',
-  other: 'Tell the moderator in the note.',
-}
-const REASONS = REPORT_REASONS.map((id) => ({ id, label: REPORT_REASON_LABELS[id], hint: REASON_HINTS[id] }))
-
-function ReportDialog({ row, onClose, onSent }: { row: BoardRow; onClose: () => void; onSent: () => void }) {
-  const [reason, setReason] = useState<ReportReason | null>(null)
-  const [note, setNote] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [sending, setSending] = useState(false)
-  return (
-    <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <form
-        className="dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Report"
-        onKeyDown={(e) => e.key === 'Escape' && onClose()}
-        onSubmit={async (e) => {
-          e.preventDefault()
-          if (!reason || sending) return
-          setSending(true)
-          const problem = await sendReport({ player: row.player.id, run: reason === 'name' ? undefined : row.runId, reason, note })
-          setSending(false)
-          if (problem) setError(problem)
-          else onSent()
-        }}
-      >
-        <h2>Report {row.player.name}</h2>
-        <p className="dialog-text">The moderator looks at every report. Reports are private: the player isn’t told who sent one.</p>
-        <fieldset className="reasons">
-          <legend className="dialog-note">What’s wrong?</legend>
-          {REASONS.map((r) => (
-            <label key={r.id} className="reason-option">
-              <input type="radio" name="reason" value={r.id} checked={reason === r.id} onChange={() => setReason(r.id)} />
-              <span>
-                <b>{r.label}</b>
-                <span className="dialog-note">{r.hint}</span>
-              </span>
-            </label>
-          ))}
-        </fieldset>
-        <label className="field">
-          <span>Note (optional)</span>
-          <textarea value={note} maxLength={500} rows={3} onChange={(e) => setNote(e.target.value)} />
-        </label>
-        {error && (
-          <p className="dialog-note problem" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="dialog-actions">
-          <button type="button" className="btn" onClick={onClose}>
-            Cancel
-          </button>
-          <button type="submit" className="btn accent" disabled={!reason || sending}>
-            {sending ? 'Sending…' : 'Send report'}
-          </button>
-        </div>
-      </form>
-    </div>
   )
 }
 

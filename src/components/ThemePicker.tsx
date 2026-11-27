@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useId, useRef } from 'react'
+import { LabelledSwitch } from '@/components/composites/labelled'
+import { Picker } from '@/components/composites/picker'
 import { THEME_SECTIONS, THEMES, type Theme } from '../themes'
 import { fuzzyMatch } from '../lib/suggest'
-import { Picker } from './Picker'
 
 interface Props {
   currentId: string
@@ -33,15 +34,16 @@ export const PREVIEW_DELAY_MS = 350
 
 const sectionOf = (t: Theme) => t.section
 const idOf = (t: Theme) => t.id
+const textOf = (t: Theme) => t.name
 
 /** A few of the theme's own colours, drawn from its CSS by scoping the theme to the swatch. */
 function Swatch({ themeId }: { themeId: string }) {
   return (
-    <span className="swatch" data-syntype-theme={themeId} aria-hidden="true">
-      <i style={{ background: 'var(--foreground)' }} />
-      <i style={{ background: 'var(--primary)' }} />
-      <i style={{ background: 'var(--code-keyword)' }} />
-      <i style={{ background: 'var(--code-string)' }} />
+    <span className="inline-flex gap-0.75 rounded-md border bg-card px-1.5 py-1" data-syntype-theme={themeId} aria-hidden="true">
+      <i className="size-2.25 rounded-full bg-foreground" />
+      <i className="size-2.25 rounded-full bg-primary" />
+      <i className="size-2.25 rounded-full bg-code-keyword" />
+      <i className="size-2.25 rounded-full bg-code-string" />
     </span>
   )
 }
@@ -49,6 +51,7 @@ function Swatch({ themeId }: { themeId: string }) {
 /** The theme list, opened from the theme button in the footer. */
 export function ThemePicker({ currentId, onPreview, onSelect, onClose, smoothCaret, onSmoothCaret }: Props) {
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const hint = useId()
   // A preview still waiting when the picker closes must not land afterwards.
   useEffect(() => () => clearTimeout(timer.current), [])
   const preview = (id: string) => {
@@ -64,28 +67,26 @@ export function ThemePicker({ currentId, onPreview, onSelect, onClose, smoothCar
       sections={THEME_SECTIONS}
       sectionOf={sectionOf}
       idOf={idOf}
+      textOf={textOf}
       matches={matches}
       currentId={currentId}
       onActive={(t) => preview(t.id)}
       onSelect={onSelect}
       onClose={onClose}
-      empty={(q) => <>No theme matches “{q}”</>}
+      empty="No theme matches."
       footer={
-        <>
-          <span className="footer-label">
-            Smooth caret
-            <small>glides between letters, with a trail when a suggestion fills in a word</small>
-          </span>
-          <button type="button" role="switch" aria-checked={smoothCaret} className="switch" onClick={() => onSmoothCaret(!smoothCaret)}>
-            {smoothCaret ? 'on' : 'off'}
-          </button>
-        </>
+        <div className="grid gap-1">
+          <LabelledSwitch label="Smooth caret" className="font-medium" isSelected={smoothCaret} onChange={onSmoothCaret} aria-describedby={hint} />
+          <p id={hint} className="text-xs text-muted-foreground">
+            Glides between letters, with a trail when a suggestion fills in a word.
+          </p>
+        </div>
       }
       renderItem={(theme) => (
         <>
-          <span className="name">{theme.name}</span>
-          {theme.credit && <span className="based">{theme.credit}</span>}
-          <span className="swatches">
+          <span className="font-mono">{theme.name}</span>
+          {theme.credit && <span className="text-xs text-muted-foreground">{theme.credit}</span>}
+          <span className="ml-auto flex gap-1.5">
             {(theme.swatches ?? [theme.id]).map((id) => (
               <Swatch key={id} themeId={id} />
             ))}

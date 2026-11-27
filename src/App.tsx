@@ -20,9 +20,13 @@ import { SettingsBar } from './blocks/SettingsBar'
 import { useStableCallback } from './hooks/useStableCallback'
 import { RenderMark } from './lib/renderMark'
 import { AdSlot } from './components/AdSlot'
-import { LanguagePicker } from './components/LanguagePicker'
-import { ThemePicker } from './components/ThemePicker'
 // Views that open on a click load on demand, so the game's first load carries only what typing needs.
+// The overlays load on demand, keeping React Aria's collection and overlay code out of the
+// first load; the pickers are fetched once the page is idle, so a shortcut opens them at once.
+const loadLanguagePicker = () => import('./components/LanguagePicker')
+const loadThemePicker = () => import('./components/ThemePicker')
+const LanguagePicker = lazy(() => loadLanguagePicker().then((m) => ({ default: m.LanguagePicker })))
+const ThemePicker = lazy(() => loadThemePicker().then((m) => ({ default: m.ThemePicker })))
 const AboutDialog = lazy(() => import('./components/AboutDialog').then((m) => ({ default: m.AboutDialog })))
 const RunsView = lazy(() => import('./components/RunsView').then((m) => ({ default: m.RunsView })))
 const LeaderboardView = lazy(() => import('./components/LeaderboardView').then((m) => ({ default: m.LeaderboardView })))
@@ -326,6 +330,12 @@ export default function App() {
   const [aboutSection] = useState(() => (typeof document !== 'undefined' ? document.getElementById('about') : null))
   useEffect(() => {
     document.documentElement.classList.add('app-ready')
+    // Fetch the pickers once the page is idle (see loadLanguagePicker).
+    const idle = window.requestIdleCallback ?? ((f: () => void) => setTimeout(f, 2000))
+    idle(() => {
+      void loadLanguagePicker()
+      void loadThemePicker()
+    })
   }, [])
   const closeAbout = () => {
     setAboutOpen(false)
@@ -489,7 +499,9 @@ export default function App() {
       <AdSlot slot="rail" className={`ad-rail left${phase === 'running' ? ' dim' : ''}`} />
       <AdSlot slot="rail" className={`ad-rail right${phase === 'running' ? ' dim' : ''}`} />
       {pickerOpen && (
-        <LanguagePicker languages={LANGUAGES} currentId={languageId} onSelect={pickLanguage} onClose={closePicker} />
+        <Suspense fallback={null}>
+          <LanguagePicker languages={LANGUAGES} currentId={languageId} onSelect={pickLanguage} onClose={closePicker} />
+        </Suspense>
       )}
       {aboutOpen && aboutSection && (
         <Suspense fallback={null}>
@@ -497,14 +509,16 @@ export default function App() {
         </Suspense>
       )}
       {themeOpen && (
-        <ThemePicker
-          currentId={themeId}
-          onPreview={applyTheme}
-          onSelect={pickTheme}
-          onClose={closeTheme}
-          smoothCaret={smoothCaret}
-          onSmoothCaret={changeSmoothCaret}
-        />
+        <Suspense fallback={null}>
+          <ThemePicker
+            currentId={themeId}
+            onPreview={applyTheme}
+            onSelect={pickTheme}
+            onClose={closeTheme}
+            smoothCaret={smoothCaret}
+            onSmoothCaret={changeSmoothCaret}
+          />
+        </Suspense>
       )}
       <Header
         view={view}
