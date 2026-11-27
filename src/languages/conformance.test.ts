@@ -110,19 +110,27 @@ describe.each(LANGUAGES.map((l) => [l.name, l] as const))('%s', (_, lang) => {
     )
   }
 
-  it(`R9 · accepting suggestions finishes every snippet without mistakes${lang.symbolic ? '' : ' and saves keystrokes'}`, () => {
-    let saved = 0
-    let keystrokes = 0
-    for (const s of lang.snippets) {
-      const end = play(lang, s, { acceptSuggestions: true, service: true })
-      expect(end.phase, s.name).toBe('done')
-      expect(firstMistake(end), s.name).toBeNull()
-      const c = counts(end.run)
-      saved += Math.max(0, c.suggested - end.run.completions)
-      keystrokes += end.run.keystrokes
-    }
-    console.info(`${lang.name}: accepting suggestions takes ${keystrokes} keystrokes and saves ${saved}`)
-    // A symbolic language has no words for suggestions to complete.
-    if (!lang.symbolic) expect(saved).toBeGreaterThan(0)
-  })
+  // R9 runs per snippet, like R4, R6 and R8: playing every snippet of a language through TypeScript's
+  // service in one test took 3 s on a quiet machine and grew with each snippet, so a busy one (the
+  // browser project starting Chromium alongside) pushed it past Vitest's 5 s limit now and then.
+  const accepted = new Map<string, { saved: number; keystrokes: number }>()
+  const playAccepting = (s: (typeof lang.snippets)[number]) => {
+    const end = play(lang, s, { acceptSuggestions: true, service: true })
+    expect(end.phase, s.name).toBe('done')
+    expect(firstMistake(end), s.name).toBeNull()
+    const c = counts(end.run)
+    accepted.set(s.name, { saved: Math.max(0, c.suggested - end.run.completions), keystrokes: end.run.keystrokes })
+  }
+  it.each(snippets)('R9 · %s finishes without mistakes when accepting suggestions', (_, s) => playAccepting(s))
+
+  if (!lang.symbolic)
+    it('R9 · accepting suggestions saves keystrokes overall', () => {
+      // Snippets whose own test was filtered out (vitest -t) are played here.
+      for (const s of lang.snippets) if (!accepted.has(s.name)) playAccepting(s)
+      const all = [...accepted.values()]
+      const saved = all.reduce((n, r) => n + r.saved, 0)
+      const keystrokes = all.reduce((n, r) => n + r.keystrokes, 0)
+      console.info(`${lang.name}: accepting suggestions takes ${keystrokes} keystrokes and saves ${saved}`)
+      expect(saved).toBeGreaterThan(0)
+    })
 })

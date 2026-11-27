@@ -102,13 +102,15 @@ describe('submitting runs', () => {
       // A top 20 faster than any honest run here, each with a log.
       const at = new Date().toISOString()
       await db.prepare("INSERT INTO snippet_versions (fingerprint, language, name, length, code, first_seen_at) VALUES (?, 'python', ?, 'short', ?, ?)").bind(fp, snippet.name, snippet.code, at).run()
-      for (let i = 0; i < LOGS_KEPT; i++) {
-        const p = await named(`top-${i}`)
-        await db.batch([
-          db.prepare("INSERT INTO bests (player_id, fingerprint, aids, language, run_id, wpm, raw_wpm, accuracy, seconds, run_aids, finished_at) VALUES (?, ?, 'any', 'python', ?, ?, ?, 100, 5, '110', ?)").bind(p.id, fp, `top-run-${i}`, 200 - i, 200 - i, at),
-          db.prepare('INSERT INTO logs (run_id, player_id, fingerprint, log, created_at) VALUES (?, ?, ?, ?, ?)').bind(`top-run-${i}`, p.id, fp, new Uint8Array([1]), at),
-        ])
-      }
+      // Named players written straight to the database in one batch: signing 20 players in and naming
+      // them through the API took most of this test's 2.4 s, every query a round trip to workerd.
+      await db.batch(
+        Array.from({ length: LOGS_KEPT }, (_, i) => [
+          db.prepare("INSERT INTO players (id, provider, provider_id, name, name_key, suggested_name, created_at, last_seen_at) VALUES (?, 'github', ?, ?, ?, ?, ?, ?)").bind(`top-${i}`, String(nextId()), `top-${i}`, `top-${i}`, `top-${i}`, at, at),
+          db.prepare("INSERT INTO bests (player_id, fingerprint, aids, language, run_id, wpm, raw_wpm, accuracy, seconds, run_aids, finished_at) VALUES (?, ?, 'any', 'python', ?, ?, ?, 100, 5, '110', ?)").bind(`top-${i}`, fp, `top-run-${i}`, 200 - i, 200 - i, at),
+          db.prepare('INSERT INTO logs (run_id, player_id, fingerprint, log, created_at) VALUES (?, ?, ?, ?, ?)').bind(`top-run-${i}`, `top-${i}`, fp, new Uint8Array([1]), at),
+        ]).flat(),
+      )
       const outside = await submit((await named('outside-top')).session, honestRun(1, 31))
       expect(outside.body).toMatchObject({ best: true, rank: LOGS_KEPT + 1 })
       expect(await db.prepare('SELECT 1 AS x FROM logs WHERE run_id = ?').bind(outside.body.runId).first()).toBeNull()
