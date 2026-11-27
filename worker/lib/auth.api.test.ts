@@ -110,7 +110,12 @@ describe('sessions', () => {
   it('a forged, expired or outdated session cookie signs no one in', async () => {
     const { session } = await signIn('github', providers({ github: { id: nextId(), login: 'session-test' } }).fetchImpl)
     const player = (await me(session)).player!
-    expect((await me(session!.replace(/.$/, (c) => (c === 'A' ? 'B' : 'A')))).signedIn).toBe(false)
+    // Change a character in the middle of the signature: the last one holds unused bits, so changing it
+    // can leave the signature's bytes as they were.
+    const dot = session!.indexOf('.')
+    const at = dot + 20
+    const tampered = session!.slice(0, at) + (session![at] === 'A' ? 'B' : 'A') + session!.slice(at + 1)
+    expect((await me(tampered)).signedIn).toBe(false)
     const forged = await sign('not-the-secret', { p: player.id, v: 1, exp: Date.now() + 60_000 })
     expect((await me(forged)).signedIn).toBe(false)
     expect((await me(session, new Date(Date.now() + 31 * 86_400_000))).signedIn).toBe(false)

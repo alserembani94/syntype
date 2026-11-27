@@ -43,8 +43,12 @@ export async function verify<T extends { exp: number }>(secret: string, token: s
   const [body, sig, extra] = token.split('.')
   if (!body || !sig || extra !== undefined) return null
   try {
+    const mac = fromBase64url(sig)
+    // atob ignores the unused low bits of the last character, so several spellings decode to the same
+    // signature; accept only the one sign() writes, so a token has exactly one valid form.
+    if (base64url(mac) !== sig) return null
     // crypto.subtle.verify compares in constant time.
-    const ok = await crypto.subtle.verify('HMAC', await hmacKey(secret), fromBase64url(sig), encoder.encode(body))
+    const ok = await crypto.subtle.verify('HMAC', await hmacKey(secret), mac, encoder.encode(body))
     if (!ok) return null
     const payload = JSON.parse(new TextDecoder().decode(fromBase64url(body))) as T
     return typeof payload.exp === 'number' && payload.exp > now ? payload : null
