@@ -8,6 +8,8 @@ exports[`github-light > renders every group and passes axe 1`] = `[]`;
 
 exports[`hc-black > renders every group and passes axe 1`] = `[]`;
 
+exports[`hc-light > renders every group and passes axe 1`] = `[]`;
+
 exports[`light > renders every group and passes axe 1`] = `[]`;
 
 exports[`one-dark-pro > renders every group and passes axe 1`] = `

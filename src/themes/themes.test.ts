@@ -65,7 +65,7 @@ const FAMILY: Record<string, string> = {
   light: 'syntype', dark: 'syntype', phosphor: 'syntype',
   'one-dark-pro': 'onedark', 'github-light': 'primer-light',
   protanopia: 'primer-dark', deuteranopia: 'primer-dark', tritanopia: 'primer-dark',
-  'hc-black': 'vscode',
+  'hc-black': 'vscode', 'hc-light': 'vscode',
 }
 
 /** Every colour primitive's value. */

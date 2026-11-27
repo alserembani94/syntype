@@ -162,6 +162,24 @@
    * high contrast theme marks selection and errors with an orange outline on
    * black, not a tint; these stay until the outline replaces them (steps 10–12).
    */
+  /* ——— Light High Contrast (VS Code): microsoft/vscode@8223a0d0d0fb (src/design/sources/vscode.json) ——— */
+  --vscode-hcl-background: #ffffff; /* vscode: registry-hcl.editor.background */
+  --vscode-hcl-foreground: #292929; /* vscode: registry-hcl.foreground */
+  --vscode-hcl-strong: #000000; /* vscode: registry-hcl.strongForeground */
+  --vscode-hcl-description: #696969; /* vscode: registry-hcl.descriptionForeground */
+  --vscode-hcl-contrast-border: #0f4a85; /* vscode: registry-hcl.contrastBorder */
+  --vscode-hcl-focus-border: #006bbd; /* vscode: registry-hcl.focusBorder */
+  --vscode-hcl-error-foreground: #b5200d; /* vscode: registry-hcl.errorForeground */
+  --vscode-hcl-block-background: #f2f2f2; /* vscode: registry-hcl.textBlockQuote.background */
+  --vscode-hcl-toggled-background: #dddddd; /* vscode: hcl.actionBar.toggledBackground */
+  --vscode-hcl-charts-green: #374e06; /* vscode: registry-hcl.charts.green */
+  --vscode-hcl-charts-purple: #652d90; /* vscode: registry-hcl.charts.purple */
+  --vscode-hcl-keyword: #0f4a85; /* vscode: hclToken.keyword */
+  --vscode-hcl-string: #811f3f; /* vscode: hclToken.string.regexp */
+  --vscode-hcl-number: #096d48; /* vscode: hclToken.constant.numeric */
+  --vscode-hcl-function: #5e2cbc; /* vscode: hclToken.entity.name.function */
+  --vscode-hcl-type: #185e73; /* vscode: hclToken.support.class */
+  --vscode-hcl-comment: #515151; /* vscode: hclToken.comment */
   --vscode-hc-exception-accent-soft: #3d2105; /* exception: until the outline */
   --vscode-hc-exception-err-soft: #4a1a12; /* exception: until the outline */
 

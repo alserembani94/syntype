@@ -53,7 +53,7 @@ view (below).
 ## Which themes meet WCAG AA
 
 Themes come in two tiers. Those flagged `wcag: 'AA'` in `THEMES` (System,
-Syntype Light and Dark, Dark High Contrast and the three colour vision
+Syntype Light and Dark, Dark and Light High Contrast and the three colour vision
 themes) are held to WCAG 2.2 AA in every pair by rule T6 in
 `src/themes/themes.test.ts`, using the pair list in `src/themes/pairs.ts`. The
 others (One Dark Pro, GitHub Light, Green Phosphor) stay faithful to their

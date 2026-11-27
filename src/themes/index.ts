@@ -6,7 +6,7 @@
 import { load, save } from '../lib/storage'
 
 /** Picker sections, in the order they're shown. */
-export const THEME_SECTIONS = ['Syntype', 'Black', 'Dark', 'Light', 'Colour vision', 'Retro'] as const
+export const THEME_SECTIONS = ['Syntype', 'High contrast', 'Dark', 'Light', 'Colour vision', 'Retro'] as const
 export type ThemeSection = (typeof THEME_SECTIONS)[number]
 
 export interface Theme {
@@ -32,7 +32,8 @@ export const THEMES: Theme[] = [
   { id: SYSTEM_THEME, name: 'System', section: 'Syntype', credit: 'light or dark, as your computer is', swatches: ['light', 'dark'], wcag: 'AA' },
   { id: 'light', name: 'Syntype Light', section: 'Syntype', wcag: 'AA' },
   { id: 'dark', name: 'Syntype Dark', section: 'Syntype', wcag: 'AA' },
-  { id: 'hc-black', name: 'Dark High Contrast', section: 'Black', credit: 'VS Code', wcag: 'AA' },
+  { id: 'hc-black', name: 'Dark High Contrast', section: 'High contrast', credit: 'VS Code', wcag: 'AA' },
+  { id: 'hc-light', name: 'Light High Contrast', section: 'High contrast', credit: 'VS Code', wcag: 'AA' },
   { id: 'one-dark-pro', name: 'One Dark Pro', section: 'Dark', credit: 'Binaryify' },
   { id: 'github-light', name: 'GitHub Light', section: 'Light', credit: 'GitHub' },
   { id: 'protanopia', name: 'Protanopia', section: 'Colour vision', credit: 'red-blind · on GitHub Dark', vision: 'protanopia', wcag: 'AA' },

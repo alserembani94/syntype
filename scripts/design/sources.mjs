@@ -30,11 +30,20 @@ function npmPackage(spec) {
   return join(dir, 'package')
 }
 
-/** A GitHub repository's files at its current commit (only `paths`). */
-function repo(name, paths) {
+/** A GitHub repository's files (only `paths`), at its current commit or at `ref` when given. */
+function repo(name, paths, ref) {
   const dir = join(work, name.replace('/', '_'))
-  run('git', ['clone', '-q', '--depth', '1', '--filter=blob:none', '--sparse', `https://github.com/${name}`, dir])
-  run('git', ['sparse-checkout', 'set', '--no-cone', ...paths], dir)
+  if (ref) {
+    mkdirSync(dir)
+    run('git', ['init', '-q'], dir)
+    run('git', ['remote', 'add', 'origin', `https://github.com/${name}`], dir)
+    run('git', ['sparse-checkout', 'set', '--no-cone', ...paths], dir)
+    run('git', ['fetch', '-q', '--depth', '1', '--filter=blob:none', 'origin', ref], dir)
+    run('git', ['checkout', '-q', 'FETCH_HEAD'], dir)
+  } else {
+    run('git', ['clone', '-q', '--depth', '1', '--filter=blob:none', '--sparse', `https://github.com/${name}`, dir])
+    run('git', ['sparse-checkout', 'set', '--no-cone', ...paths], dir)
+  }
   return { dir, commit: run('git', ['rev-parse', 'HEAD'], dir) }
 }
 
@@ -104,11 +113,15 @@ try {
     })
   }
 
-  // ——— VS Code: Dark High Contrast, Dark+ token colours, the colour registry ———
+  // ——— VS Code: Dark and Light High Contrast, Dark+ token colours, the colour registry ———
+  // Pinned, so both high-contrast themes come from the same commit and a refresh is a deliberate change.
   {
+    const VSCODE_COMMIT = '8223a0d0d0fb8f84af94fd3681c21a0006048513'
     const files = ['extensions/theme-defaults/themes/hc_black.json', 'extensions/theme-defaults/themes/dark_plus.json', 'extensions/theme-defaults/themes/dark_vs.json']
     const reg = ['src/vs/platform/theme/common/colors/baseColors.ts', 'src/vs/platform/theme/common/colors/chartsColors.ts']
-    const vs = repo('microsoft/vscode', [...files, ...reg].map((f) => `/${f}`))
+    const hcLight = 'extensions/theme-defaults/themes/hc_light.json'
+    const regLight = [...reg, 'src/vs/platform/theme/common/colors/editorColors.ts']
+    const vs = repo('microsoft/vscode', [...files, hcLight, ...regLight].map((f) => `/${f}`), VSCODE_COMMIT)
     const colors = {}
     /** JSON with comments and trailing commas (VS Code's theme files), as plain JSON. */
     const strip = (t) => {
@@ -156,9 +169,32 @@ try {
     }
     // descriptionForeground is transparent(foreground, 0.7) in high contrast: white at 70% over black.
     colors['registry.descriptionForeground'] = over('#ffffffb3', '#000000')
+    // Light High Contrast: its own colours, its token colours, and the registry's hcLight values.
+    const hcl = JSON.parse(strip(readFileSync(join(vs.dir, hcLight), 'utf8')))
+    for (const [k, v] of Object.entries(hcl.colors ?? {})) if (/^#[0-9a-f]{3,8}$/i.test(v)) colors[`hcl.${k}`] = hex(v)
+    for (const tc of hcl.tokenColors ?? []) {
+      const fg = tc.settings?.foreground
+      if (fg && /^#[0-9a-f]{6}$/i.test(fg)) colors[`hclToken.${tc.name ?? [].concat(tc.scope)[0]}`] = hex(fg)
+    }
+    for (const f of regLight) {
+      const t = readFileSync(join(vs.dir, f), 'utf8')
+      for (const m of t.matchAll(/registerColor\('([\w.]+)',\s*(\{[^}]*\}|'#[0-9a-fA-F]{3,8}')/g)) {
+        const lit = m[2].match(/^'(#[0-9a-fA-F]{3,8})'$/)
+        const light = m[2].match(/hcLight:\s*'(#[0-9a-fA-F]{3,8})'/)
+        const named = m[2].match(/hcLight:\s*Color\.(white|black)\b/)
+        if (light) colors[`registry-hcl.${m[1]}`] = hex(light[1])
+        else if (named) colors[`registry-hcl.${m[1]}`] = named[1] === 'white' ? '#ffffff' : '#000000'
+        else if (lit) colors[`registry-hcl.${m[1]}`] = hex(lit[1])
+      }
+    }
+    // descriptionForeground is transparent(foreground, 0.7) in Light High Contrast too: #292929 at 70% over white.
+    colors['registry-hcl.descriptionForeground'] = over(colors['registry-hcl.foreground'] + 'b3', '#ffffff')
     write('vscode', {
-      sources: [{ repository: 'microsoft/vscode', commit: vs.commit, files: [...files, ...reg] }],
-      derived: { 'registry.descriptionForeground': 'transparent(foreground #ffffff, 0.7) over editor.background #000000' },
+      sources: [{ repository: 'microsoft/vscode', commit: vs.commit, files: [...files, hcLight, ...regLight] }],
+      derived: {
+        'registry.descriptionForeground': 'transparent(foreground #ffffff, 0.7) over editor.background #000000',
+        'registry-hcl.descriptionForeground': 'transparent(foreground #292929, 0.7) over editor.background #ffffff',
+      },
       colors,
     })
   }

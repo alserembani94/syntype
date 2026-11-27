@@ -118,6 +118,22 @@
 }
 
 /*
+ * Light High Contrast (MIT), VS Code's extensions/theme-defaults/themes/hc_light.json
+ * and the colour registry's hcLight values, at microsoft/vscode@8223a0d. Strings
+ * take the theme's regex maroon rather than the keyword blue, so the five code
+ * colours stay apart; tints are the theme's own greys.
+ */
+[data-syntype-theme="hc-light"] {
+  --background: var(--vscode-hcl-background); --foreground: var(--vscode-hcl-foreground); --card: var(--vscode-hcl-background); --card-foreground: var(--vscode-hcl-foreground); --popover: var(--vscode-hcl-background); --popover-foreground: var(--vscode-hcl-foreground);
+  --primary: var(--vscode-hcl-contrast-border); --primary-foreground: var(--vscode-hcl-background); --secondary: var(--vscode-hcl-block-background); --secondary-foreground: var(--vscode-hcl-foreground); --muted: var(--vscode-hcl-block-background); --muted-foreground: var(--vscode-hcl-description); --accent: var(--vscode-hcl-toggled-background); --accent-foreground: var(--vscode-hcl-foreground);
+  --destructive: var(--vscode-hcl-error-foreground); --destructive-muted: var(--vscode-hcl-block-background); --success: var(--vscode-hcl-charts-green); --border: var(--vscode-hcl-contrast-border); --input: var(--vscode-hcl-contrast-border); --input-border: var(--vscode-hcl-contrast-border); --ring: var(--vscode-hcl-focus-border);
+  --overlay: var(--vscode-hcl-strong); --shadow-color: var(--vscode-hcl-strong); --chart-1: var(--vscode-hcl-contrast-border); --chart-2: var(--vscode-hcl-charts-green); --chart-3: var(--vscode-hcl-charts-purple); --chart-4: var(--vscode-hcl-error-foreground); --chart-5: var(--vscode-hcl-type);
+  --code-keyword: var(--vscode-hcl-keyword); --code-string: var(--vscode-hcl-string); --code-number: var(--vscode-hcl-number); --code-function: var(--vscode-hcl-function); --code-type: var(--vscode-hcl-type); --code-comment: var(--vscode-hcl-comment); --code-punctuation: var(--vscode-hcl-strong); --tab-indicator: var(--vscode-hcl-focus-border);
+  --code-glow: none;
+  color-scheme: light;
+}
+
+/*
  * One Dark Pro (MIT), themes/OneDark-Pro.json in Binaryify/OneDark-Pro: editor
  * #282c34, side bar #21252b, borders #3e4452, text #abb2bf, status bar text
  * #9da5b4; keyword #c678dd, string #98c379, number #d19a66, function #61afef,
