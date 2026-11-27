@@ -24,7 +24,7 @@ function Explain({ name, label }: { name: string; label: string }) {
   )
 }
 
-export interface TestInfo {
+interface TestInfo {
   language: string
   length: string
   snippet: string

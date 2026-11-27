@@ -8,7 +8,8 @@
  * Storage can be missing or refused (private windows, sandboxed pages, a full
  * disk). openHistory() then resolves to null and the game carries on without it.
  */
-import type { LogEntry, RunRecord } from './runlog'
+import type { LogEntry } from './runcore'
+import type { RunRecord } from './runlog'
 import type { Submission } from './submit'
 import { MIN_ACCURACY_FOR_BEST } from './stats'
 
@@ -31,7 +32,7 @@ export interface StoredRun extends Omit<RunRecord, 'log'> {
 export const snippetKey = (r: Pick<RunRecord, 'language' | 'snippet' | 'fingerprint'>) => `${r.language}/${r.snippet}/${r.fingerprint}`
 
 /** Best first: accurate runs by WPM, then earlier first on a tie. */
-export function byBest(a: StoredRun, b: StoredRun): number {
+function byBest(a: StoredRun, b: StoredRun): number {
   const accurate = (r: StoredRun) => (r.accuracy >= MIN_ACCURACY_FOR_BEST ? 1 : 0)
   return accurate(b) - accurate(a) || b.wpm - a.wpm || a.finishedAt.localeCompare(b.finishedAt)
 }
@@ -68,7 +69,7 @@ export interface History {
 }
 
 /** An exported history file. */
-export interface HistoryFile {
+interface HistoryFile {
   format: 'syntype-history'
   version: 1
   exportedAt: string

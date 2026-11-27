@@ -15,7 +15,7 @@ import { LanguageButton, Mark, Muted, Note, Stat, TableSkeleton, ViewHead, ViewT
 import type { Language, SnippetLength } from '../languages'
 import { AIDS } from '../lib/aids'
 import { keepSafe, snippetKey, storageInfo, type History, type StoredRun } from '../lib/history'
-import { fingerprint } from '../lib/runlog'
+import { fingerprint } from '../lib/runcore'
 import { matchesAids, overview, snippetStats, type AidsFilter } from '../lib/board'
 import { duration, runTime, speed, whenPlayed } from '../lib/format'
 import type { TypingAids } from '../lib/runcore'

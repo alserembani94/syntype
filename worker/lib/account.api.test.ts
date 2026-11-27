@@ -13,7 +13,6 @@ let db: Db
 beforeAll(() => {
   db = env.db
 })
-const me_ = me
 
 describe('a player’s own data', () => {
   const lang = PYTHON
@@ -42,30 +41,30 @@ describe('a player’s own data', () => {
       }
       const boardNames = async () =>
         ((await (await handle(new Request(`${SITE}/api/boards/${fp}`), deps())).json()) as { rows: { player: { name: string } }[] }).rows.map((r) => r.player.name)
-      const me = await named('data-owner')
+      const owner = await named('data-owner')
       const other = await named('data-other')
-      const mine = await submit(me.session, honestRun(1.2, 91))
+      const mine = await submit(owner.session, honestRun(1.2, 91))
       const theirs = await submit(other.session, honestRun(1, 92))
       expect(await boardNames()).toEqual(['data-owner', 'data-other'])
 
       // Hide and show again.
-      const hid = await call<{ player: { hidden: boolean } }>('/api/me/hide', me.session, { hidden: true })
+      const hid = await call<{ player: { hidden: boolean } }>('/api/me/hide', owner.session, { hidden: true })
       expect(hid.body.player.hidden).toBe(true)
       expect(await boardNames()).toEqual(['data-other'])
-      await call('/api/me/hide', me.session, { hidden: false })
+      await call('/api/me/hide', owner.session, { hidden: false })
       expect(await boardNames()).toEqual(['data-owner', 'data-other'])
 
       // Entries, and deleting one; another player's runs aren't yours to delete.
-      const entries = await call<{ entries: { runId: string; snippet: string; hasLog: boolean }[] }>('/api/me/runs', me.session)
+      const entries = await call<{ entries: { runId: string; snippet: string; hasLog: boolean }[] }>('/api/me/runs', owner.session)
       expect(entries.body.entries).toEqual([expect.objectContaining({ runId: mine.body.runId, snippet: snippet.name, hasLog: true })])
-      expect((await call(`/api/me/runs/${theirs.body.runId}/delete`, me.session, {})).status).toBe(404)
-      expect((await call(`/api/me/runs/${mine.body.runId}/delete`, me.session, {})).status).toBe(200)
+      expect((await call(`/api/me/runs/${theirs.body.runId}/delete`, owner.session, {})).status).toBe(404)
+      expect((await call(`/api/me/runs/${mine.body.runId}/delete`, owner.session, {})).status).toBe(200)
       expect(await boardNames()).toEqual(['data-other'])
 
       // Download: everything kept, with logs readable.
-      const again = await submit(me.session, honestRun(1.1, 93))
-      await reportAs(me.session, { player: other.id, reason: 'other', note: 'checking' })
-      const data = await call<{ player: { name: string }; bests: unknown[]; logs: { runId: string; log: unknown[] }[]; reportsMade: { note: string }[] }>('/api/me/data', me.session)
+      const again = await submit(owner.session, honestRun(1.1, 93))
+      await reportAs(owner.session, { player: other.id, reason: 'other', note: 'checking' })
+      const data = await call<{ player: { name: string }; bests: unknown[]; logs: { runId: string; log: unknown[] }[]; reportsMade: { note: string }[] }>('/api/me/data', owner.session)
       expect(data.headers.get('Content-Disposition')).toMatch(/attachment/)
       expect(data.body.player.name).toBe('data-owner')
       expect(data.body.bests.length).toBe(2)
@@ -73,30 +72,30 @@ describe('a player’s own data', () => {
       expect(data.body.logs[0].log.length).toBeGreaterThan(10)
       expect(data.body.reportsMade).toEqual([expect.objectContaining({ note: 'checking' })])
       // Reports about them and moderator actions: included, without who reported, their notes, or the moderator's email.
-      await reportAs(other.session, { player: me.id, reason: 'other', note: 'written by data-other' })
-      await db.prepare("INSERT INTO reports (id, reporter_id, target_player_id, target_run_id, reason, note, created_at, source) VALUES ('auto-about', NULL, ?, NULL, 'cheating', 'Automatic: test', ?, 'auto')").bind(me.id, new Date().toISOString()).run()
-      await db.prepare("INSERT INTO admin_actions (id, action, target_player_id, target_run_id, detail, created_at, admin) VALUES ('act-about', 'hide', ?, NULL, NULL, ?, 'owner@example.com')").bind(me.id, new Date().toISOString()).run()
-      const full = await call<{ reportsAboutYou: Record<string, unknown>[]; moderatorActions: Record<string, unknown>[] }>('/api/me/data', me.session)
+      await reportAs(other.session, { player: owner.id, reason: 'other', note: 'written by data-other' })
+      await db.prepare("INSERT INTO reports (id, reporter_id, target_player_id, target_run_id, reason, note, created_at, source) VALUES ('auto-about', NULL, ?, NULL, 'cheating', 'Automatic: test', ?, 'auto')").bind(owner.id, new Date().toISOString()).run()
+      await db.prepare("INSERT INTO admin_actions (id, action, target_player_id, target_run_id, detail, created_at, admin) VALUES ('act-about', 'hide', ?, NULL, NULL, ?, 'owner@example.com')").bind(owner.id, new Date().toISOString()).run()
+      const full = await call<{ reportsAboutYou: Record<string, unknown>[]; moderatorActions: Record<string, unknown>[] }>('/api/me/data', owner.session)
       const text = JSON.stringify(full.body)
       expect(text).not.toMatch(/written by data-other|owner@example\.com|reporter/)
       expect(full.body.reportsAboutYou).toEqual(
         expect.arrayContaining([expect.objectContaining({ reason: 'other', note: null, source: 'player' }), expect.objectContaining({ note: 'Automatic: test', source: 'auto' })]),
       )
       expect(full.body.moderatorActions).toEqual([expect.objectContaining({ action: 'hide' })])
-      await db.prepare("DELETE FROM reports WHERE target_player_id = ? AND reason != 'name'").bind(me.id).run()
+      await db.prepare("DELETE FROM reports WHERE target_player_id = ? AND reason != 'name'").bind(owner.id).run()
       expect((await call('/api/me/data', 'not-a-session')).status).toBe(401)
 
       // Delete the account: confirmed by name; data gone, reports made kept without a name, reports about them gone.
-      await reportAs(other.session, { player: me.id, reason: 'name' })
-      expect((await call('/api/me/delete', me.session, { confirm: 'someone else' })).status).toBe(400)
-      const gone = await call<{ deleted: boolean }>('/api/me/delete', me.session, { confirm: 'DATA-OWNER' })
+      await reportAs(other.session, { player: owner.id, reason: 'name' })
+      expect((await call('/api/me/delete', owner.session, { confirm: 'someone else' })).status).toBe(400)
+      const gone = await call<{ deleted: boolean }>('/api/me/delete', owner.session, { confirm: 'DATA-OWNER' })
       expect(gone.body.deleted).toBe(true)
       expect(gone.headers.get('Set-Cookie')).toMatch(/^syntype_session=; /)
-      expect((await me_(me.session)).signedIn).toBe(false)
+      expect((await me(owner.session)).signedIn).toBe(false)
       expect(await boardNames()).toEqual(['data-other'])
-      for (const table of ['bests', 'logs']) expect(await db.prepare(`SELECT count(*) AS n FROM ${table} WHERE player_id = ?`).bind(me.id).first()).toEqual({ n: 0 })
+      for (const table of ['bests', 'logs']) expect(await db.prepare(`SELECT count(*) AS n FROM ${table} WHERE player_id = ?`).bind(owner.id).first()).toEqual({ n: 0 })
       expect(await db.prepare('SELECT reporter_id FROM reports WHERE note = ?').bind('checking').first()).toEqual({ reporter_id: null })
-      expect(await db.prepare('SELECT count(*) AS n FROM reports WHERE target_player_id = ?').bind(me.id).first()).toEqual({ n: 0 })
+      expect(await db.prepare('SELECT count(*) AS n FROM reports WHERE target_player_id = ?').bind(owner.id).first()).toEqual({ n: 0 })
     } finally {
       ;({ snippet, fp } = saved)
     }

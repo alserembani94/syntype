@@ -41,11 +41,11 @@ export interface Result {
 /** Standard WPM: five characters count as one word. */
 export const wpm = (chars: number, seconds: number) => (seconds > 0 ? chars / 5 / (seconds / 60) : 0)
 
-export const accuracy = (run: Run) =>
+const accuracy = (run: Run) =>
   run.keystrokes ? (run.correctKeystrokes / run.keystrokes) * 100 : 100
 
 /** Fewer full seconds than this and consistency would be noise. */
-export const MIN_SECONDS_FOR_CONSISTENCY = 3
+const MIN_SECONDS_FOR_CONSISTENCY = 3
 
 /**
  * Consistency: 100% minus the coefficient of variation of the per-second raw

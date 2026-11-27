@@ -4,7 +4,7 @@ A typing speed test for code (Vite + React + TypeScript). See README.md for how 
 
 ## Commands
 
-- `npm test`: all tests, including the language conformance suite. Run before every commit.
+- `npm test`: all tests, including the language conformance suite, then `npm run check:unused` (knip: no unused files, exports or dependencies; entry points in `knip.jsonc`). Run before every commit. An export only its own file uses isn't exported; a module a script loads by name (`ssrLoadModule`) is listed as an entry there.
 - `npm run lint`, `npx tsc -b`: must be clean.
 - `npm run build`: regular build (the TypeScript worker is a separate file, and the leaderboard, My runs, About and Account & data views are loaded on demand).
 - `npm run build:page`: one self-contained page in `dist-page/index.html`, used for the published artifact (its own build, with every view in one script and the worker gzipped inside the page).

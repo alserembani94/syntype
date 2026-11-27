@@ -12,7 +12,7 @@ import type { PlayerRow } from './players'
 import type { SnippetLength } from '../../src/languages/types'
 import type { Entry } from '../../src/lib/apiTypes'
 
-export const INACTIVE_YEARS = 2
+const INACTIVE_YEARS = 2
 
 /** Cloudflare's Rate Limiting binding (wrangler.jsonc "ratelimits"): approximate, per key and Cloudflare location. */
 export interface RateLimiter {

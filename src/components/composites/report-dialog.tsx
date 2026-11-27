@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/textarea'
 import type { ReportReason } from '@/lib/apiTypes'
 import { REASONS } from '@/lib/reportReasons'
 
-export const NOTE_MAX = 500
+const NOTE_MAX = 500
 
 export interface ReportDialogProps {
   playerName: string

@@ -18,7 +18,7 @@ const stdlib = (module: string, members: CompletionItem[]): VocabularyPack => ({
   members: { [module]: members },
 })
 
-export const builtins: VocabularyPack = {
+const builtins: VocabularyPack = {
   name: 'Python',
   globals: [
     ...items(

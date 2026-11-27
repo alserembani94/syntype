@@ -37,7 +37,7 @@ export interface SnippetIndexEntry {
   length: SnippetLength
 }
 
-export function compactPairs(p: Pairs): CompactPairs {
+function compactPairs(p: Pairs): CompactPairs {
   const close: [number, number][] = []
   const allowed: number[] = []
   p.closeOf.forEach((c, i) => c >= 0 && close.push([i, c]))

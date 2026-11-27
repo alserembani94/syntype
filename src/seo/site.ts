@@ -49,7 +49,7 @@ export interface Page {
 }
 
 
-export const homePage = (languages: Language[]): Page => ({
+const homePage = (languages: Language[]): Page => ({
   path: '/',
   file: 'index.html',
   url: `${SITE_URL}/`,

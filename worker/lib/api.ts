@@ -77,7 +77,7 @@ async function bodyOf(request: Request, maxBytes?: number): Promise<{ value: unk
 export const SESSION_COOKIE = 'syntype_session'
 export const SIGNIN_COOKIE = 'syntype_signin'
 /** Signed in for 30 days from the last sign-in. */
-export const SESSION_DAYS = 30
+const SESSION_DAYS = 30
 const SIGNIN_MINUTES = 10
 
 /** Development servers allowed alongside the site itself. */

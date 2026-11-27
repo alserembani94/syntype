@@ -9,7 +9,7 @@
  * forward from there, and a jump starts from the nearest snapshot, rebuilding
  * at most that many changes through the same reducer that made them.
  */
-import { decodeLog, type LogEntry, type TypingAids } from './runlog'
+import { decodeLog, type LogEntry, type TypingAids } from './runcore'
 import { init, reducer, type LoggedAction, type TestState } from './typing'
 import { computePairs } from './pairs'
 import type { Run } from './engine'

@@ -7,13 +7,13 @@ import { VISIBLE } from './sql'
 import type { Db } from './db'
 
 /** A new best this many times the player's average on their other snippets... */
-export const JUMP_FACTOR = 1.6
+const JUMP_FACTOR = 1.6
 /** ...and at least this fast (a jump from 30 to 50 WPM is just practice). */
-export const JUMP_MIN_WPM = 90
+const JUMP_MIN_WPM = 90
 /** History needed before a jump means anything. */
-export const HISTORY_MIN = 3
+const HISTORY_MIN = 3
 /** A newcomer taking #1 is flagged on boards with at least this many players. */
-export const NEWCOMER_BOARD_MIN = 5
+const NEWCOMER_BOARD_MIN = 5
 
 /** Why a new best should be looked at, or null. Pure, for the tests. */
 export function flagReason(run: { wpm: number; rank: number }, history: { count: number; average: number }, boardSize: number): string | null {

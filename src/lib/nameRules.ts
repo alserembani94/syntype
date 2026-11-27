@@ -4,7 +4,7 @@
  * reserved and offensive names.
  */
 
-export const NAME_MIN = 3
+const NAME_MIN = 3
 export const NAME_MAX = 24
 
 /** Collapses runs of spaces and trims, so "  Ada   L " becomes "Ada L". */

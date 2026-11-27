@@ -116,7 +116,7 @@ export function filterEntries(entries: ServiceEntry[], prefix: string): Suggesti
 }
 
 /** The list is capped; VS Code shows a scrolling window onto it. */
-export const MAX_SUGGESTIONS = 50
+const MAX_SUGGESTIONS = 50
 
 /** What's on screen at position i: the typed character, or an auto-inserted one. */
 function charAt(run: Run, i: number): string | undefined {

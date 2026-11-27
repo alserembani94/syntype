@@ -1,0 +1,15 @@
+// knip: finds unused files, exports and dependencies. `npm run check:unused`, part of `npm test`.
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  // Beyond what knip finds itself (the HTML pages, vite, vitest, wrangler's worker/index.ts):
+  // every script, and the modules scripts/build-pages.mjs loads with ssrLoadModule and reads by
+  // name (seo.SITE_NAME), which knip can't follow.
+  "entry": [
+    "scripts/**/*.{ts,mjs}",
+    "src/seo/site.ts",
+    "src/seo/policies.ts",
+    "src/languages/index.ts",
+    "src/lib/snippetfiles.ts"
+  ],
+  "project": ["src/**/*.{ts,tsx,css}", "worker/**/*.ts", "scripts/**/*.{ts,mjs}"]
+}

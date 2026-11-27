@@ -12,11 +12,11 @@ import { SITE_URL } from './site'
 
 import { OPERATOR, PRIVACY_CONTACT } from './policyLinks'
 
-export { OPERATOR, PRIVACY_CONTACT, POLICY_LINKS } from './policyLinks'
+export { PRIVACY_CONTACT, POLICY_LINKS } from './policyLinks'
 /** When the privacy page last changed. */
-export const PRIVACY_UPDATED = '2026-11-25'
+const PRIVACY_UPDATED = '2026-11-25'
 
-export interface PolicySection {
+interface PolicySection {
   heading: string
   /** Paragraphs; a line starting "- " is a list item. */
   body: string[]

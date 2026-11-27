@@ -2,9 +2,9 @@ import type { AutoClosingPair, HighlightRules } from '../languages/types'
 import { tokens } from './tokenize'
 
 /** VS Code's default `autoCloseBefore`: only auto-close when the next character is one of these. */
-export const DEFAULT_AUTO_CLOSE_BEFORE = ';:.,=}])> \n\t'
+const DEFAULT_AUTO_CLOSE_BEFORE = ';:.,=}])> \n\t'
 
-export const DEFAULT_AUTO_CLOSING_PAIRS: AutoClosingPair[] = [
+const DEFAULT_AUTO_CLOSING_PAIRS: AutoClosingPair[] = [
   { open: '{', close: '}' },
   { open: '[', close: ']' },
   { open: '(', close: ')' },

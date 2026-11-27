@@ -19,7 +19,7 @@ function pkg(path: string, members: CompletionItem[]): VocabularyPack {
   }
 }
 
-export const builtins: VocabularyPack = {
+const builtins: VocabularyPack = {
   name: 'Go',
   globals: [
     ...items('len cap make new append copy delete panic recover close min max clear print println', 'function'),

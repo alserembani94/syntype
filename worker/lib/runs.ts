@@ -36,7 +36,7 @@ export interface RunConfig {
 }
 
 /** The action the game's Turnstile widget runs (src/lib/turnstile.ts). */
-export const TURNSTILE_ACTION = 'submit-run'
+const TURNSTILE_ACTION = 'submit-run'
 /**
  * Cloudflare's always-pass test secret (local development). Its answers name
  * the hostname example.com and carry no action, so those checks are skipped for it.
@@ -44,9 +44,9 @@ export const TURNSTILE_ACTION = 'submit-run'
 const TURNSTILE_TEST_SECRET = '1x0000000000000000000000000000000AA'
 
 /** A token is good for this long after the run starts. */
-export const TOKEN_HOURS = 2
+const TOKEN_HOURS = 2
 /** How long after finishing a run can still be submitted (a dropped connection can retry). */
-export const SUBMIT_WITHIN_MS = 10 * 60_000
+const SUBMIT_WITHIN_MS = 10 * 60_000
 /** Allowance for the time between the first key and the token request reaching the server. */
 const START_SLACK_MS = 5_000
 /** Boards keep logs for their top 20. */
@@ -69,7 +69,7 @@ const snippetCache = new Map<string, SnippetFile | null>()
 const FINGERPRINT = /^[0-9a-f]{64}$/
 
 /** The snippet with this fingerprint, if the game offers it today. */
-export async function snippetFor(assets: Assets, fingerprint: string): Promise<SnippetFile | null> {
+async function snippetFor(assets: Assets, fingerprint: string): Promise<SnippetFile | null> {
   if (!FINGERPRINT.test(fingerprint)) return null
   if (snippetCache.has(fingerprint)) return snippetCache.get(fingerprint)!
   const res = await assets(`${SNIPPET_DATA_PATH}/${fingerprint}.json`)

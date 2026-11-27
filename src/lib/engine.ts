@@ -15,7 +15,7 @@ import type { Pairs } from './pairs'
  * pending  auto-inserted by auto-close, still ahead of the caret
  * skipped  auto-inserted text the caret moved past with →, End or ↓
  */
-export type CharState = 'ok' | 'bad' | 'auto' | 'pending' | 'skipped' | undefined
+type CharState = 'ok' | 'bad' | 'auto' | 'pending' | 'skipped' | undefined
 
 export interface RunOptions {
   autoIndent: boolean

@@ -34,7 +34,7 @@ export const SITE = config.SITE_URL
 export const env = { db: undefined as unknown as Db, snippetData: new Map<string, SnippetFile>() }
 
 /** The build's snippet data files, as the Worker's static assets serve them. */
-export const assets = async (path: string) => {
+const assets = async (path: string) => {
   if (path.endsWith('/index.json')) return Response.json([...env.snippetData.values()].map(({ fingerprint, language, name, length }) => ({ fingerprint, language, name, length })))
   const f = env.snippetData.get(path.split('/').pop()!.replace('.json', ''))
   return f ? Response.json(f) : new Response('Not found', { status: 404 })
@@ -91,7 +91,7 @@ export const deps = (fetchImpl: Deps['fetch'] = async () => new Response(null, {
  * A request to the API. A body makes it a POST from the site's pages (`origin:
  * null` leaves Origin out, as another site's form would); `session` signs it in.
  */
-export function req(
+function req(
   path: string,
   opts: { session?: string | null; body?: unknown; method?: string; origin?: string | null; headers?: Record<string, string>; now?: Date; fetch?: Deps['fetch'] } = {},
 ) {

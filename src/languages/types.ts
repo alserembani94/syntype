@@ -94,7 +94,7 @@ export interface VocabularyPack {
  * Autocomplete for a language. Keywords come from `highlight`;
  * words the user has typed are added automatically.
  */
-export interface CompletionConfig {
+interface CompletionConfig {
   /** A single word character, e.g. /[\w$]/ for JavaScript or /[\w-]/ for CSS. Defaults to /[\w$]/. */
   wordChar?: RegExp
   /** What opens member suggestions, e.g. ["."] or ["::", "->"]. Defaults to ["."]. */
@@ -114,7 +114,7 @@ export interface CompletionConfig {
 
 /** Sections of the language picker, in the order they're shown. */
 export const CATEGORIES = ['Web', 'Systems', 'Scripting', 'Data & config', 'Testing & QA', 'Mainframe', 'Esoteric'] as const
-export type LanguageCategory = (typeof CATEGORIES)[number]
+type LanguageCategory = (typeof CATEGORIES)[number]
 
 export interface Language {
   /** Stable id, used in storage keys. */

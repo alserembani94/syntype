@@ -7,7 +7,7 @@ const items = (labels: string, kind: SuggestionKind): CompletionItem[] =>
   labels.split(/\s+/).filter(Boolean).map((label) => ({ label, kind }))
 
 /** Selenium's Python API, always on in this track. */
-export const seleniumPack: VocabularyPack = {
+const seleniumPack: VocabularyPack = {
   name: 'selenium',
   globals: [
     ...items('webdriver By Keys WebDriverWait Select ActionChains EC', 'class'),

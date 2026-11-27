@@ -45,18 +45,18 @@ export const REJECTIONS: Record<Rejection, string> = {
 }
 
 /** Limits that keep a replay within the Worker's CPU budget. */
-export const MAX_RUN_MINUTES = 30
+const MAX_RUN_MINUTES = 30
 const maxEntries = (code: string) => 4 * code.length + 200 + MAX_RUN_MINUTES * 60
 
 /** Keys closer together than this, many in a row, aren't typed by hand. */
-export const FAST_GAP_MS = 15
-export const FAST_RUN = 10
+const FAST_GAP_MS = 15
+const FAST_RUN = 10
 /** The fastest sustained typing accepted, over a window of keys. */
-export const MAX_SUSTAINED_WPM = 250
-export const SUSTAINED_WINDOW = 100
+const MAX_SUSTAINED_WPM = 250
+const SUSTAINED_WINDOW = 100
 const MIN_SUSTAINED_WINDOW = 50
 /** Gaps vary from key to key; machine rhythm barely does. */
-export const MIN_RHYTHM_VARIATION = 0.08
+const MIN_RHYTHM_VARIATION = 0.08
 const MIN_KEYS_FOR_RHYTHM = 40
 
 const TYPED = /^[\x20-\x7e\n\t]$/

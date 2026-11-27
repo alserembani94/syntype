@@ -20,7 +20,6 @@ export interface Player {
   hidden: boolean
   /** Hidden from the leaderboards by a moderator. */
   hiddenByModerator: boolean
-  nameChangedAt: string | null
   /** When the name may change again, if not yet. */
   renameAfter: string | null
 }
@@ -111,7 +110,6 @@ export interface AdminPlayer {
   suggestedName: string
   hidden: boolean
   hiddenByModerator: boolean
-  nameChangedAt: string | null
   createdAt: string
   lastSeenAt: string
   openReports: number

@@ -16,7 +16,7 @@ type Message =
  * this (scripts/build-page.mjs), because there the page may have no address of
  * its own to resolve a separate worker file against.
  */
-export const INLINE_WORKER_ID = 'ts-worker-source'
+const INLINE_WORKER_ID = 'ts-worker-source'
 
 /** Starting the service (loading 4 MB of compiler) takes a second or two; give up well after that. */
 const START_TIMEOUT_MS = 30_000
@@ -47,7 +47,7 @@ let shared: CompletionService | null = null
 /** One worker for the whole page, started the first time it's needed. */
 export const getTypeScriptService = () => (shared ??= createTypeScriptService())
 
-export function createTypeScriptService(): CompletionService {
+function createTypeScriptService(): CompletionService {
   let status: ServiceStatus = 'idle'
   let failure: string | undefined
   const listeners = new Set<(s: ServiceStatus) => void>()

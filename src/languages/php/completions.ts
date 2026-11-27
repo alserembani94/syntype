@@ -5,7 +5,7 @@ const items = (labels: string, kind: SuggestionKind): CompletionItem[] =>
   labels.split(/\s+/).filter(Boolean).map((label) => ({ label, kind }))
 
 /** PHP's built-in functions, classes and constants: always available, no imports. */
-export const builtins: VocabularyPack = {
+const builtins: VocabularyPack = {
   name: 'PHP',
   globals: [
     ...items(

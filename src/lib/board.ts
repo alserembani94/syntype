@@ -4,7 +4,7 @@
  * dates. Pure functions, so they're tested directly (board.test.ts).
  */
 import type { StoredRun } from './history'
-import type { TypingAids } from './runlog'
+import type { TypingAids } from './runcore'
 import { MIN_ACCURACY_FOR_BEST } from './stats'
 import type { SnippetLength } from '../languages'
 
@@ -20,7 +20,7 @@ export function matchesAids(filter: AidsFilter, aids: TypingAids): boolean {
 }
 
 /** Counts towards a best: accurate enough, as personal bests on the results screen. */
-export const counts = (r: StoredRun) => r.accuracy >= MIN_ACCURACY_FOR_BEST
+const counts = (r: StoredRun) => r.accuracy >= MIN_ACCURACY_FOR_BEST
 
 export interface SnippetStats {
   runs: number

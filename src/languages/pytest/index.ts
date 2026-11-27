@@ -7,7 +7,7 @@ const items = (labels: string, kind: SuggestionKind): CompletionItem[] =>
   labels.split(/\s+/).filter(Boolean).map((label) => ({ label, kind }))
 
 /** pytest's API and built-in fixtures, always on in this track. */
-export const pytestPack: VocabularyPack = {
+const pytestPack: VocabularyPack = {
   name: 'pytest',
   globals: [
     { label: 'pytest', kind: 'module' },

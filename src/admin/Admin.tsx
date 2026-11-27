@@ -518,8 +518,6 @@ function RunTools({ runId, playerId, hasLog, onRemoved, onNotice }: { runId: str
 const SNIPPET = 'justify-self-start rounded-md bg-muted px-1.5 py-px font-mono text-xs'
 
 const aidsText = (key: string) => aidNames(aidsOf(key)).join(' + ') || 'no aids'
-// Language ids as they are (the admin bundle leaves out the language definitions).
-const langName = (id: string) => id
 
 /** What a reported run is: snippet, speed, aids, date; or that it's no longer on the boards. */
 function RunLine({ info }: { info: RunInfo | null }) {
@@ -527,7 +525,7 @@ function RunLine({ info }: { info: RunInfo | null }) {
   return (
     <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-1.5 text-sm">
       <span className={SNIPPET}>
-        {langName(info.language)} · {info.snippet}
+        {info.language} · {info.snippet}
       </span>
       <b>{Math.round(info.wpm)} WPM</b> · {Math.round(info.accuracy)}% · {aidsText(info.aids)} · {when(info.finishedAt)}
     </div>
@@ -563,7 +561,7 @@ function PlayerRuns({ player, onNotice }: { player: AdminPlayer; onNotice: Notif
       {entries.map((e) => (
         <li key={e.runId} className="grid gap-1.5 rounded-lg border px-3 py-2.5">
           <span className={SNIPPET}>
-            {langName(e.language)} · {e.snippet}
+            {e.language} · {e.snippet}
           </span>
           <Meta>
             {Math.round(e.wpm)} WPM · {Math.round(e.accuracy)}% · {aidsText(e.aids)} · {when(e.finishedAt)}

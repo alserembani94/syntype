@@ -8,7 +8,7 @@ const items = (labels: string, kind: SuggestionKind): CompletionItem[] =>
 const uses = (module: string) => new RegExp(`^\\s*use\\s+std::${module}\\b`, 'm')
 
 /** The prelude, primitive types and common macros: always available. */
-export const prelude: VocabularyPack = {
+const prelude: VocabularyPack = {
   name: 'std',
   globals: [
     ...items('Vec String Option Result Box Iterator IntoIterator Clone Copy Debug Default PartialEq Eq Hash From Into', 'class'),

@@ -8,7 +8,7 @@ export const TYPES =
   'integer int smallint bigint serial bigserial numeric decimal real text varchar char boolean bool date time timestamp timestamptz interval uuid json jsonb bytea'
 
 /** PostgreSQL's built-in functions and types. Columns and tables come from words typed earlier. */
-export const builtins: VocabularyPack = {
+const builtins: VocabularyPack = {
   name: 'PostgreSQL',
   globals: [
     ...items(

@@ -11,6 +11,6 @@ export const REGISTERS = [r64, r32, r16, r8].join(' ').split(' ')
 const items = (labels: string[]): CompletionItem[] => labels.map((label) => ({ label, kind: 'variable' }))
 
 /** Registers are always there; labels and data names come from words typed earlier. */
-export const registers: VocabularyPack = { name: 'register', globals: items(REGISTERS) }
+const registers: VocabularyPack = { name: 'register', globals: items(REGISTERS) }
 
 export const packs: VocabularyPack[] = [registers]

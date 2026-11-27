@@ -1,24 +1,16 @@
 /** The admin page's calls to /api/admin (worker/lib/moderation.ts has the other side). */
-import type { AdminAction, AdminPlayer, Entry, PlayerAction, ReportGroup, ReportReason as Reason, RunInfo } from '../lib/apiTypes'
+import type { AdminAction, AdminPlayer, Entry, PlayerAction, ReportGroup, RunInfo } from '../lib/apiTypes'
 
 import { api } from '../lib/http'
 
-export type { AdminAction, AdminPlayer, Entry, PlayerAction, Reason, RunInfo, ReportGroup }
-
-export class AdminError extends Error {
-  status: number
-  constructor(message: string, status: number) {
-    super(message)
-    this.status = status
-  }
-}
+export type { AdminAction, AdminPlayer, Entry, PlayerAction, RunInfo, ReportGroup }
 
 async function call<T>(path: string, body?: unknown): Promise<T> {
   const r = await api<T>(`/api/admin${path}`, { body })
   if (r.ok) return r.body
   // Access's login page (an expired Access session) instead of our JSON.
-  if (r.status !== 0 && !r.body) throw new AdminError('Your Cloudflare Access session has ended. Reload the page to sign in again.', r.status)
-  throw new AdminError(r.body?.error ?? (r.status ? `Request failed (${r.status})` : r.error), r.status)
+  if (r.status !== 0 && !r.body) throw new Error('Your Cloudflare Access session has ended. Reload the page to sign in again.')
+  throw new Error(r.body?.error ?? (r.status ? `Request failed (${r.status})` : r.error))
 }
 
 export const whoAmI = () => call<{ email: string }>('/me')

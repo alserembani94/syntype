@@ -1,7 +1,7 @@
 /** Leaderboard names (docs/leaderboard.md, "Display name"). Their shape is in src/lib/nameRules.ts, shared with the game. */
 import { NAME_MAX, nameShapeProblem, tidyName } from '../../src/lib/nameRules'
 
-export { NAME_MAX, NAME_MIN, tidyName } from '../../src/lib/nameRules'
+export { tidyName } from '../../src/lib/nameRules'
 /** Renaming is allowed once a week; the first confirmation doesn't count. */
 export const RENAME_EVERY_MS = 7 * 24 * 60 * 60 * 1000
 

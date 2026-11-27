@@ -14,7 +14,7 @@ import { Tip } from './tip'
  * themes and the same as hover. Set on the same attributes as shadcn's (aria-pressed for
  * toggles, aria-checked for a choice), or its later rule wins.
  */
-export const SELECTED =
+const SELECTED =
   'data-selected:bg-accent data-selected:text-primary aria-pressed:bg-accent aria-pressed:text-primary aria-checked:bg-accent aria-checked:text-primary hover:data-selected:bg-accent'
 
 export interface Option<T extends string> {

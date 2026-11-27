@@ -16,8 +16,6 @@ import { computePairs } from './pairs'
 import { encodeLog, fingerprint, replayLog, resultOf, type LogEntry, type TypingAids } from './runcore'
 import type { Language, Snippet, SnippetLength } from '../languages'
 
-export { decodeLog, encodeLog, fingerprint, replayLog, resultOf, type LogEntry, type TypingAids } from './runcore'
-
 export interface RunRecord {
   /** Unique per run. */
   id: string

@@ -68,7 +68,7 @@ function lab(rgb: RGB): RGB {
 const rad = (deg: number) => (deg * Math.PI) / 180
 
 /** CIEDE2000 difference between two colours. About 2 is just noticeable; 10 or more reads as clearly different. */
-export function deltaE([L1, a1, b1]: RGB, [L2, a2, b2]: RGB) {
+function deltaE([L1, a1, b1]: RGB, [L2, a2, b2]: RGB) {
   const C1 = Math.hypot(a1, b1)
   const C2 = Math.hypot(a2, b2)
   const Cb = (C1 + C2) / 2

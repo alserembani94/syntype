@@ -7,7 +7,7 @@ import { load, save } from '../lib/storage'
 
 /** Picker sections, in the order they're shown. */
 export const THEME_SECTIONS = ['Syntype', 'High contrast', 'Dark', 'Light', 'Colour vision', 'Retro'] as const
-export type ThemeSection = (typeof THEME_SECTIONS)[number]
+type ThemeSection = (typeof THEME_SECTIONS)[number]
 
 export interface Theme {
   /** Stable id: the data-syntype-theme value and the saved setting. */

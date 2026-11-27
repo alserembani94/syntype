@@ -5,7 +5,7 @@
  */
 
 /** Most requests are small JSON: a name, a report, a fingerprint. */
-export const SMALL_BODY = 8 * 1024
+const SMALL_BODY = 8 * 1024
 
 export type BodyResult = { ok: true; value: unknown } | { ok: false; status: 400 | 413 }
 

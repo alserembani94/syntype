@@ -13,10 +13,10 @@
 import { contrast } from '../test/colour'
 import type { Deficiency } from '.'
 
-export type Kind = 'text' | 'large' | 'ui'
+type Kind = 'text' | 'large' | 'ui'
 /** A colour spec: a role, or a role at an alpha over another spec. */
-export type Spec = string | { role: string; alpha: number; over: Spec }
-export interface Pair {
+type Spec = string | { role: string; alpha: number; over: Spec }
+interface Pair {
   group: string
   name: string
   fg: Spec
@@ -66,7 +66,7 @@ export function editorDims(css: string): EditorDims {
 
 const m = (role: string, alpha: number, base: Spec) => ({ role, alpha, over: base })
 
-export const pairs = (d: EditorDims): Pair[] => [
+const pairs = (d: EditorDims): Pair[] => [
   // ——— Text on surfaces ———
   { group: 'Text', name: 'Body text on the page', fg: 'foreground', bg: 'background', kind: 'text', where: 'every screen' },
   { group: 'Text', name: 'Body text on cards and the editor', fg: 'foreground', bg: 'card', kind: 'text', where: 'editor, tables, cards' },
@@ -140,13 +140,13 @@ export const pairs = (d: EditorDims): Pair[] => [
   ...[1, 2, 3, 4, 5].map((n) => ({ group: 'Non-text', name: `Chart colour ${n}`, fg: `chart-${n}`, bg: 'card', kind: 'ui' as Kind, where: 'charts (reserved)' })),
 ]
 
-export const NEED: Record<Kind, number> = { text: 4.5, large: 3, ui: 3 }
-export const AAA: Record<Kind, number | null> = { text: 7, large: 4.5, ui: null }
+const NEED: Record<Kind, number> = { text: 4.5, large: 3, ui: 3 }
+const AAA: Record<Kind, number | null> = { text: 7, large: 4.5, ui: null }
 
 const hex = (rgb: number[]) => '#' + rgb.map((c) => Math.round(Math.min(255, Math.max(0, c))).toString(16).padStart(2, '0')).join('')
 const rgbOf = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
 /** `fg` at `alpha` over `bg`, blended in sRGB as the browser composites it. */
-export const over = (fg: string, alpha: number, bg: string) => hex(rgbOf(fg).map((c, i) => c * alpha + rgbOf(bg)[i] * (1 - alpha)))
+const over = (fg: string, alpha: number, bg: string) => hex(rgbOf(fg).map((c, i) => c * alpha + rgbOf(bg)[i] * (1 - alpha)))
 const resolve = (r: Record<string, string>, s: Spec): string => (typeof s === 'string' ? r[s] : over(r[s.role], s.alpha, resolve(r, s.over)))
 const label = (s: Spec): string => (typeof s === 'string' ? s : `${s.role}/${Math.round(s.alpha * 100)} on ${label(s.over)}`)
 

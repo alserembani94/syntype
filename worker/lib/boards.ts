@@ -17,7 +17,7 @@ import type { Board, BoardReplay, BoardRow, LanguageBoards } from '../../src/lib
 
 export type { BoardRow }
 
-export const BOARD_SIZE = 15
+const BOARD_SIZE = 15
 /** How long boards are cached at the edge, in seconds. */
 export const BOARD_CACHE_SECONDS = 60
 
@@ -25,7 +25,7 @@ export const validAids = (aids: string | null): string => (aids && /^(any|[01]{3
 
 let indexCache: { at: number; entries: SnippetIndexEntry[] } | null = null
 /** The snippets the game offers today (the build's index), kept a minute. */
-export async function currentSnippets(assets: Assets, now: number): Promise<SnippetIndexEntry[]> {
+async function currentSnippets(assets: Assets, now: number): Promise<SnippetIndexEntry[]> {
   if (indexCache && now - indexCache.at < 60_000) return indexCache.entries
   const res = await assets(`${SNIPPET_DATA_PATH}/index.json`)
   const entries = res.ok ? ((await res.json()) as SnippetIndexEntry[]) : []

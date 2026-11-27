@@ -10,10 +10,10 @@ import { getPlayer, type PlayerRow } from './players'
 import { runRemoval } from './boards'
 import { PLAYER_ACTIONS, REPORT_REASONS, type AdminAction, type AdminPlayer, type PlayerAction, type ReportGroup, type ReportReason, type RunInfo } from '../../src/lib/apiTypes'
 
-export const REASONS = REPORT_REASONS
-export type Reason = ReportReason
-export const NOTE_MAX = 500
-export const REPORTS_PER_DAY = 10
+const REASONS = REPORT_REASONS
+type Reason = ReportReason
+const NOTE_MAX = 500
+const REPORTS_PER_DAY = 10
 
 
 /** A player reports a player, or one of their runs. */
@@ -69,7 +69,6 @@ const adminPlayer = (p: PlayerRow & { open_reports?: number }): AdminPlayer => (
   suggestedName: p.suggested_name,
   hidden: p.hidden === 1,
   hiddenByModerator: p.moderator_hidden === 1,
-  nameChangedAt: p.name_changed_at,
   createdAt: p.created_at,
   lastSeenAt: p.last_seen_at,
   openReports: p.open_reports ?? 0,

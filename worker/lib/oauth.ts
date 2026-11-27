@@ -24,7 +24,7 @@ export interface Profile {
 
 export class SignInError extends Error {}
 
-export const callbackUrl = (origin: string, provider: Provider) => `${origin}/api/auth/${provider}/callback`
+const callbackUrl = (origin: string, provider: Provider) => `${origin}/api/auth/${provider}/callback`
 
 /** Where to send the player to sign in. `challenge` is PKCE's code challenge (S256), sent to both providers. */
 export function authorizeUrl(provider: Provider, config: OAuthConfig, origin: string, state: string, challenge: string): string {

@@ -29,7 +29,7 @@ import type { ServiceEntry, ServiceRequest, ServiceResponse } from './service'
 import { wpm, type Sample } from './stats'
 import type { Snippet } from '../languages/types'
 
-export type Phase = 'ready' | 'running' | 'done'
+type Phase = 'ready' | 'running' | 'done'
 
 export interface TestOptions extends RunOptions {
   /** Null or missing turns suggestions off. */
@@ -47,7 +47,7 @@ export interface SuggestState {
 }
 
 /** A completion request waiting for the service. */
-export interface PendingRequest extends ServiceRequest {
+interface PendingRequest extends ServiceRequest {
   id: number
   start: number
 }

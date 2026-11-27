@@ -30,7 +30,6 @@ export function publicPlayer(p: PlayerRow): Player {
     suggestedName: p.suggested_name,
     hidden: p.hidden === 1,
     hiddenByModerator: p.moderator_hidden === 1,
-    nameChangedAt: p.name_changed_at,
     /** When they may rename next, if they can't now. */
     renameAfter: p.name && p.name_changed_at ? new Date(Date.parse(p.name_changed_at) + RENAME_EVERY_MS).toISOString() : null,
   }
