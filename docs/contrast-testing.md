@@ -119,3 +119,13 @@ it, scores the Okabe–Ito and Tol palettes the same way for reference, and
 searches Primer's dark display scales (the vision themes' palette, T5) for
 the code colours that stay furthest apart as seen while reading at 4.5:1 on
 the editor both as seen and with normal vision.
+
+Lessons from the first round (AC 5): every place a code colour is drawn on
+another background narrows the palette a vision theme can use. Suggestion
+icons on the highlighted row once had to read on its tint in every code
+colour, which left Deuteranopia no palette above 11.3 ΔE; drawing them in
+the row's text colour there freed it. Before adding such a combination,
+check what it costs the vision themes with `scripts/design/cvd-study.ts`.
+Signals that sit on a tint (red buttons, badges) use the tint rules already
+measure (`--destructive-muted`) rather than a translucent fill, whose
+contrast changes with every surface and hover state.

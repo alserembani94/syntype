@@ -14,7 +14,7 @@ exports[`one-dark-pro > renders every group and passes axe 1`] = `
 [
   "#e06c75 on #282c34: 4.38 (4.5:1)",
   "#e06c75 on #2f333d: 3.95 (4.5:1)",
-  "#e06c75 on #4d3941: 3.32 (4.5:1)",
+  "#e06c75 on #3f2e36: 3.96 (4.5:1)",
 ]
 `;
 
@@ -22,8 +22,4 @@ exports[`phosphor > renders every group and passes axe 1`] = `[]`;
 
 exports[`protanopia > renders every group and passes axe 1`] = `[]`;
 
-exports[`tritanopia > renders every group and passes axe 1`] = `
-[
-  "#f85149 on #3c1e21: 4.47 (4.5:1)",
-]
-`;
+exports[`tritanopia > renders every group and passes axe 1`] = `[]`;

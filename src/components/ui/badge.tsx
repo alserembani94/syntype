@@ -1,6 +1,7 @@
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
 
+// Local edit: the destructive variant rests on --destructive-muted (the mistake tint, 4.5:1+ in every AA theme) and shows a red border on hover, instead of 10–30% red fills that dropped its text below 4.5:1.
 // Local edit: focus rings use ring-ring at full strength, not ring-ring/50 (WCAG 1.4.11 needs 3:1; half strength was 1.9–2.95:1).
 
 const badgeVariants = cva(
@@ -12,7 +13,7 @@ const badgeVariants = cva(
         secondary:
           "bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80",
         destructive:
-          "bg-destructive/10 text-destructive focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:focus-visible:ring-destructive/40 [a]:hover:bg-destructive/20",
+          "bg-destructive-muted text-destructive focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 [a]:hover:border-destructive",
         outline:
           "border-border text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground",
         ghost:

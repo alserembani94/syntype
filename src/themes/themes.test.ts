@@ -51,13 +51,7 @@ const KNOWN_FAILURES = new Set([
  * with "(as seen)" for a colour vision theme's simulated view, and T4's
  * success check. Each later step takes its share off; the list may only shrink.
  */
-const KNOWN_AA_FAILURES = new Set<string>([
-  'protanopia: success apart from code colours as seen',
-  'deuteranopia: success apart from code colours as seen',
-  'deuteranopia: success apart from code colours with normal vision',
-  'tritanopia: Destructive button label (as seen)',
-  'tritanopia: success apart from code colours as seen',
-])
+const KNOWN_AA_FAILURES = new Set<string>([])
 
 /** Names retired by the move to roles: no stylesheet, component or script may use them. */
 const RETIRED = [

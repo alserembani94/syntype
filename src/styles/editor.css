@@ -135,7 +135,7 @@ span.c.nl { color: color-mix(in srgb, var(--tc) var(--a), transparent); }
 .suggest .label { overflow: hidden; text-overflow: ellipsis; font-variant-ligatures: none; }
 .suggest .label b { color: var(--primary); font-weight: 600; }
 .suggest .detail { margin-left: auto; color: var(--muted-foreground); font: var(--text-xs) var(--font-sans); }
-.suggest li.selected .detail { color: var(--accent-foreground); }
+.suggest li.selected .detail, .suggest li.selected .icon { color: var(--accent-foreground); }
 
 /* The results' speed chart (SpeedChart) and My runs' chart (RunsView). */
 svg.chart { width: 100%; height: auto; display: block; overflow: visible; }

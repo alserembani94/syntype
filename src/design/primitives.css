@@ -126,11 +126,8 @@
   --primer-dark-tritanopia-danger: #f85149; /* primer-dark: dark-tritanopia:--fgColor-danger */
   --primer-dark-tritanopia-success: #58a6ff; /* primer-dark: dark-tritanopia:--fgColor-success */
   --primer-dark-tritanopia-danger-muted-on-default: #25181c; /* primer-dark: over(dark-tritanopia:--bgColor-danger-muted, dark:--bgColor-default) */
-  --primer-dark-blue-6: #4da0ff; /* primer-dark: dark:--display-blue-scale-6 */
-  --primer-dark-blue-9: #a3d3ff; /* primer-dark: dark:--display-blue-scale-9 */
   --primer-dark-cyan-8: #45cbf7; /* primer-dark: dark:--display-cyan-scale-8 */
   --primer-dark-cyan-9: #80dbf9; /* primer-dark: dark:--display-cyan-scale-9 */
-  --primer-dark-green-6: #41b445; /* primer-dark: dark:--display-green-scale-6 */
   --primer-dark-green-9: #99e090; /* primer-dark: dark:--display-green-scale-9 */
   --primer-dark-lime-8: #9fcc3e; /* primer-dark: dark:--display-lime-scale-8 */
   --primer-dark-olive-9: #e2d04b; /* primer-dark: dark:--display-olive-scale-9 */
@@ -140,6 +137,10 @@
   --primer-dark-red-7: #f48b8d; /* primer-dark: dark:--display-red-scale-7 */
   --primer-dark-brown-9: #dbceb3; /* primer-dark: dark:--display-brown-scale-9 */
   --primer-dark-auburn-8: #d4b7b5; /* primer-dark: dark:--display-auburn-scale-8 */
+  --primer-dark-purple-9: #e1c7ff; /* primer-dark: dark:--display-purple-scale-9 */
+  --primer-dark-blue-5: #0576ff; /* primer-dark: dark:--display-blue-scale-5 */
+  --primer-dark-orange-5: #c46212; /* primer-dark: dark:--display-orange-scale-5 */
+  --primer-dark-pine-5: #18915e; /* primer-dark: dark:--display-pine-scale-5 */
 
   /* ——— Dark High Contrast (VS Code): microsoft/vscode@8223a0d0d0fb (src/design/sources/vscode.json) ——— */
   --vscode-hc-background: #000000; /* vscode: hc.editor.background */

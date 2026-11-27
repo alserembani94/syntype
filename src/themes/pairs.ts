@@ -93,8 +93,6 @@ export const pairs = (d: EditorDims): Pair[] => [
   { group: 'Accent text', name: 'Success text', fg: 'success', bg: 'card', kind: 'text', where: '“New personal best”, “best” and “you” marks' },
   { group: 'Accent text', name: 'Error text on the page', fg: 'destructive', bg: 'background', kind: 'text', where: 'errors, “Delete account” heading' },
   { group: 'Accent text', name: 'Error text in dialogs', fg: 'destructive', bg: 'popover', kind: 'text', where: 'dialog errors' },
-  { group: 'Accent text', name: 'Destructive button label', fg: 'destructive', bg: m('destructive', 0.1, 'background'), kind: 'text', where: 'Clear…, Remove run, Hide, error badges (bg-destructive/10)', scheme: 'light' },
-  { group: 'Accent text', name: 'Destructive button label', fg: 'destructive', bg: m('destructive', 0.2, 'background'), kind: 'text', where: 'Clear…, Remove run, Hide, error badges (dark:bg-destructive/20)', scheme: 'dark' },
 
   // ——— The editor's code ———
   { group: 'Code', name: 'Keyword', fg: 'code-keyword', bg: 'card', kind: 'text', where: 'typed code' },
@@ -104,7 +102,7 @@ export const pairs = (d: EditorDims): Pair[] => [
   { group: 'Code', name: 'Type', fg: 'code-type', bg: 'card', kind: 'text', where: 'typed code' },
   { group: 'Code', name: 'Punctuation', fg: 'code-punctuation', bg: 'card', kind: 'text', where: 'typed code' },
   { group: 'Code', name: 'Comment', fg: 'code-comment', bg: 'card', kind: 'text', where: 'typed code' },
-  { group: 'Code', name: 'Mistake on its tint', fg: 'destructive', bg: 'destructive-muted', kind: 'text', where: 'a wrong character (also wavy-underlined)' },
+  { group: 'Code', name: 'Mistake on its tint', fg: 'destructive', bg: 'destructive-muted', kind: 'text', where: 'a wrong character (also wavy-underlined); destructive buttons and badges (Clear…, Remove run, Cheating)' },
   // Each character is its token colour mixed with the secondary text colour (editor.css, span.c).
   { group: 'Code', name: 'Untyped plain text', fg: m('foreground', d.untyped, 'muted-foreground'), bg: 'card', kind: 'text', where: 'code still to type' },
   { group: 'Code', name: 'Untyped keyword', fg: m('code-keyword', d.untyped, 'muted-foreground'), bg: 'card', kind: 'text', where: 'code still to type' },
@@ -115,7 +113,7 @@ export const pairs = (d: EditorDims): Pair[] => [
   { group: 'Code', name: 'Auto-closed closer waiting', fg: m('foreground', d.pending, 'muted-foreground'), bg: 'accent', kind: 'text', where: 'a closing bracket auto-close inserted, before the player reaches it' },
   { group: 'Code', name: 'Line numbers', fg: m('muted-foreground', d.gutter, 'card'), bg: 'card', kind: 'text', where: 'the gutter' },
   { group: 'Code', name: 'Current line number', fg: 'primary', bg: 'card', kind: 'text', where: 'the gutter, the caret\'s line' },
-  ...(['keyword', 'string', 'number', 'function', 'type'] as const).map((c) => ({ group: 'Code', name: `Suggestion icon on the highlighted row (${c})`, fg: `code-${c}`, bg: 'accent', kind: 'text' as Kind, where: 'the suggestion list (kw, ƒ …)' })),
+  ...(['keyword', 'string', 'number', 'function', 'type'] as const).map((c) => ({ group: 'Code', name: `Suggestion icon (${c})`, fg: `code-${c}`, bg: 'popover', kind: 'text' as Kind, where: 'the suggestion list (kw, ƒ …); the highlighted row draws them in its text colour' })),
 
   { group: 'Text', name: 'Inactive tab label', fg: 'muted-foreground', bg: 'muted', kind: 'text', where: 'admin tabs, gallery tabs (text-muted-foreground)' },
   { group: 'Text', name: 'Ad placeholder size', fg: 'muted-foreground', bg: 'muted', kind: 'text', where: 'the ad space on results' },
@@ -132,6 +130,7 @@ export const pairs = (d: EditorDims): Pair[] => [
   { group: 'Non-text', name: 'Switch off: thumb on its track', fg: 'background', bg: 'input-border', kind: 'ui', where: 'the switch thumb, when off' },
   { group: 'Non-text', name: 'Switch or checkbox on', fg: 'primary', bg: 'popover', kind: 'ui', where: 'Smooth caret, Show me on the leaderboards' },
   { group: 'Non-text', name: 'Caret', fg: 'primary', bg: 'card', kind: 'ui', where: 'the editor' },
+  ...(['background', 'card', 'popover'] as const).map((g) => ({ group: 'Non-text', name: `Destructive button hover outline on ${g}`, fg: 'destructive', bg: g, kind: 'ui' as Kind, where: 'a destructive button or badge, hovered' })),
   { group: 'Non-text', name: 'Mistake underline', fg: 'destructive', bg: 'card', kind: 'ui', where: 'wavy underline under a wrong character' },
   { group: 'Non-text', name: 'Slider track', fg: 'muted', bg: 'card', kind: 'ui', where: 'the replay position', exempt: 'the filled part and thumb carry the position' },
   { group: 'Non-text', name: 'Slider fill and thumb', fg: 'primary', bg: 'card', kind: 'ui', where: 'the replay position' },
