@@ -1,0 +1,195 @@
+=== Greet.cs
+static string Greet(string name) => $"Hello, {name}!";
+=== Point.cs
+public record Point(double X, double Y)
+{
+    public double Length => Math.Sqrt(X * X + Y * Y);
+}
+=== IsEven.cs
+static bool IsEven(int n)
+{
+    return n % 2 == 0;
+}
+=== MaxOf.cs
+static T MaxOf<T>(T a, T b) where T : IComparable<T>
+{
+    return a.CompareTo(b) >= 0 ? a : b;
+}
+=== Status.cs
+public enum Status
+{
+    Active,
+    Suspended,
+    Closed,
+}
+=== TopScores.cs
+public record Player(string Name, int Score);
+
+static List<string> TopScores(IEnumerable<Player> players, int count)
+{
+    return players
+        .OrderByDescending(p => p.Score)
+        .Take(count)
+        .Select(p => $"{p.Name}: {p.Score}")
+        .ToList();
+}
+=== Describe.cs
+static string Describe(object? value) => value switch
+{
+    null => "nothing",
+    int n when n < 0 => "a negative number",
+    int n => $"the number {n}",
+    string { Length: 0 } => "an empty string",
+    string s => $"the text {s}",
+    _ => value.GetType().Name,
+};
+=== WordCount.cs
+static Dictionary<string, int> WordCount(string text)
+{
+    var counts = new Dictionary<string, int>();
+    foreach (var word in text.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+    {
+        counts[word] = counts.GetValueOrDefault(word) + 1;
+    }
+    return counts;
+}
+=== FetchUser.cs
+using System.Text.Json;
+
+public record User(int Id, string Name);
+
+static async Task<User?> FetchUserAsync(HttpClient http, int id)
+{
+    var json = await http.GetStringAsync($"/users/{id}");
+    return JsonSerializer.Deserialize<User>(json);
+}
+=== Csv.cs
+using System.Text;
+
+static string ToCsv(IEnumerable<string[]> rows)
+{
+    var sb = new StringBuilder();
+    foreach (var row in rows)
+    {
+        sb.AppendLine(string.Join(",", row));
+    }
+    return sb.ToString();
+}
+=== BankAccount.cs
+public class BankAccount
+{
+    private readonly List<decimal> _transactions = [];
+
+    public BankAccount(string owner)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(owner);
+        Owner = owner;
+    }
+
+    public string Owner { get; }
+    public decimal Balance => _transactions.Sum();
+
+    public void Deposit(decimal amount)
+    {
+        if (amount <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount), "Must be positive.");
+        }
+        _transactions.Add(amount);
+    }
+
+    public void Withdraw(decimal amount)
+    {
+        if (amount > Balance)
+        {
+            throw new InvalidOperationException("Insufficient funds.");
+        }
+        _transactions.Add(-amount);
+    }
+}
+=== Repository.cs
+public interface IRepository<T> where T : class
+{
+    T? Find(int id);
+    IReadOnlyList<T> All();
+    void Save(int id, T item);
+    bool Delete(int id);
+}
+
+public class InMemoryRepository<T> : IRepository<T> where T : class
+{
+    private readonly Dictionary<int, T> _items = new();
+
+    public T? Find(int id) => _items.GetValueOrDefault(id);
+
+    public IReadOnlyList<T> All() => _items.Values.ToList();
+
+    public void Save(int id, T item) => _items[id] = item;
+
+    public bool Delete(int id) => _items.Remove(id);
+}
+=== OrderService.cs
+public record OrderLine(string Product, int Quantity, decimal Price);
+
+public record Order(int Id, List<OrderLine> Lines)
+{
+    public decimal Total => Lines.Sum(l => l.Quantity * l.Price);
+}
+
+public interface IOrderStore
+{
+    Task<IReadOnlyList<Order>> AllAsync(CancellationToken token);
+}
+
+public class OrderService(IOrderStore store)
+{
+    public async Task<decimal> RevenueAsync(CancellationToken token = default)
+    {
+        var orders = await store.AllAsync(token);
+        return orders.Sum(o => o.Total);
+    }
+
+    public async Task<Order?> LargestAsync(CancellationToken token = default)
+    {
+        var orders = await store.AllAsync(token);
+        return orders.MaxBy(o => o.Total);
+    }
+}
+=== Retry.cs
+public static class Retry
+{
+    public static async Task<T> RunAsync<T>(
+        Func<CancellationToken, Task<T>> action,
+        int attempts = 3,
+        CancellationToken token = default)
+    {
+        var delay = TimeSpan.FromMilliseconds(200);
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                return await action(token);
+            }
+            catch (HttpRequestException) when (attempt < attempts)
+            {
+                await Task.Delay(delay, token);
+                delay *= 2;
+            }
+        }
+    }
+}
+=== StepRange.cs
+using System.Collections;
+
+public class StepRange(int start, int end, int step = 1) : IEnumerable<int>
+{
+    public IEnumerator<int> GetEnumerator()
+    {
+        for (var i = start; i < end; i += step)
+        {
+            yield return i;
+        }
+    }
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+}

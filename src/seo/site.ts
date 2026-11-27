@@ -21,6 +21,7 @@ export const BLURBS: Record<string, string> = {
   python: 'list comprehensions, dataclasses and async functions',
   c: 'pointers, structs, malloc and realloc, file I/O, qsort and a hash table',
   cpp: 'classes and RAII, templates, smart pointers, ranges and an LRU cache',
+  csharp: 'records, LINQ, async/await, pattern matching and generic repositories',
   rust: 'structs, impl blocks, Result and iterators',
   go: 'structs, slices, interfaces and error handling',
   assembly: 'NASM syntax, syscalls, loops, string functions and a bubble sort',

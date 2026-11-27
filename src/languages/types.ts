@@ -113,7 +113,7 @@ interface CompletionConfig {
 }
 
 /** Sections of the language picker, in the order they're shown. */
-export const CATEGORIES = ['Web', 'Systems', 'Scripting', 'Data & config', 'Testing & QA', 'Mainframe', 'Esoteric'] as const
+export const CATEGORIES = ['Web', 'Systems', 'Applications', 'Scripting', 'Data & config', 'Testing & QA', 'Mainframe', 'Esoteric'] as const
 type LanguageCategory = (typeof CATEGORIES)[number]
 
 export interface Language {

@@ -3,7 +3,7 @@
  * sections without importing the languages themselves (their snippets would
  * bloat the gallery for nothing).
  */
-export const LANGUAGE_SECTIONS = ['Web', 'Systems', 'Scripting', 'Data & config', 'Testing & QA', 'Mainframe', 'Esoteric'] as const
+export const LANGUAGE_SECTIONS = ['Web', 'Systems', 'Applications', 'Scripting', 'Data & config', 'Testing & QA', 'Mainframe', 'Esoteric'] as const
 
 export const SAMPLE_LANGUAGES: { id: string; name: string; section: string; aliases?: string }[] = [
   { id: 'javascript', name: 'JavaScript', section: 'Web', aliases: 'js' },
