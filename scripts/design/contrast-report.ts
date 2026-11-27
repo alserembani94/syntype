@@ -120,12 +120,12 @@ function pageSummary(id: string) {
   const elements = p.pairs.reduce((n, x) => n + x.count, 0)
   const reviews = p.reviews.reduce((n, r) => n + r.count, 0)
   const list = fails.length
-    ? `<table class="pt"><thead><tr><th></th><th>Text axe found below AA</th><th class="num">Ratio</th><th class="num">Needs</th><th class="num">Elements</th></tr></thead><tbody>${fails
+    ? `<div class="tw"><table class="pt"><thead><tr><th></th><th>Text axe found below AA</th><th class="num">Ratio</th><th class="num">Needs</th><th class="num">Elements</th></tr></thead><tbody>${fails
         .map(
           (f) =>
             `<tr><td class="s"><span class="sample" style="background:${f.bg};color:${f.fg}">Aa</span></td><td>${f.examples.map((e) => `“${esc(e.text || '…')}” <span class="where">${esc(e.state)}</span>`).join('<br>')}<div class="hex"><code>${f.fg}</code> on <code>${f.bg}</code> · ${esc(f.size)} ${esc(f.weight)}</div></td><td class="num">${f.ratio.toFixed(2)}</td><td class="num">${f.need}:1</td><td class="num">${f.count}</td></tr>`,
         )
-        .join('')}</tbody></table>`
+        .join('')}</tbody></table></div>`
     : `<p><span class="pill pass"><i aria-hidden="true">✓</i>No text below AA</span> that axe could measure.</p>`
   return `<p class="stat-line"><b>${elements.toLocaleString('en')}</b> text elements measured in the browser, <b>${p.pairs.length}</b> distinct colour pairs, <b>${fails.length}</b> below AA. axe couldn't judge <b>${reviews.toLocaleString('en')}</b> elements (${p.reviews.map((r) => `${esc(r.why)}: ${r.count}`).join(', ') || 'none'}); the editor's code is among them, which is why the role pairs above cover it.</p>${list}`
 }
