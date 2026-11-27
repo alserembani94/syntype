@@ -9,19 +9,12 @@ exports[`dark > renders every group and passes axe 1`] = `
 
 exports[`deuteranopia > renders every group and passes axe 1`] = `[]`;
 
-exports[`github-light > renders every group and passes axe 1`] = `
-[
-  "#75787c on #f6f8fa: 4.16 (4.5:1)",
-  "#797b7e on #ffffff: 4.24 (4.5:1)",
-]
-`;
+exports[`github-light > renders every group and passes axe 1`] = `[]`;
 
 exports[`hc-black > renders every group and passes axe 1`] = `[]`;
 
 exports[`light > renders every group and passes axe 1`] = `
 [
-  "#737782 on #f6f7fa: 4.17 (4.5:1)",
-  "#777a84 on #ffffff: 4.28 (4.5:1)",
   "#c25a08 on #fbe9d8: 3.72 (4.5:1)",
   "#c25a08 on #ffffff: 4.41 (4.5:1)",
   "#d0303f on #faeaec: 4.32 (4.5:1)",

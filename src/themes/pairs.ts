@@ -39,12 +39,16 @@ export interface EditorDims {
   auto: number
   /** A closer auto-close inserted, before the player reaches it (`.c.pending`). */
   pending: number
-  /** Line numbers (`.gutter` opacity). */
+  /** Line numbers (`.gutter` opacity; 1 when it has none). */
   gutter: number
+  /** The line-end marker ↵ (`.c.nl`), faded toward the background. */
+  lineEnd: number
 }
 
 /** Reads the editor's dimming from editor.css's source. */
 export function editorDims(css: string): EditorDims {
+  // The pairs below model a character as its token colour mixed with the secondary text colour.
+  if (!css.includes('var(--a), var(--muted-foreground)); }')) throw new Error('editor.css: characters no longer mix with --muted-foreground; update pairs.ts')
   const pick = (re: RegExp, what: string) => {
     const m = css.match(re)
     if (!m) throw new Error(`editor.css: can't find ${what}`)
@@ -55,7 +59,8 @@ export function editorDims(css: string): EditorDims {
     caret: pick(/^\.c\.cur \{[^}]*--a:\s*([\d.]+%)/m, '.c.cur --a'),
     auto: pick(/^\.c\.auto[^{]*\{[^}]*--a:\s*([\d.]+%)/m, '.c.auto --a'),
     pending: pick(/^\.c\.pending \{[^}]*--a:\s*([\d.]+%)/m, '.c.pending --a'),
-    gutter: pick(/^\.gutter \{[^}]*opacity:\s*([\d.]+)/m, '.gutter opacity'),
+    gutter: /^\.gutter \{[^}]*opacity:/m.test(css) ? pick(/^\.gutter \{[^}]*opacity:\s*([\d.]+)/m, '.gutter opacity') : 1,
+    lineEnd: pick(/^\.c\.nl, \.c\.nl\.ok \{[^}]*--a:\s*([\d.]+%)/m, '.c.nl --a'),
   }
 }
 
@@ -72,7 +77,7 @@ export const pairs = (d: EditorDims): Pair[] => [
   { group: 'Text', name: 'Secondary text on muted', fg: 'muted-foreground', bg: 'muted', kind: 'text', where: 'the status bar, Kbd keys, the tab bar' },
   { group: 'Text', name: 'Secondary text on a dialog footer', fg: 'muted-foreground', bg: m('muted', 0.5, 'popover'), kind: 'text', where: 'dialog footers (bg-muted/50)' },
   { group: 'Text', name: 'Text in a tooltip', fg: 'background', bg: 'foreground', kind: 'text', where: 'tooltips (inverted)' },
-  { group: 'Text', name: 'Typing-aid tag that is off', fg: m('muted-foreground', 0.5, 'card'), bg: 'card', kind: 'text', where: 'My runs and board tables (struck through)' },
+  { group: 'Text', name: 'Typing-aid tag that is off', fg: 'muted-foreground', bg: 'card', kind: 'text', where: 'My runs and board tables (struck through)' },
 
   // ——— Brand, state and status as text ———
   { group: 'Accent text', name: 'Primary text on the page', fg: 'primary', bg: 'background', kind: 'text', where: 'links, the brand, selected nav label' },
@@ -81,7 +86,7 @@ export const pairs = (d: EditorDims): Pair[] => [
   { group: 'Accent text', name: 'Selected chip or nav label', fg: 'primary', bg: 'accent', kind: 'text', where: 'length, aids, Type / My runs / Leaderboard' },
   { group: 'Accent text', name: 'Big numbers (large)', fg: 'primary', bg: 'card', kind: 'large', where: 'results WPM and accuracy, stat values' },
   { group: 'Accent text', name: 'Button label on primary', fg: 'primary-foreground', bg: 'primary', kind: 'text', where: 'default buttons (Type this snippet, Resolve)' },
-  { group: 'Text', name: 'Suggestion detail on the highlighted row', fg: 'muted-foreground', bg: 'accent', kind: 'text', where: 'the suggestion list while typing' },
+  { group: 'Text', name: 'Suggestion detail on the highlighted row', fg: 'accent-foreground', bg: 'accent', kind: 'text', where: 'the suggestion list while typing' },
   { group: 'Accent text', name: 'Label on a hovered item', fg: 'accent-foreground', bg: 'accent', kind: 'text', where: 'hovered menu items, highlighted rows' },
   { group: 'Accent text', name: 'Label on secondary', fg: 'secondary-foreground', bg: 'secondary', kind: 'text', where: 'secondary buttons and badges' },
   { group: 'Accent text', name: 'Success text', fg: 'success', bg: 'card', kind: 'text', where: '“New personal best”, “best” and “you” marks' },
@@ -99,22 +104,28 @@ export const pairs = (d: EditorDims): Pair[] => [
   { group: 'Code', name: 'Punctuation', fg: 'code-punctuation', bg: 'card', kind: 'text', where: 'typed code' },
   { group: 'Code', name: 'Comment', fg: 'code-comment', bg: 'card', kind: 'text', where: 'typed code' },
   { group: 'Code', name: 'Mistake on its tint', fg: 'destructive', bg: 'destructive-muted', kind: 'text', where: 'a wrong character (also wavy-underlined)' },
-  { group: 'Code', name: 'Untyped plain text', fg: m('foreground', d.untyped, 'card'), bg: 'card', kind: 'text', where: 'code still to type' },
-  { group: 'Code', name: 'Untyped keyword', fg: m('code-keyword', d.untyped, 'card'), bg: 'card', kind: 'text', where: 'code still to type' },
-  { group: 'Code', name: 'Untyped comment', fg: m('code-comment', d.untyped, 'card'), bg: 'card', kind: 'text', where: 'code still to type' },
-  { group: 'Code', name: 'Next character', fg: m('foreground', d.caret, 'card'), bg: 'card', kind: 'text', where: 'the character at the caret' },
-  { group: 'Code', name: 'Auto-inserted text', fg: m('foreground', d.auto, 'card'), bg: 'card', kind: 'text', where: 'auto-indent and auto-close text' },
-  { group: 'Code', name: 'Auto-closed closer waiting', fg: m('foreground', d.pending, 'accent'), bg: 'accent', kind: 'text', where: 'a closing bracket auto-close inserted, before the player reaches it' },
+  // Each character is its token colour mixed with the secondary text colour (editor.css, span.c).
+  { group: 'Code', name: 'Untyped plain text', fg: m('foreground', d.untyped, 'muted-foreground'), bg: 'card', kind: 'text', where: 'code still to type' },
+  { group: 'Code', name: 'Untyped keyword', fg: m('code-keyword', d.untyped, 'muted-foreground'), bg: 'card', kind: 'text', where: 'code still to type' },
+  { group: 'Code', name: 'Untyped comment', fg: m('code-comment', d.untyped, 'muted-foreground'), bg: 'card', kind: 'text', where: 'code still to type' },
+  { group: 'Code', name: 'Next character', fg: m('foreground', d.caret, 'muted-foreground'), bg: 'card', kind: 'text', where: 'the character at the caret' },
+  { group: 'Code', name: 'Next character in a comment', fg: m('code-comment', d.caret, 'muted-foreground'), bg: 'card', kind: 'text', where: 'the character at the caret' },
+  { group: 'Code', name: 'Auto-inserted text', fg: m('foreground', d.auto, 'muted-foreground'), bg: 'card', kind: 'text', where: 'auto-indent and auto-close text' },
+  { group: 'Code', name: 'Auto-closed closer waiting', fg: m('foreground', d.pending, 'muted-foreground'), bg: 'accent', kind: 'text', where: 'a closing bracket auto-close inserted, before the player reaches it' },
   { group: 'Code', name: 'Line numbers', fg: m('muted-foreground', d.gutter, 'card'), bg: 'card', kind: 'text', where: 'the gutter' },
+  { group: 'Code', name: 'Current line number', fg: 'primary', bg: 'card', kind: 'text', where: 'the gutter, the caret\'s line' },
+  ...(['keyword', 'string', 'number', 'function', 'type'] as const).map((c) => ({ group: 'Code', name: `Suggestion icon on the highlighted row (${c})`, fg: `code-${c}`, bg: 'accent', kind: 'text' as Kind, where: 'the suggestion list (kw, ƒ …)' })),
 
-  { group: 'Text', name: 'Inactive tab label', fg: m('foreground', 0.6, 'muted'), bg: 'muted', kind: 'text', where: 'admin tabs, gallery tabs (text-foreground/60)', scheme: 'light' },
-  { group: 'Text', name: 'Ad placeholder size', fg: m('muted-foreground', 0.8, 'muted'), bg: 'muted', kind: 'text', where: 'the ad space on results (opacity-80)' },
+  { group: 'Text', name: 'Inactive tab label', fg: 'muted-foreground', bg: 'muted', kind: 'text', where: 'admin tabs, gallery tabs (text-muted-foreground)' },
+  { group: 'Text', name: 'Ad placeholder size', fg: 'muted-foreground', bg: 'muted', kind: 'text', where: 'the ad space on results' },
 
   // ——— Non-text (1.4.11) ———
+  { group: 'Non-text', name: 'Line-end marker', fg: m('muted-foreground', d.lineEnd, 'card'), bg: 'card', kind: 'ui', where: 'the ↵ at each line end in the editor' },
+  { group: 'Non-text', name: 'Line break to step over', fg: 'primary', bg: 'card', kind: 'ui', where: 'the ↵ that auto-close moved down' },
   { group: 'Non-text', name: 'Text field border', fg: 'input', bg: 'background', kind: 'ui', where: 'inputs, checkboxes, the search box' },
   { group: 'Non-text', name: 'Text field border in a dialog', fg: 'input', bg: 'popover', kind: 'ui', where: 'the name step, Account & data' },
-  { group: 'Non-text', name: 'Focus ring (ring/50)', fg: m('ring', 0.5, 'background'), bg: 'background', kind: 'ui', where: 'every focused control' },
-  { group: 'Non-text', name: 'Focus ring in a dialog', fg: m('ring', 0.5, 'popover'), bg: 'popover', kind: 'ui', where: 'focused controls in dialogs' },
+  { group: 'Non-text', name: 'Focus ring', fg: 'ring', bg: 'background', kind: 'ui', where: 'every focused control' },
+  { group: 'Non-text', name: 'Focus ring in a dialog', fg: 'ring', bg: 'popover', kind: 'ui', where: 'focused controls in dialogs' },
   { group: 'Non-text', name: 'Selected chip vs the page', fg: 'accent', bg: 'background', kind: 'ui', where: 'the tint that marks a selected chip', exempt: 'the label colour also changes (see “Selected chip or nav label”)' },
   { group: 'Non-text', name: 'Switch or checkbox on', fg: 'primary', bg: 'popover', kind: 'ui', where: 'Smooth caret, Show me on the leaderboards' },
   { group: 'Non-text', name: 'Caret', fg: 'primary', bg: 'card', kind: 'ui', where: 'the editor' },

@@ -9,6 +9,8 @@ import {
   type SliderProps as SliderPrimitiveProps,
 } from "react-aria-components"
 
+// Local edit: focus rings use ring-ring at full strength, not ring-ring/50 (WCAG 1.4.11 needs 3:1; half strength was 1.9–2.95:1).
+
 type SliderValue = number | number[]
 type SliderProps<T extends SliderValue = SliderValue> = Omit<
   SliderPrimitiveProps<T>,
@@ -47,7 +49,7 @@ function Slider<T extends SliderValue = SliderValue>({
                 data-slot="slider-thumb"
                 key={index}
                 index={index}
-                className="relative block size-3 shrink-0 rounded-full border border-ring bg-background ring-ring/50 transition-[color,box-shadow] select-none group-data-horizontal:top-[50%] group-data-vertical:left-[50%] after:absolute after:-inset-2 hover:ring-3 focus-visible:ring-3 focus-visible:outline-hidden active:ring-3 disabled:pointer-events-none disabled:opacity-50"
+                className="relative block size-3 shrink-0 rounded-full border border-ring bg-background ring-ring transition-[color,box-shadow] select-none group-data-horizontal:top-[50%] group-data-vertical:left-[50%] after:absolute after:-inset-2 hover:ring-3 focus-visible:ring-3 focus-visible:outline-hidden active:ring-3 disabled:pointer-events-none disabled:opacity-50"
               />
             ))}
           </>

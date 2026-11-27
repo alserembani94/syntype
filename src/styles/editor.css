@@ -22,26 +22,31 @@
 .editor { position: relative; cursor: text; }
 .scroller { position: relative; display: grid; grid-template-columns: auto 1fr; overflow: auto; max-height: 52vh; min-height: 180px; padding: 18px 0; }
 .gutter, .code { font-variant-ligatures: none; font-feature-settings: "liga" 0, "calt" 0; font-family: var(--font-mono); font-size: var(--text-base); line-height: 1.75; margin: 0; white-space: pre; }
-.gutter { text-align: right; color: var(--muted-foreground); opacity: .55; padding: 0 14px 0 18px; user-select: none; font-variant-numeric: tabular-nums; }
-.gutter .now { color: var(--primary); opacity: 1; }
+.gutter { text-align: right; color: var(--muted-foreground); padding: 0 14px 0 18px; user-select: none; font-variant-numeric: tabular-nums; }
+.gutter .now { color: var(--primary); }
 .code { padding-right: 24px; min-width: 0; }
 /*
- * Each character is dimmed by mixing its colour with transparency (--a), not
- * with opacity: an element with opacity below 1 needs its own rendering
- * effect, and with ~900 of them every keystroke re-laid out and repainted the
- * whole snippet (about 47 ms a key on a slow phone, 18 ms this way). On text,
- * the two look the same. --tc is the character's token colour (set by the
- * token classes below); span.c outranks those classes.
+ * Each character mixes its token colour (--tc, set by the token classes below;
+ * span.c outranks them) with the secondary text colour by --a: code still to
+ * type is plain grey (0%), and its syntax colour appears as it's typed. Both
+ * ends are readable text (T3), so every state in between passes WCAG's 4.5:1
+ * too (rule T6 measures each one, reading --a from here). Mixing colours, not
+ * opacity: an element with opacity below 1 needs its own rendering effect,
+ * and with ~900 of them every keystroke re-laid out and repainted the whole
+ * snippet (about 47 ms a key on a slow phone, 18 ms this way).
+ *
+ * The line-end marker (↵) is a symbol, not text: it fades toward the
+ * background, at the least strength that keeps 3:1 in every AA theme (1.4.11).
  */
-.c { --a: 34%; border-radius: 2px; }
-span.c { color: color-mix(in srgb, var(--tc, var(--foreground)) var(--a), transparent); }
+.c { --a: 0%; border-radius: 2px; }
+span.c { color: color-mix(in srgb, var(--tc, var(--foreground)) var(--a), var(--muted-foreground)); }
+span.c.nl { color: color-mix(in srgb, var(--tc) var(--a), transparent); }
 .c.ok { --a: 100%; }
 .c.auto, .c.skipped { --a: 60%; }
 .c.pending { --a: 85%; background: var(--accent); }
-.c.nl.pending { --a: 60%; --tc: var(--primary); }
+.c.nl.pending { --a: 100%; --tc: var(--primary); }
 .c.bad { --a: 100%; color: var(--destructive) !important; background: var(--destructive-muted); text-decoration: underline wavy var(--destructive); text-underline-offset: 4px; }
-.c.nl { --tc: var(--muted-foreground); --a: 22%; }
-.c.nl.ok { --a: 35%; }
+.c.nl, .c.nl.ok { --tc: var(--muted-foreground); --a: 75%; }
 .c.nl.bad { --a: 100%; }
 .c.cur { box-shadow: inset 2px 0 0 var(--primary); animation: blink 1.05s steps(1) infinite; --a: 55%; }
 .typing .c.cur { animation: none; }
@@ -130,6 +135,7 @@ span.c { color: color-mix(in srgb, var(--tc, var(--foreground)) var(--a), transp
 .suggest .label { overflow: hidden; text-overflow: ellipsis; font-variant-ligatures: none; }
 .suggest .label b { color: var(--primary); font-weight: 600; }
 .suggest .detail { margin-left: auto; color: var(--muted-foreground); font: var(--text-xs) var(--font-sans); }
+.suggest li.selected .detail { color: var(--accent-foreground); }
 
 /* The results' speed chart (SpeedChart) and My runs' chart (RunsView). */
 svg.chart { width: 100%; height: auto; display: block; overflow: visible; }

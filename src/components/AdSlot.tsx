@@ -20,7 +20,7 @@ export function AdSlot({ slot, className }: Props) {
       data-ad-slot={slot}
     >
       <span className="text-2xs font-semibold tracking-wider uppercase">Ad space</span>
-      <span className="font-mono text-2xs opacity-80">
+      <span className="font-mono text-2xs">
         {width} × {height}
       </span>
     </aside>
