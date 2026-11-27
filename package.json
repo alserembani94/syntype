@@ -22,7 +22,8 @@
     "check:csp": "node scripts/visual/run.mjs scripts/visual/csp.ts",
     "report:size": "node scripts/visual/run.mjs scripts/visual/size.ts",
     "bench:restyle": "node scripts/visual/run.mjs scripts/visual/restyle.ts",
-    "bench:renders": "node scripts/visual/run.mjs scripts/visual/renders.ts"
+    "bench:renders": "node scripts/visual/run.mjs scripts/visual/renders.ts",
+    "report:contrast": "node scripts/visual/run.mjs scripts/design/contrast-roles.ts --out .visual/contrast/roles.json && node scripts/visual/run.mjs scripts/design/cvd-study.ts --out .visual/contrast/cvd.json && node scripts/visual/run.mjs scripts/visual/contrast.ts && node scripts/visual/run.mjs scripts/design/contrast-report.ts"
   },
   "dependencies": {
     "class-variance-authority": "0.7.1",
