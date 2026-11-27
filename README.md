@@ -1,6 +1,6 @@
 # Syntype
 
-A typing speed test for code, in the spirit of monkeytype. It uses real code snippets, colours them like an editor, and reports how fast and how accurately you type them. Languages: JavaScript, TypeScript, Python, Rust, Go, x86-64 Assembly, PHP, YAML, PostgreSQL, COBOL, Brainfuck and LOLCODE. The game is built so more can be added.
+A typing speed test for code, in the spirit of monkeytype. It uses real code snippets, colours them like an editor, and reports how fast and how accurately you type them. Languages: JavaScript, TypeScript, Python, C, Rust, Go, x86-64 Assembly, PHP, YAML, PostgreSQL, COBOL, Brainfuck and LOLCODE. The game is built so more can be added.
 
 ## Run it
 

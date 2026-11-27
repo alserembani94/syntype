@@ -1,0 +1,249 @@
+=== swap.c
+void swap(int *a, int *b) {
+    int tmp = *a;
+    *a = *b;
+    *b = tmp;
+}
+=== clamp.c
+int clamp(int x, int lo, int hi) {
+    return x < lo ? lo : x > hi ? hi : x;
+}
+=== str_len.c
+#include <stddef.h>
+
+size_t str_len(const char *s) {
+    size_t n = 0;
+    while (s[n]) n++;
+    return n;
+}
+=== is_power_of_two.c
+#include <stdbool.h>
+#include <stdint.h>
+
+bool is_power_of_two(uint32_t n) {
+    return n && !(n & (n - 1));
+}
+=== array_len.c
+#define ARRAY_LEN(a) (sizeof(a) / sizeof((a)[0]))
+
+int primes[] = { 2, 3, 5, 7 };
+int count = (int)ARRAY_LEN(primes);
+=== reverse.c
+#include <string.h>
+
+void reverse(char *s) {
+    size_t n = strlen(s);
+    for (size_t i = 0; i < n / 2; i++) {
+        char tmp = s[i];
+        s[i] = s[n - 1 - i];
+        s[n - 1 - i] = tmp;
+    }
+}
+=== point.c
+#include <math.h>
+
+typedef struct {
+    double x;
+    double y;
+} Point;
+
+double distance(Point a, Point b) {
+    double dx = b.x - a.x;
+    double dy = b.y - a.y;
+    return sqrt(dx * dx + dy * dy);
+}
+
+Point mid(Point a, Point b) {
+    return (Point){ .x = (a.x + b.x) / 2, .y = (a.y + b.y) / 2 };
+}
+=== sort_ints.c
+#include <stdlib.h>
+
+static int compare_ints(const void *a, const void *b) {
+    int x = *(const int *)a;
+    int y = *(const int *)b;
+    return (x > y) - (x < y);
+}
+
+void sort_ints(int *values, size_t count) {
+    qsort(values, count, sizeof *values, compare_ints);
+}
+=== count_lines.c
+#include <stdio.h>
+
+long count_lines(const char *path) {
+    FILE *file = fopen(path, "r");
+    if (!file) return -1;
+    long lines = 0;
+    int c;
+    while ((c = fgetc(file)) != EOF) {
+        if (c == '\n') lines++;
+    }
+    fclose(file);
+    return lines;
+}
+=== trim.c
+#include <ctype.h>
+#include <string.h>
+
+char *trim(char *s) {
+    while (isspace((unsigned char)*s)) s++;
+    char *end = s + strlen(s);
+    while (end > s && isspace((unsigned char)end[-1])) end--;
+    *end = '\0';
+    return s;
+}
+=== linked_list.c
+#include <stdbool.h>
+#include <stdlib.h>
+
+typedef struct Node {
+    int value;
+    struct Node *next;
+} Node;
+
+Node *push(Node *head, int value) {
+    Node *node = malloc(sizeof *node);
+    if (!node) return NULL;
+    node->value = value;
+    node->next = head;
+    return node;
+}
+
+bool contains(const Node *head, int value) {
+    for (const Node *n = head; n; n = n->next) {
+        if (n->value == value) return true;
+    }
+    return false;
+}
+
+void free_list(Node *head) {
+    while (head) {
+        Node *next = head->next;
+        free(head);
+        head = next;
+    }
+}
+=== vector.c
+#include <stdbool.h>
+#include <stdlib.h>
+
+typedef struct {
+    int *items;
+    size_t len;
+    size_t cap;
+} Vector;
+
+bool vector_push(Vector *v, int item) {
+    if (v->len == v->cap) {
+        size_t cap = v->cap ? v->cap * 2 : 8;
+        int *items = realloc(v->items, cap * sizeof *items);
+        if (!items) return false;
+        v->items = items;
+        v->cap = cap;
+    }
+    v->items[v->len++] = item;
+    return true;
+}
+
+void vector_free(Vector *v) {
+    free(v->items);
+    *v = (Vector){ 0 };
+}
+=== hash_table.c
+#include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
+
+#define CAPACITY 64
+
+typedef struct {
+    const char *key;
+    int value;
+} Entry;
+
+static Entry table[CAPACITY];
+
+static uint32_t hash(const char *s) {
+    uint32_t h = 5381;
+    while (*s) h = h * 33 + (unsigned char)*s++;
+    return h;
+}
+
+bool put(const char *key, int value) {
+    uint32_t i = hash(key) % CAPACITY;
+    for (int tries = 0; tries < CAPACITY; tries++) {
+        Entry *e = &table[i];
+        if (!e->key || strcmp(e->key, key) == 0) {
+            *e = (Entry){ .key = key, .value = value };
+            return true;
+        }
+        i = (i + 1) % CAPACITY;
+    }
+    return false;
+}
+
+int *get(const char *key) {
+    uint32_t i = hash(key) % CAPACITY;
+    for (int tries = 0; tries < CAPACITY && table[i].key; tries++) {
+        if (strcmp(table[i].key, key) == 0) return &table[i].value;
+        i = (i + 1) % CAPACITY;
+    }
+    return NULL;
+}
+=== word_count.c
+#include <ctype.h>
+#include <stdbool.h>
+#include <stdio.h>
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "usage: %s FILE\n", argv[0]);
+        return 1;
+    }
+    FILE *file = fopen(argv[1], "r");
+    if (!file) {
+        perror(argv[1]);
+        return 1;
+    }
+    long words = 0;
+    bool in_word = false;
+    int c;
+    while ((c = fgetc(file)) != EOF) {
+        if (isspace(c)) {
+            in_word = false;
+        } else if (!in_word) {
+            in_word = true;
+            words++;
+        }
+    }
+    fclose(file);
+    printf("%ld\n", words);
+    return 0;
+}
+=== ring_buffer.c
+#include <stdbool.h>
+#include <stddef.h>
+
+#define RING_SIZE 16
+
+typedef struct {
+    int items[RING_SIZE];
+    size_t head;
+    size_t count;
+} Ring;
+
+bool ring_push(Ring *r, int item) {
+    if (r->count == RING_SIZE) return false;
+    r->items[(r->head + r->count) % RING_SIZE] = item;
+    r->count++;
+    return true;
+}
+
+bool ring_pop(Ring *r, int *out) {
+    if (r->count == 0) return false;
+    *out = r->items[r->head];
+    r->head = (r->head + 1) % RING_SIZE;
+    r->count--;
+    return true;
+}

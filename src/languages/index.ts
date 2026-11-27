@@ -13,13 +13,14 @@ import { lolcode } from './lolcode'
 import { playwright } from './playwright'
 import { selenium } from './selenium'
 import { pytest } from './pytest'
+import { c } from './c'
 import type { Language } from './types'
 
 /**
  * Every language the game offers. To add one, create a folder next to
  * `javascript/` with a snippets.txt and an index.ts, then list it here.
  */
-export const LANGUAGES: Language[] = [javascript, typescript, python, rust, go, assembly, php, yaml, postgresql, cobol, brainfuck, lolcode, playwright, selenium, pytest]
+export const LANGUAGES: Language[] = [javascript, typescript, python, c, rust, go, assembly, php, yaml, postgresql, cobol, brainfuck, lolcode, playwright, selenium, pytest]
 
 export function getLanguage(id: string): Language {
   return LANGUAGES.find((l) => l.id === id) ?? LANGUAGES[0]
