@@ -8,9 +8,18 @@ export function base64url(bytes: Uint8Array): string {
   return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
+/**
+ * The bytes of canonical base64url text; throws on anything else. atob alone is
+ * lenient: it skips whitespace and ignores the unused low bits of the last
+ * character, so several texts decode to the same bytes (a 32-byte HMAC ending in
+ * `A` also verifies ending in `B`, `C` or `D`). A signed token must have exactly
+ * one spelling, so the text must be what base64url() makes of its own bytes.
+ */
 export function fromBase64url(text: string): Uint8Array<ArrayBuffer> {
   const b = atob(text.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (text.length % 4)) % 4))
-  return Uint8Array.from(b, (c) => c.charCodeAt(0))
+  const bytes = Uint8Array.from(b, (c) => c.charCodeAt(0))
+  if (base64url(bytes) !== text) throw new Error('Not canonical base64url.')
+  return bytes
 }
 
 /** Unguessable random text: `bytes` of randomness, base64url-encoded. */
