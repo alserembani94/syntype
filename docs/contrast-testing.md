@@ -22,6 +22,31 @@ measured as drawn: composited over its real background first (Tailwind's
 `bg-x/50` and the editor's `color-mix(in srgb, …)` both equal sRGB alpha
 compositing).
 
+## Where things stand (after the first round, November 2026)
+
+Nine of ten themes meet WCAG 2.2 AA in every pair and are flagged
+`wcag: 'AA'`: System, Syntype Light and Dark, Dark and Light High Contrast,
+GitHub Light, Green Phosphor and the three colour vision themes.
+`KNOWN_AA_FAILURES` is empty, so any new failure in a flagged theme fails
+`npm test`.
+
+One Dark Pro is the one theme left outside AA, by choice: it keeps One Dark
+Pro's own colours, and three of them fall short:
+
+| Pair | Ratio | Source colour |
+| --- | --- | --- |
+| Comments on the editor | 3.73:1 | `#7f848e` |
+| Error text in dialogs | 4.38:1 | `#e06c75` on `#282c34` |
+| A mistake on its tint (and red buttons) | 3.97:1 | `#e06c75` on `#3f2e36` |
+
+`check:a11y` exempts colour contrast in One Dark Pro with that reason
+(`EXEMPTIONS` in `scripts/visual/a11y.ts`); every other theme must be clean.
+T3's known list keeps One Dark Pro's mistake tint and Green Phosphor's chart
+colours (closer than 12 ΔE, a distinctness floor rather than WCAG).
+
+The round's record, before and after for every theme, is the contrast report
+(`npm run report:contrast` rebuilds it).
+
 ## Two measurements, because neither is enough alone
 
 1. **Role pairs** (`src/themes/pairs.ts`, run by
