@@ -78,7 +78,8 @@ listed pair that now passes, until it's taken off. The list may only shrink.
    to `src/themes/pairs.ts` with where it appears, so every flagged theme is
    held to it.
 5. To flag a theme as meeting AA, set `wcag: 'AA'`; it must pass T6 with no
-   entries in the known list.
+   entries in the known list. The flag also puts a "WCAG AA" badge on it in the theme
+   picker, so players can find it.
 6. For a colour vision theme, also run the study and meet T4.
 
 ### When a borrowed palette falls short

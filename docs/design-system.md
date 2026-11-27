@@ -89,7 +89,7 @@ States: open, with its focus inside; closing returns focus.
 
 **Tip** and **Shortcut** (`composites/tip.tsx`). Use: explaining a control, with its shortcut as keys (`shortcut="Ctrl+Shift+L"`, `"⌘⇧L"`, `"Ctrl+K, then T"`, `"Enter"`). Replaces `title` everywhere (A4). The trigger must be focusable: wrap a `Button`, or text through `Explained` (`RunsView.tsx`) or `Explain` (`Results.tsx`).
 
-**Picker** (`composites/picker.tsx`). Use: choosing from a long, sectioned list with search (languages, themes). Options: `matches` for our own search rules, `onActive` for live preview, `footer` for extra controls. One Esc closes it; Enter chooses even when typed straight after the name. Load it on demand (`lazy()`), as `App.tsx` does.
+**Picker** (`composites/picker.tsx`). Use: choosing from a long, sectioned list with search (languages, themes). Options: `matches` for our own search rules, `onActive` for live preview, `footer` for extra controls. One Esc closes it; Enter chooses even when typed straight after the name. Load it on demand (`lazy()`), as `App.tsx` does. ✓ `ThemePicker.tsx` badges themes flagged `wcag: 'AA'` with "WCAG AA" (an outline `Badge`, hidden from screen readers, with "meets WCAG AA contrast" in visually hidden text) and lists them for "wcag", "accessible" or "aa".
 
 **Toaster** and **useToast** (`composites/toast.tsx`, `use-toast.ts`). Use: a message after something happened (report sent, export done). `toast.show(text)` hides after 6 s; `{ tone: 'error' }` stays until dismissed and is announced as an alert. One `Toaster` per page root.
 ✗ A message written into the page next to the button.

@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef } from 'react'
+import { Badge } from '@/components/ui/badge'
 import { LabelledSwitch } from '@/components/composites/labelled'
 import { Picker } from '@/components/composites/picker'
 import { THEME_SECTIONS, THEMES, type Theme } from '../themes'
@@ -14,6 +15,9 @@ interface Props {
   onSmoothCaret: (on: boolean) => void
 }
 
+/** Searches that list the themes meeting WCAG AA. */
+const AA_WORDS = ['wcag', 'accessible', 'accessibility', 'aa']
+
 function matches(theme: Theme, query: string): boolean {
   const q = query.trim().toLowerCase()
   if (!q) return true
@@ -21,6 +25,7 @@ function matches(theme: Theme, query: string): boolean {
     theme.name.toLowerCase().includes(q) ||
     theme.section.toLowerCase().includes(q) ||
     (theme.credit ?? '').toLowerCase().includes(q) ||
+    (theme.wcag === 'AA' && AA_WORDS.some((w) => w.startsWith(q) || q.startsWith(w))) ||
     fuzzyMatch(q, theme.name) !== null
   )
 }
@@ -85,6 +90,14 @@ export function ThemePicker({ currentId, onPreview, onSelect, onClose, smoothCar
       renderItem={(theme) => (
         <>
           <span className="font-mono">{theme.name}</span>
+          {theme.wcag === 'AA' && (
+            <>
+              <Badge variant="outline" aria-hidden="true" className="h-4 rounded-sm px-1 font-mono text-2xs text-muted-foreground">
+                WCAG AA
+              </Badge>
+              <span className="sr-only">, meets WCAG AA contrast</span>
+            </>
+          )}
           {theme.credit && <span className="text-xs text-muted-foreground">{theme.credit}</span>}
           <span className="ml-auto flex gap-1.5">
             {(theme.swatches ?? [theme.id]).map((id) => (
