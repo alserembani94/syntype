@@ -25,8 +25,6 @@ const PICKER_LIST = { rule: 'scrollable-region-focusable', selector: '[data-slot
  * on anything new, and on a listed failure that now passes.
  */
 const KNOWN: Record<string, string> = {
-  'light report dialog': 'white on the primary button (4.41:1; T3 known failure)',
-  'dark report dialog': "a reason's hint on its selected tint (3.78:1)",
   'one-dark-pro report dialog': 'the error alert text, coral on the card (4.38:1)',
 }
 const expectClean = (key: string, violations: string[]) =>

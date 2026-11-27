@@ -1,11 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`dark > renders every group and passes axe 1`] = `
-[
-  "#7d859b on #302b2b: 3.78 (4.5:1)",
-  "#ff6b78 on #482d38: 4.46 (4.5:1)",
-]
-`;
+exports[`dark > renders every group and passes axe 1`] = `[]`;
 
 exports[`deuteranopia > renders every group and passes axe 1`] = `[]`;
 
@@ -13,14 +8,7 @@ exports[`github-light > renders every group and passes axe 1`] = `[]`;
 
 exports[`hc-black > renders every group and passes axe 1`] = `[]`;
 
-exports[`light > renders every group and passes axe 1`] = `
-[
-  "#c25a08 on #fbe9d8: 3.72 (4.5:1)",
-  "#c25a08 on #ffffff: 4.41 (4.5:1)",
-  "#d0303f on #faeaec: 4.32 (4.5:1)",
-  "#ffffff on #c25a08: 4.41 (4.5:1)",
-]
-`;
+exports[`light > renders every group and passes axe 1`] = `[]`;
 
 exports[`one-dark-pro > renders every group and passes axe 1`] = `
 [

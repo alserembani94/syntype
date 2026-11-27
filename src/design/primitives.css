@@ -33,7 +33,7 @@
   --syntype-green-350: #2ad75a; /* phosphor code-punctuation */
   --syntype-green-425: #20b049; /* phosphor muted-foreground */
   --syntype-green-450: #1f9e45; /* phosphor code-comment */
-  --syntype-green-500: #1d8a55; /* light success, phosphor input-border */
+  --syntype-green-500: #1d8a55; /* phosphor input-border */
   --syntype-green-700: #0f4d1c; /* phosphor border */
   --syntype-green-775: #0b3315; /* phosphor accent */
   --syntype-green-925: #031806; /* phosphor muted */
@@ -41,25 +41,20 @@
   --syntype-green-975: #000a02; /* phosphor background */
   --syntype-lime-125: #e8ff9e; /* phosphor code-number */
   --syntype-lime-175: #c6ff7a; /* phosphor code-string */
-  --syntype-orange-475: #c25a08; /* light primary */
-  --syntype-orange-500: #b8520c; /* light code-number */
   --syntype-pink-375: #f08ccf; /* dark code-type */
   --syntype-pink-550: #a0277a; /* light code-type */
   --syntype-purple-375: #c49bff; /* dark code-keyword */
   --syntype-purple-550: #7a3fc4; /* light code-keyword */
   --syntype-red-400: #ff6b4a; /* phosphor destructive */
-  --syntype-red-500: #d0303f; /* light destructive */
   --syntype-red-825: #3a1208; /* phosphor destructive-muted */
   --syntype-rose-200: #fbdfe2; /* light destructive-muted */
-  --syntype-rose-400: #ff6b78; /* dark destructive */
   --syntype-rose-775: #4a1f27; /* dark destructive-muted */
   --syntype-slate-75: #f6f7fa; /* light muted */
   --syntype-slate-125: #eef0f4; /* light background */
   --syntype-slate-200: #dfe3ee; /* dark foreground */
   --syntype-slate-225: #dde1ea; /* light border */
   --syntype-slate-375: #aab2c6; /* dark code-punctuation */
-  --syntype-slate-425: #8b92a6; /* light code-comment */
-  --syntype-slate-450: #7d859b; /* dark muted-foreground, light input-border */
+  --syntype-slate-450: #7d859b; /* light input-border */
   --syntype-slate-500: #687088; /* dark code-comment */
   --syntype-slate-525: #646b82; /* light muted-foreground, dark input-border */
   --syntype-slate-600: #4a5268; /* light code-punctuation */
@@ -68,6 +63,14 @@
   --syntype-slate-850: #1a1e28; /* dark card */
   --syntype-slate-875: #161a23; /* dark muted */
   --syntype-slate-900: #12151c; /* dark background */
+  --syntype-emerald-550: #067855; /* light code-string */
+  --syntype-green-525: #007c48; /* light success */
+  --syntype-orange-525: #b04a00; /* light primary, light code-number */
+  --syntype-red-525: #c01c32; /* light destructive */
+  --syntype-rose-375: #ff707c; /* dark destructive */
+  --syntype-slate-425: #8d95ac; /* dark muted-foreground */
+  --syntype-lime-400: #969966; /* dark code-comment */
+  --syntype-lime-525: #6b6c3b; /* light code-comment */
   --syntype-white: #ffffff; /* light card */
   --syntype-yellow-325: #e8c547; /* light tab-indicator, dark tab-indicator */
 

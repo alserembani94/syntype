@@ -41,7 +41,6 @@ export const MIN_DIFFERENCE = { distinct: 12, mistakeVsSuccess: 30 }
  * so does a listed one that passes (take it off the list).
  */
 const KNOWN_FAILURES = new Set([
-  'light: primary-foreground on primary',
   'one-dark-pro: destructive on destructive-muted',
   'phosphor: chart colours apart',
 ])
@@ -51,29 +50,8 @@ const KNOWN_FAILURES = new Set([
  * (contrast round, November 2026), each as "<theme>: <pair>" from pairs.ts,
  * with "(as seen)" for a colour vision theme's simulated view, and T4's
  * success check. Each later step takes its share off; the list may only shrink.
- * AC 2 added six pairs it newly measures, all drawn in palette colours AC 4
- * fixes (the comment colour, Syntype Light's orange, string and number on the
- * highlighted suggestion row, Syntype Dark's secondary text on your
- * leaderboard row).
  */
 const KNOWN_AA_FAILURES = new Set<string>([
-  'light: Primary text on the page',
-  'light: Primary text on cards',
-  'light: Primary text in dialogs',
-  'light: Selected chip or nav label',
-  'light: Button label on primary',
-  'light: Success text',
-  'light: Error text on the page',
-  'light: Destructive button label',
-  'light: Comment',
-  'light: Mistake on its tint',
-  'light: Next character in a comment',
-  'light: Current line number',
-  'light: Suggestion icon on the highlighted row (string)',
-  'light: Suggestion icon on the highlighted row (number)',
-  'dark: Comment',
-  'dark: Next character in a comment',
-  'dark: Secondary text on your leaderboard row',
   'protanopia: success apart from code colours as seen',
   'deuteranopia: success apart from code colours as seen',
   'deuteranopia: success apart from code colours with normal vision',

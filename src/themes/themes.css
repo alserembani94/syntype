@@ -64,10 +64,10 @@
 :where(:root),
 [data-syntype-theme="light"] {
   --background: var(--syntype-slate-125); --foreground: var(--syntype-slate-825); --card: var(--syntype-white); --card-foreground: var(--syntype-slate-825); --popover: var(--syntype-white); --popover-foreground: var(--syntype-slate-825);
-  --primary: var(--syntype-orange-475); --primary-foreground: var(--syntype-white); --secondary: var(--syntype-slate-75); --secondary-foreground: var(--syntype-slate-825); --muted: var(--syntype-slate-75); --muted-foreground: var(--syntype-slate-525); --accent: var(--syntype-amber-150); --accent-foreground: var(--syntype-slate-825);
-  --destructive: var(--syntype-red-500); --destructive-muted: var(--syntype-rose-200); --success: var(--syntype-green-500); --border: var(--syntype-slate-225); --input: var(--syntype-slate-225); --input-border: var(--syntype-slate-450); --ring: var(--syntype-orange-475);
-  --overlay: var(--syntype-slate-825); --shadow-color: var(--syntype-slate-825); --chart-1: var(--syntype-orange-475); --chart-2: var(--syntype-purple-550); --chart-3: var(--syntype-emerald-525); --chart-4: var(--syntype-blue-525); --chart-5: var(--syntype-pink-550);
-  --code-keyword: var(--syntype-purple-550); --code-string: var(--syntype-emerald-525); --code-number: var(--syntype-orange-500); --code-function: var(--syntype-blue-525); --code-type: var(--syntype-pink-550); --code-comment: var(--syntype-slate-425); --code-punctuation: var(--syntype-slate-600); --tab-indicator: var(--syntype-yellow-325);
+  --primary: var(--syntype-orange-525); --primary-foreground: var(--syntype-white); --secondary: var(--syntype-slate-75); --secondary-foreground: var(--syntype-slate-825); --muted: var(--syntype-slate-75); --muted-foreground: var(--syntype-slate-525); --accent: var(--syntype-amber-150); --accent-foreground: var(--syntype-slate-825);
+  --destructive: var(--syntype-red-525); --destructive-muted: var(--syntype-rose-200); --success: var(--syntype-green-525); --border: var(--syntype-slate-225); --input: var(--syntype-slate-225); --input-border: var(--syntype-slate-450); --ring: var(--syntype-orange-525);
+  --overlay: var(--syntype-slate-825); --shadow-color: var(--syntype-slate-825); --chart-1: var(--syntype-orange-525); --chart-2: var(--syntype-purple-550); --chart-3: var(--syntype-emerald-525); --chart-4: var(--syntype-blue-525); --chart-5: var(--syntype-pink-550);
+  --code-keyword: var(--syntype-purple-550); --code-string: var(--syntype-emerald-550); --code-number: var(--syntype-orange-525); --code-function: var(--syntype-blue-525); --code-type: var(--syntype-pink-550); --code-comment: var(--syntype-lime-525); --code-punctuation: var(--syntype-slate-600); --tab-indicator: var(--syntype-yellow-325);
   --code-glow: none;
   color-scheme: light;
 }
@@ -76,10 +76,10 @@
 @media (prefers-color-scheme: dark) {
   :where(:root:not([data-theme="light"])) {
     --background: var(--syntype-slate-900); --foreground: var(--syntype-slate-200); --card: var(--syntype-slate-850); --card-foreground: var(--syntype-slate-200); --popover: var(--syntype-slate-850); --popover-foreground: var(--syntype-slate-200);
-    --primary: var(--syntype-amber-350); --primary-foreground: var(--syntype-slate-850); --secondary: var(--syntype-slate-875); --secondary-foreground: var(--syntype-slate-200); --muted: var(--syntype-slate-875); --muted-foreground: var(--syntype-slate-450); --accent: var(--syntype-amber-775); --accent-foreground: var(--syntype-slate-200);
-    --destructive: var(--syntype-rose-400); --destructive-muted: var(--syntype-rose-775); --success: var(--syntype-emerald-375); --border: var(--syntype-slate-750); --input: var(--syntype-slate-750); --input-border: var(--syntype-slate-525); --ring: var(--syntype-amber-350);
+    --primary: var(--syntype-amber-350); --primary-foreground: var(--syntype-slate-850); --secondary: var(--syntype-slate-875); --secondary-foreground: var(--syntype-slate-200); --muted: var(--syntype-slate-875); --muted-foreground: var(--syntype-slate-425); --accent: var(--syntype-amber-775); --accent-foreground: var(--syntype-slate-200);
+    --destructive: var(--syntype-rose-375); --destructive-muted: var(--syntype-rose-775); --success: var(--syntype-emerald-375); --border: var(--syntype-slate-750); --input: var(--syntype-slate-750); --input-border: var(--syntype-slate-525); --ring: var(--syntype-amber-350);
     --overlay: var(--syntype-slate-900); --shadow-color: var(--syntype-slate-900); --chart-1: var(--syntype-amber-350); --chart-2: var(--syntype-emerald-350); --chart-3: var(--syntype-blue-375); --chart-4: var(--syntype-pink-375); --chart-5: var(--syntype-slate-500);
-    --code-keyword: var(--syntype-purple-375); --code-string: var(--syntype-emerald-350); --code-number: var(--syntype-amber-325); --code-function: var(--syntype-blue-375); --code-type: var(--syntype-pink-375); --code-comment: var(--syntype-slate-500); --code-punctuation: var(--syntype-slate-375); --tab-indicator: var(--syntype-yellow-325);
+    --code-keyword: var(--syntype-purple-375); --code-string: var(--syntype-emerald-350); --code-number: var(--syntype-amber-325); --code-function: var(--syntype-blue-375); --code-type: var(--syntype-pink-375); --code-comment: var(--syntype-lime-400); --code-punctuation: var(--syntype-slate-375); --tab-indicator: var(--syntype-yellow-325);
     --code-glow: none;
     color-scheme: dark;
   }
@@ -87,10 +87,10 @@
 :where(:root[data-theme="dark"]),
 [data-syntype-theme="dark"] {
   --background: var(--syntype-slate-900); --foreground: var(--syntype-slate-200); --card: var(--syntype-slate-850); --card-foreground: var(--syntype-slate-200); --popover: var(--syntype-slate-850); --popover-foreground: var(--syntype-slate-200);
-  --primary: var(--syntype-amber-350); --primary-foreground: var(--syntype-slate-850); --secondary: var(--syntype-slate-875); --secondary-foreground: var(--syntype-slate-200); --muted: var(--syntype-slate-875); --muted-foreground: var(--syntype-slate-450); --accent: var(--syntype-amber-775); --accent-foreground: var(--syntype-slate-200);
-  --destructive: var(--syntype-rose-400); --destructive-muted: var(--syntype-rose-775); --success: var(--syntype-emerald-375); --border: var(--syntype-slate-750); --input: var(--syntype-slate-750); --input-border: var(--syntype-slate-525); --ring: var(--syntype-amber-350);
+  --primary: var(--syntype-amber-350); --primary-foreground: var(--syntype-slate-850); --secondary: var(--syntype-slate-875); --secondary-foreground: var(--syntype-slate-200); --muted: var(--syntype-slate-875); --muted-foreground: var(--syntype-slate-425); --accent: var(--syntype-amber-775); --accent-foreground: var(--syntype-slate-200);
+  --destructive: var(--syntype-rose-375); --destructive-muted: var(--syntype-rose-775); --success: var(--syntype-emerald-375); --border: var(--syntype-slate-750); --input: var(--syntype-slate-750); --input-border: var(--syntype-slate-525); --ring: var(--syntype-amber-350);
   --overlay: var(--syntype-slate-900); --shadow-color: var(--syntype-slate-900); --chart-1: var(--syntype-amber-350); --chart-2: var(--syntype-emerald-350); --chart-3: var(--syntype-blue-375); --chart-4: var(--syntype-pink-375); --chart-5: var(--syntype-slate-500);
-  --code-keyword: var(--syntype-purple-375); --code-string: var(--syntype-emerald-350); --code-number: var(--syntype-amber-325); --code-function: var(--syntype-blue-375); --code-type: var(--syntype-pink-375); --code-comment: var(--syntype-slate-500); --code-punctuation: var(--syntype-slate-375); --tab-indicator: var(--syntype-yellow-325);
+  --code-keyword: var(--syntype-purple-375); --code-string: var(--syntype-emerald-350); --code-number: var(--syntype-amber-325); --code-function: var(--syntype-blue-375); --code-type: var(--syntype-pink-375); --code-comment: var(--syntype-lime-400); --code-punctuation: var(--syntype-slate-375); --tab-indicator: var(--syntype-yellow-325);
   --code-glow: none;
   color-scheme: dark;
 }
