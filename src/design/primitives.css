@@ -33,7 +33,7 @@
   --syntype-green-350: #2ad75a; /* phosphor code-punctuation */
   --syntype-green-425: #20b049; /* phosphor muted-foreground */
   --syntype-green-450: #1f9e45; /* phosphor code-comment */
-  --syntype-green-500: #1d8a55; /* light success */
+  --syntype-green-500: #1d8a55; /* light success, phosphor input-border */
   --syntype-green-700: #0f4d1c; /* phosphor border */
   --syntype-green-775: #0b3315; /* phosphor accent */
   --syntype-green-925: #031806; /* phosphor muted */
@@ -59,9 +59,9 @@
   --syntype-slate-225: #dde1ea; /* light border */
   --syntype-slate-375: #aab2c6; /* dark code-punctuation */
   --syntype-slate-425: #8b92a6; /* light code-comment */
-  --syntype-slate-450: #7d859b; /* dark muted-foreground */
+  --syntype-slate-450: #7d859b; /* dark muted-foreground, light input-border */
   --syntype-slate-500: #687088; /* dark code-comment */
-  --syntype-slate-525: #646b82; /* light muted-foreground */
+  --syntype-slate-525: #646b82; /* light muted-foreground, dark input-border */
   --syntype-slate-600: #4a5268; /* light code-punctuation */
   --syntype-slate-750: #2a3040; /* dark border */
   --syntype-slate-825: #1c2232; /* light foreground */
@@ -111,6 +111,7 @@
   --primer-dark-bg-default: #0d1117; /* primer-dark: dark:--bgColor-default */
   --primer-dark-bg-muted: #151b23; /* primer-dark: dark:--bgColor-muted */
   --primer-dark-border-default: #3d444d; /* primer-dark: dark:--borderColor-default */
+  --primer-dark-border-emphasis: #656c76; /* primer-dark: dark:--borderColor-emphasis */
   --primer-dark-fg-default: #f0f6fc; /* primer-dark: dark:--fgColor-default */
   --primer-dark-fg-muted: #9198a1; /* primer-dark: dark:--fgColor-muted */
   --primer-dark-fg-accent: #4493f8; /* primer-dark: dark:--fgColor-accent */

@@ -19,7 +19,7 @@ export const ROLES = [
   'background', 'foreground', 'card', 'card-foreground', 'popover', 'popover-foreground',
   'primary', 'primary-foreground', 'secondary', 'secondary-foreground', 'muted', 'muted-foreground',
   'accent', 'accent-foreground', 'destructive', 'destructive-muted', 'success',
-  'border', 'input', 'ring', 'overlay', 'shadow-color',
+  'border', 'input', 'input-border', 'ring', 'overlay', 'shadow-color',
   'chart-1', 'chart-2', 'chart-3', 'chart-4', 'chart-5',
   'code-keyword', 'code-string', 'code-number', 'code-function', 'code-type', 'code-comment', 'code-punctuation',
   'tab-indicator',
@@ -71,29 +71,13 @@ const KNOWN_AA_FAILURES = new Set<string>([
   'light: Current line number',
   'light: Suggestion icon on the highlighted row (string)',
   'light: Suggestion icon on the highlighted row (number)',
-  'light: Text field border',
-  'light: Text field border in a dialog',
   'dark: Comment',
   'dark: Next character in a comment',
   'dark: Secondary text on your leaderboard row',
-  'dark: Text field border',
-  'dark: Text field border in a dialog',
-  'protanopia: Text field border',
-  'protanopia: Text field border (as seen)',
-  'protanopia: Text field border in a dialog',
-  'protanopia: Text field border in a dialog (as seen)',
   'protanopia: success apart from code colours as seen',
-  'deuteranopia: Text field border',
-  'deuteranopia: Text field border (as seen)',
-  'deuteranopia: Text field border in a dialog',
-  'deuteranopia: Text field border in a dialog (as seen)',
   'deuteranopia: success apart from code colours as seen',
   'deuteranopia: success apart from code colours with normal vision',
   'tritanopia: Destructive button label (as seen)',
-  'tritanopia: Text field border',
-  'tritanopia: Text field border (as seen)',
-  'tritanopia: Text field border in a dialog',
-  'tritanopia: Text field border in a dialog (as seen)',
   'tritanopia: success apart from code colours as seen',
 ])
 
@@ -227,6 +211,8 @@ describe.each(THEMES.filter((t) => t.id !== SYSTEM_THEME).map((t) => [t.name, t]
     for (const c of ['keyword', 'string', 'number', 'function', 'type', 'punctuation']) check(`code-${c}`, MIN_CONTRAST.code, ['card'])
     check('code-comment', MIN_CONTRAST.comment, ['card'])
     for (const ui of ['primary', 'destructive', 'success']) check(ui, MIN_CONTRAST.ui, ['background', 'card'])
+    // Field edges (text fields, checkboxes, radios, the switch's off track) identify the control (WCAG 1.4.11).
+    check('input-border', MIN_CONTRAST.ui, ['background', 'card', 'popover', 'muted'])
   })
 
   it.each([

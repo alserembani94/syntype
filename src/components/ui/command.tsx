@@ -32,6 +32,8 @@ import {
 } from "@/components/ui/input-group"
 import { SearchIcon, CheckIcon } from "lucide-react"
 
+// Local edit: field edges use --input-border (3:1 against the page, WCAG 1.4.11); --input stays for fills.
+
 function Command({
   className,
   dir,
@@ -110,7 +112,7 @@ function CommandInput({ className, ...props }: InputProps) {
       data-slot="command-input-wrapper"
       className="p-1 pb-0"
     >
-      <InputGroup className="h-8! rounded-lg! border-input/30 bg-input/30 shadow-none! *:data-[slot=input-group-addon]:pl-2!">
+      <InputGroup className="h-8! rounded-lg! border-input-border bg-input/30 shadow-none! *:data-[slot=input-group-addon]:pl-2!">
         <Input
           {...props}
           data-slot="command-input"

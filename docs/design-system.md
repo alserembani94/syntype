@@ -35,7 +35,7 @@ States: default, hover, focus-visible, pressed, disabled (`isDisabled`), each va
 
 ### Forms
 
-**Input** with **Field**, **FieldLabel**, **FieldDescription** (`ui/input.tsx`, `ui/field.tsx`). Use: any text entry, always inside a `Field` with a visible label; hints and errors in `FieldDescription`, linked with `aria-describedby`. Not for: search over a list (`Picker`).
+**Input** with **Field**, **FieldLabel**, **FieldDescription** (`ui/input.tsx`, `ui/field.tsx`). Use: any text entry, always inside a `Field` with a visible label; hints and errors in `FieldDescription`, linked with `aria-describedby`. Not for: search over a list (`Picker`). Its edge is `--input-border`, which every theme holds to 3:1 against the page (WCAG 1.4.11); `--input` is only its fill. Checkboxes, radios and a switch's off track use the same edge.
 ✓ The name step in `AccountDialogs.tsx`: `Field` → `FieldLabel htmlFor` → `Input aria-invalid aria-describedby` → `FieldDescription`.
 ✗ A placeholder as the only label. ✗ `autoFocus` on a field that appears when a tab opens: it pulls focus off the tabs (fixed in Admin's player search).
 States: default, focus, invalid, disabled.
