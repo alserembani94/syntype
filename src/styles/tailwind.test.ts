@@ -118,3 +118,39 @@ describe('the policy pages', () => {
     expect(readFileSync(fileURLToPath(new URL('../../scripts/build-pages.mjs', import.meta.url)), 'utf8')).toMatch(/class="[^"]*font-display/)
   })
 })
+
+describe('no legacy CSS (design system step 14)', () => {
+  const src = fileURLToPath(new URL('../', import.meta.url))
+  const cssFiles = (dir: string): string[] =>
+    readdirSync(dir).flatMap((f) => (statSync(join(dir, f)).isDirectory() ? cssFiles(join(dir, f)) : f.endsWith('.css') ? [join(dir, f).slice(src.length)] : []))
+
+  it('the only stylesheets are the system\'s and the editor\'s', () => {
+    // A new screen is styled with utilities. A new stylesheet needs a reason as strong as the
+    // editor's (every keystroke goes through it) and a line in CLAUDE.md's design rules.
+    expect(cssFiles(src).sort()).toEqual([
+      'design/primitives.css',
+      'styles/admin.css',
+      'styles/app.css',
+      'styles/base.css',
+      'styles/editor.css',
+      'styles/system.css',
+      'styles/tailwind-theme.css',
+      'themes/themes.css',
+    ])
+  })
+
+  it('has no legacy layer', () => {
+    for (const f of cssFiles(src)) expect(readFileSync(join(src, f), 'utf8'), f).not.toMatch(/\blayer\(legacy\)|@layer[^;]*\blegacy\b/)
+  })
+})
+
+describe('sizes come from the scale (D1)', () => {
+  it('our code writes no one-off font sizes (text-[13px]); shadcn\'s components keep theirs as installed', () => {
+    const src = fileURLToPath(new URL('../', import.meta.url))
+    const files = (dir: string): string[] =>
+      readdirSync(dir).flatMap((f) => (statSync(join(dir, f)).isDirectory() ? (f === 'ui' ? [] : files(join(dir, f))) : /\.tsx?$/.test(f) && !f.includes('.test.') ? [join(dir, f)] : []))
+    const pages = fileURLToPath(new URL('../../scripts/build-pages.mjs', import.meta.url))
+    const found = [...files(src), pages].flatMap((f) => [...readFileSync(f, 'utf8').matchAll(/\btext-\[\d[\d.]*(?:px|rem|em)\]/g)].map((m) => `${f.slice(src.length)}: ${m[0]}`))
+    expect(found).toEqual([])
+  })
+})

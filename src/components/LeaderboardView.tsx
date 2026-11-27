@@ -31,7 +31,7 @@ const LENGTHS = (['short', 'medium', 'long'] as const).map((l) => ({ id: l, labe
 const AID_OPTIONS = AIDS.map((a) => ({ id: a.id, label: a.name }))
 /** The figures in a table: the best in the brand colour, the rest plain. */
 const BEST = 'font-display text-base font-bold text-primary'
-const FIGURE = 'font-display text-[0.9375rem] font-semibold'
+const FIGURE = 'font-display text-sm font-semibold'
 
 interface Place {
   language: string

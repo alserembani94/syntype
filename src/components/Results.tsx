@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Kbd } from '@/components/ui/kbd'
 import { Toggle } from '@/components/ui/toggle'
 import { Tip } from '@/components/composites/tip'
+import { cn } from '@/lib/utils'
 import { InfoIcon } from 'lucide-react'
 
 /** What a stat means, in a tooltip on a small info button: reachable by keyboard and touch, unlike a title. */
@@ -44,6 +45,14 @@ interface Props {
 }
 
 const keyLabel = (c: string) => (c === '\n' ? 'enter' : c === ' ' ? 'space' : c)
+/** The stat rows: label, value, caption. */
+const ROW = 'm-0 grid gap-x-7 gap-y-4.5 max-sm:grid-cols-2 max-sm:gap-x-5 max-sm:gap-y-3.5 [&>div]:grid [&>div]:min-w-0 [&>div]:content-start [&>div]:gap-0.5'
+const DT = 'font-mono text-sm text-muted-foreground'
+const DD = 'm-0 font-mono text-sm font-medium'
+const NUM = 'm-0 font-display text-2xl leading-tight font-bold text-primary tabular-nums [text-shadow:var(--code-glow)]'
+const NUM2 = 'm-0 font-display text-xl leading-tight font-bold tabular-nums [text-shadow:var(--code-glow)]'
+const SUB = 'm-0 font-mono text-xs text-muted-foreground [contain:inline-size]'
+
 const pct = (v: number | null) => (v === null ? '—' : `${Math.round(v)}%`)
 
 const Icon = ({ d }: { d: string }) => (
@@ -76,32 +85,32 @@ export function Results({ result: r, isBest, info, run, highlight, onNext, onRet
   }, [])
 
   return (
-    <div className="results">
-      <div className="r-hero">
-        <div className="r-main">
-          <div className="big">
-            <span className="k">wpm</span>
-            <span className="v">{Math.round(r.wpm)}</span>
+    <div className="grid gap-6 px-6.5 pt-6.5 pb-5.5 max-sm:px-4 max-sm:py-5" data-results="">
+      <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-7 max-sm:grid-cols-1 max-sm:gap-4.5">
+        <div className="grid content-start gap-3.5 max-sm:flex max-sm:flex-wrap max-sm:items-end max-sm:gap-x-7 max-sm:gap-y-2.5">
+          <div className="grid">
+            <span className="font-mono text-2xl leading-tight font-medium text-muted-foreground">wpm</span>
+            <span className="font-display text-display font-bold text-primary tabular-nums [text-shadow:var(--code-glow)] max-sm:text-display-sm">{Math.round(r.wpm)}</span>
           </div>
-          <div className="big">
-            <span className="k">acc</span>
-            <span className="v">{Math.round(r.accuracy)}%</span>
+          <div className="grid">
+            <span className="font-mono text-2xl leading-tight font-medium text-muted-foreground">acc</span>
+            <span className="font-display text-display font-bold text-primary tabular-nums [text-shadow:var(--code-glow)] max-sm:text-display-sm">{Math.round(r.accuracy)}%</span>
           </div>
-          {isBest && <span className="pb">New personal best</span>}
+          {isBest && <span className="justify-self-start rounded-full border border-current px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-success">New personal best</span>}
         </div>
-        <div className="r-chart">
+        <div className="grid min-w-0 gap-1.5">
           <SpeedChart samples={r.samples} />
-          <div className="legend">
+          <div className="flex justify-center gap-4 font-mono text-xs text-muted-foreground">
             <span>
-              <i className="wpm" />
+              <i className="mr-1.5 inline-block w-3.5 border-t-2 border-primary align-middle" />
               wpm
             </span>
             <span>
-              <i className="raw" />
+              <i className="mr-1.5 inline-block w-3.5 border-t-2 border-muted-foreground align-middle" />
               raw
             </span>
             <span>
-              <i className="er">✕</i>
+              <i className="mr-1.5 font-bold text-destructive not-italic">✕</i>
               errors
             </span>
           </div>
@@ -110,90 +119,90 @@ export function Results({ result: r, isBest, info, run, highlight, onNext, onRet
 
       {leaderboard && <LeaderboardLine view={leaderboard} onResubmit={onResubmit} />}
 
-      <dl className="r-row">
-        <div className="test">
-          <dt>test</dt>
-          <dd>
+      <dl className={`${ROW} grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)_minmax(max-content,1fr)_repeat(2,minmax(0,1fr))] md:max-lg:grid-cols-[minmax(0,1fr)_minmax(max-content,1fr)_repeat(2,minmax(0,1fr))]`}>
+        <div className="max-sm:col-span-full md:max-lg:col-span-full">
+          <dt className={DT}>test</dt>
+          <dd className={`${DD} text-primary`}>
             {info.language} · {info.length}
           </dd>
-          <dd className="sub">
+          <dd className={SUB}>
             {info.snippet}
             {info.assists.length > 0 && ` · ${info.assists.join(' · ')}`}
           </dd>
         </div>
         <div>
-          <dt>raw</dt>
-          <dd className="num">{Math.round(r.rawWpm)}</dd>
+          <dt className={DT}>raw</dt>
+          <dd className={NUM}>{Math.round(r.rawWpm)}</dd>
         </div>
         <div>
-          <dt>
+          <dt className={DT}>
             characters
             <Explain name="characters" label="Typed right / wrong / from suggestions / auto-inserted" />
           </dt>
-          <dd className="num">
+          <dd className={NUM}>
             {/* <wbr>: on the narrowest screens the count may break after a slash. */}
             {r.correct}/<wbr />
             {r.incorrect}/<wbr />
             {r.suggested}/<wbr />
             {r.autoInserted}
           </dd>
-          <dd className="sub">right / wrong / suggested / auto</dd>
+          <dd className={SUB}>right / wrong / suggested / auto</dd>
         </div>
         <div>
-          <dt>
+          <dt className={DT}>
             consistency
             <Explain name="consistency" label="How steady your per-second speed was" />
           </dt>
-          <dd className="num">
+          <dd className={NUM}>
             {pct(r.consistency)}
           </dd>
-          {r.consistency === null && <dd className="sub">needs 3s or more</dd>}
+          {r.consistency === null && <dd className={SUB}>needs 3s or more</dd>}
         </div>
         <div>
-          <dt>time</dt>
-          <dd className="num">{r.seconds < 10 ? r.seconds.toFixed(1) : Math.round(r.seconds)}s</dd>
-          {r.pausedSeconds >= 0.5 && <dd className="sub">paused {Math.round(r.pausedSeconds)}s, not counted</dd>}
+          <dt className={DT}>time</dt>
+          <dd className={NUM}>{r.seconds < 10 ? r.seconds.toFixed(1) : Math.round(r.seconds)}s</dd>
+          {r.pausedSeconds >= 0.5 && <dd className={SUB}>paused {Math.round(r.pausedSeconds)}s, not counted</dd>}
         </div>
       </dl>
 
-      <dl className="r-row secondary">
+      <dl className={`${ROW} grid-cols-[repeat(3,minmax(0,1fr))_minmax(0,2fr)] border-t pt-4.5`}>
         <div>
-          <dt>
+          <dt className={DT}>
             code speed
             <Explain name="code speed" label="Every right character on screen, including suggested and auto-inserted text" />
           </dt>
-          <dd className="num">
+          <dd className={NUM2}>
             {Math.round(r.codeWpm)} wpm
           </dd>
         </div>
         <div>
-          <dt>
+          <dt className={DT}>
             keys saved
             <Explain name="keys saved" label="Keystrokes saved by accepting suggestions" />
           </dt>
-          <dd className="num">
+          <dd className={NUM2}>
             {r.keysSaved}
           </dd>
         </div>
         <div>
-          <dt>symbol accuracy</dt>
-          <dd className="num">
+          <dt className={DT}>symbol accuracy</dt>
+          <dd className={NUM2}>
             {pct(r.symbolAccuracy)}
-            {r.symbolAccuracy !== null && <small> of {r.symbolTotal}</small>}
+            {r.symbolAccuracy !== null && <small className="font-mono text-sm font-normal text-muted-foreground [text-shadow:none]"> of {r.symbolTotal}</small>}
           </dd>
         </div>
-        <div className="missed">
-          <dt>missed most</dt>
-          <dd className="keys">
+        <div className="max-sm:col-span-full">
+          <dt className={DT}>missed most</dt>
+          <dd className="m-0 flex flex-wrap gap-1.5">
             {r.missed.length ? (
               r.missed.map(([c, n]) => (
-                <span key={c} className="keycap">
+                <span key={c} className="inline-flex items-baseline gap-1.5 rounded-md border border-b-3 bg-muted px-2 py-0.5 font-mono text-sm font-semibold">
                   {keyLabel(c)}
-                  <small>×{n}</small>
+                  <small className="text-xs font-normal text-destructive">×{n}</small>
                 </span>
               ))
             ) : (
-              <span className="none">nothing, clean run</span>
+              <span className="font-mono text-sm text-muted-foreground">nothing, clean run</span>
             )}
           </dd>
         </div>
@@ -246,12 +255,12 @@ function LeaderboardLine({ view, onResubmit }: { view: SubmitView; onResubmit?: 
     }
   })()
   return (
-    <p className={`r-board ${tone}`} role="status">
+    <p className={cn('m-0 -mt-2 flex flex-wrap items-baseline gap-2.5 text-sm', tone === 'ok' && 'font-semibold text-success', tone === 'muted' && 'text-muted-foreground', tone === 'problem' && 'text-destructive')} role="status">
       {text}
       {(view.status === 'failed' || (view.status === 'rejected' && view.reason === 'turnstile')) && onResubmit && (
-        <button type="button" className="link" onClick={onResubmit}>
+        <Button variant="link" size="sm" className="h-auto p-0" onPress={onResubmit}>
           Try again
-        </button>
+        </Button>
       )}
     </p>
   )

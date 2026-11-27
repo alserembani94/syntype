@@ -176,9 +176,13 @@ export const CodeView = memo(function CodeView({
         </pre>
       </div>
       {overlay && (
-        <button type="button" className="focus-overlay" onClick={() => inputRef?.current?.focus({ preventScroll: true })}>
-          <strong>{overlay === 'paused' ? 'Paused' : touch ? 'Tap to start typing' : 'Click here to start typing'}</strong>
-          <span>
+        <button
+          type="button"
+          className="absolute inset-0 z-4 grid cursor-pointer place-content-center gap-1.5 border-0 bg-transparent text-center font-sans text-foreground outline-none focus-visible:rounded-lg focus-visible:outline-2 focus-visible:-outline-offset-6 focus-visible:outline-primary"
+          onClick={() => inputRef?.current?.focus({ preventScroll: true })}
+        >
+          <strong className="text-lg font-semibold">{overlay === 'paused' ? 'Paused' : touch ? 'Tap to start typing' : 'Click here to start typing'}</strong>
+          <span className="text-sm text-muted-foreground">
             {overlay === 'paused'
               ? `${touch ? 'Tap' : 'Click'} to continue. Time away isn't counted.`
               : 'The clock starts on your first key.'}

@@ -136,7 +136,7 @@ export const STATES: State[] = [
       await typeSnippet(p, 'short', 'clamp.py')
       await pause(p)
       await replayKeys(p, recorded('h-001').log)
-      await p.locator('.results').waitFor()
+      await p.locator('[data-results]').waitFor()
       await p.clock.resume()
     },
   },

@@ -34,6 +34,11 @@ import { applyTheme, getTheme, loadTheme, saveTheme } from './themes'
 import { isLeaderboardPath, isRunsPath, isSitePath, languageFromPath, languagePage, leaderboardPage, RUNS_PAGE } from './seo/site'
 import { Results } from './components/Results'
 import { ownsKey } from './lib/keyTarget'
+import { Kbd } from '@/components/ui/kbd'
+import { cn } from '@/lib/utils'
+
+/** An ad rail: hidden unless the window is wide and tall enough for both beside the column. */
+const RAIL = 'fixed top-1/2 hidden -translate-y-1/2 transition-opacity duration-300 min-[1360px]:grid [@media(max-height:680px)]:hidden!'
 
 interface Settings {
   languageId: string
@@ -494,10 +499,11 @@ export default function App() {
   const best = currentBests[currentKey]
 
   return (
-    <div className="wrap" style={{ '--tab-size': language.indentSize ?? 2 } as React.CSSProperties}>
+    <div className="mx-auto grid max-w-230 gap-4.5" style={{ '--tab-size': language.indentSize ?? 2 } as React.CSSProperties}>
       {/* Side ads on wide screens; they fade back while a snippet is being typed. */}
-      <AdSlot slot="rail" className={`ad-rail left${phase === 'running' ? ' dim' : ''}`} />
-      <AdSlot slot="rail" className={`ad-rail right${phase === 'running' ? ' dim' : ''}`} />
+      {/* Rails sit in the margins either side of the 920px column, only where both fit; they fade back while typing. */}
+      <AdSlot slot="rail" className={cn(RAIL, 'right-[calc(50%+500px)]', phase === 'running' && 'opacity-35')} />
+      <AdSlot slot="rail" className={cn(RAIL, 'left-[calc(50%+500px)]', phase === 'running' && 'opacity-35')} />
       {pickerOpen && (
         <Suspense fallback={null}>
           <LanguagePicker languages={LANGUAGES} currentId={languageId} onSelect={pickLanguage} onClose={closePicker} />
@@ -535,11 +541,11 @@ export default function App() {
       />
 
       {view === 'board' ? (
-        <Suspense fallback={<section className="runs" aria-busy="true" />}>
+        <Suspense fallback={<section className="grid gap-4" aria-busy="true" aria-label="Loading" />}>
           <LeaderboardView languages={LANGUAGES} language={languageId} length={length} onLanguage={changeLanguage} onLength={changeLength} player={player.player} onType={typeSnippet} />
         </Suspense>
       ) : view === 'runs' ? (
-        <Suspense fallback={<section className="runs" aria-busy="true" />}>
+        <Suspense fallback={<section className="grid gap-4" aria-busy="true" aria-label="Loading" />}>
           <RunsView languages={LANGUAGES} history={runHistory} language={languageId} length={length} onLanguage={changeLanguage} onLength={changeLength} inAddress={onSite} onType={typeSnippet} />
         </Suspense>
       ) : (
@@ -635,39 +641,39 @@ export default function App() {
           </RenderMark>
 
           <p
-            className={`hint${chord || atPending(run) || suggestOpen ? ' attention' : ''}`}
+            className={cn('-mt-1.5 mb-0 flex flex-wrap items-center gap-1 text-sm max-sm:hidden', chord || atPending(run) || suggestOpen ? 'text-primary' : 'text-muted-foreground')}
             style={{ visibility: phase === 'done' && !chord ? 'hidden' : undefined }}
           >
             {chord ? (
               <>
-                <kbd>{keys.mod}</kbd>+
-                <kbd>K</kbd> pressed · <kbd>T</kbd> theme · any other key cancels
+                <Kbd>{keys.mod}</Kbd>+
+                <Kbd>K</Kbd> pressed · <Kbd>T</Kbd> theme · any other key cancels
               </>
             ) : suggestOpen ? (
               <>
-                <kbd>tab</kbd> <kbd>enter</kbd> accept · <kbd>↑</kbd> <kbd>↓</kbd> choose · <kbd>esc</kbd> close
+                <Kbd>tab</Kbd> <Kbd>enter</Kbd> accept · <Kbd>↑</Kbd> <Kbd>↓</Kbd> choose · <Kbd>esc</Kbd> close
               </>
             ) : !atPending(run) ? (
               phase === 'ready' ? (
                 <>
-                  start typing when you're ready · <kbd>{keys.mod}</kbd>+
-                  <kbd>enter</kbd> new snippet · <kbd>{keys.mod}</kbd>+
-                  <kbd>{keys.shift}</kbd>+
-                  <kbd>L</kbd> language · <kbd>{keys.mod}</kbd>+<kbd>⌫</kbd> deletes a word
+                  start typing when you're ready · <Kbd>{keys.mod}</Kbd>+
+                  <Kbd>enter</Kbd> new snippet · <Kbd>{keys.mod}</Kbd>+
+                  <Kbd>{keys.shift}</Kbd>+
+                  <Kbd>L</Kbd> language · <Kbd>{keys.mod}</Kbd>+<Kbd>⌫</Kbd> deletes a word
                 </>
               ) : (
                 <>
-                  <kbd>{keys.mod}</kbd>+
-                  <kbd>enter</kbd> new snippet · <kbd>{keys.mod}</kbd>+<kbd>⌫</kbd> deletes a word · results appear when you finish
+                  <Kbd>{keys.mod}</Kbd>+
+                  <Kbd>enter</Kbd> new snippet · <Kbd>{keys.mod}</Kbd>+<Kbd>⌫</Kbd> deletes a word · results appear when you finish
                 </>
               )
             ) : run.chars[run.pos] === '\n' ? (
               <>
-                auto-closed below · <kbd>↓</kbd> to move past it
+                auto-closed below · <Kbd>↓</Kbd> to move past it
               </>
             ) : (
               <>
-                auto-closed · type it, or <kbd>→</kbd> <kbd>end</kbd> to move past
+                auto-closed · type it, or <Kbd>→</Kbd> <Kbd>end</Kbd> to move past
               </>
             )}
           </p>

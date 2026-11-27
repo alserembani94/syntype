@@ -59,7 +59,7 @@ export function Stat({ label, value, note, plain }: { label: string; value: Reac
 /** A small mark beside a value: "best", "you", "older version". */
 export function Mark({ children, tone = 'success' }: { children: ReactNode; tone?: 'success' | 'muted' }) {
   return (
-    <Badge variant="outline" className={cn('ml-1.5 h-4 px-1.5 align-[2px] text-[0.625rem]', tone === 'success' ? 'border-success text-success' : 'text-muted-foreground')}>
+    <Badge variant="outline" className={cn('ml-1.5 h-4 px-1.5 align-[2px] text-2xs', tone === 'success' ? 'border-success text-success' : 'text-muted-foreground')}>
       {children}
     </Badge>
   )

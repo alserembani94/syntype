@@ -176,6 +176,9 @@
   --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --font-display: "Bricolage Grotesque", "Space Grotesk", system-ui, sans-serif;
+  /* Small labels and marks: badges in tables, the ad placeholder's caption. */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: calc(1 / 0.6875);
   --text-xs: 0.75rem;
   --text-xs--line-height: calc(1 / 0.75);
   --text-sm: 0.875rem;
@@ -194,6 +197,9 @@
   --text-4xl--line-height: calc(2.5 / 2.25);
   --text-display: 4rem;
   --text-display--line-height: 1;
+  /* The results' big numbers on phones. */
+  --text-display-sm: 3rem;
+  --text-display-sm--line-height: 1;
 
   /* ——— Radius: Nova's 10px ——— */
   --radius: 0.625rem;

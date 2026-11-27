@@ -13,7 +13,7 @@ export function AidTags({ aids }: { aids: TypingAids }) {
     <span className="inline-flex gap-1">
       <span className="sr-only">{AIDS.map((x) => `${x.name} ${aids[x.id] ? 'on' : 'off'}`).join(', ')}</span>
       {AIDS.map((x) => (
-        <Badge key={x.id} variant="outline" aria-hidden="true" className={cn('h-4 rounded-sm px-1 font-mono text-[0.625rem]', aids[x.id] ? 'text-muted-foreground' : 'text-muted-foreground/50 line-through')}>
+        <Badge key={x.id} variant="outline" aria-hidden="true" className={cn('h-4 rounded-sm px-1 font-mono text-2xs', aids[x.id] ? 'text-muted-foreground' : 'text-muted-foreground/50 line-through')}>
           {x.short}
         </Badge>
       ))}

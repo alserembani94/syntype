@@ -1,0 +1,163 @@
+/*
+ * The editor: the one hand-written stylesheet (design system step 14). Every
+ * keystroke goes through these rules, one span per character, so they stay
+ * plain CSS on the theme roles rather than utility classes: see CLAUDE.md's
+ * Performance notes before changing anything here, and measure on the longest
+ * snippet (npm run bench:restyle) before and after.
+ *
+ * Also here: what's drawn per character or per data point in the same way
+ * (the suggestion box, the speed and runs charts, the results' code review).
+ * Colours are roles only (src/themes/themes.css); type sizes are the scale's
+ * (var(--text-…)), except the editor's own 13px (tab bar, code on phones) and
+ * the suggestion icons' 10px, which match VS Code and have no step (D1).
+ */
+
+/* The editor's frame: a file tab over the code, a status bar under it. */
+.pane { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; min-width: 0; }
+.tabbar { display: flex; align-items: stretch; background: var(--muted); border-bottom: 1px solid var(--border); font-size: 13px; }
+.tab { display: flex; align-items: center; gap: 8px; padding: 9px 16px; background: var(--card); border-right: 1px solid var(--border); font-family: var(--font-mono); margin-bottom: -1px; }
+.tab .dot { width: 8px; height: 8px; border-radius: 2px; background: var(--tab-indicator); }
+.tabbar .lang { margin-left: auto; padding: 9px 14px; color: var(--muted-foreground); font-size: var(--text-xs); align-self: center; }
+
+.editor { position: relative; cursor: text; }
+.scroller { position: relative; display: grid; grid-template-columns: auto 1fr; overflow: auto; max-height: 52vh; min-height: 180px; padding: 18px 0; }
+.gutter, .code { font-variant-ligatures: none; font-feature-settings: "liga" 0, "calt" 0; font-family: var(--font-mono); font-size: var(--text-base); line-height: 1.75; margin: 0; white-space: pre; }
+.gutter { text-align: right; color: var(--muted-foreground); opacity: .55; padding: 0 14px 0 18px; user-select: none; font-variant-numeric: tabular-nums; }
+.gutter .now { color: var(--primary); opacity: 1; }
+.code { padding-right: 24px; min-width: 0; }
+/*
+ * Each character is dimmed by mixing its colour with transparency (--a), not
+ * with opacity: an element with opacity below 1 needs its own rendering
+ * effect, and with ~900 of them every keystroke re-laid out and repainted the
+ * whole snippet (about 47 ms a key on a slow phone, 18 ms this way). On text,
+ * the two look the same. --tc is the character's token colour (set by the
+ * token classes below); span.c outranks those classes.
+ */
+.c { --a: 34%; border-radius: 2px; }
+span.c { color: color-mix(in srgb, var(--tc, var(--foreground)) var(--a), transparent); }
+.c.ok { --a: 100%; }
+.c.auto, .c.skipped { --a: 60%; }
+.c.pending { --a: 85%; background: var(--accent); }
+.c.nl.pending { --a: 60%; --tc: var(--primary); }
+.c.bad { --a: 100%; color: var(--destructive) !important; background: var(--destructive-muted); text-decoration: underline wavy var(--destructive); text-underline-offset: 4px; }
+.c.nl { --tc: var(--muted-foreground); --a: 22%; }
+.c.nl.ok { --a: 35%; }
+.c.nl.bad { --a: 100%; }
+.c.cur { box-shadow: inset 2px 0 0 var(--primary); animation: blink 1.05s steps(1) infinite; --a: 55%; }
+.typing .c.cur { animation: none; }
+@keyframes blink { 50% { box-shadow: inset 2px 0 0 transparent; } }
+.kw { --tc: var(--code-keyword); color: var(--tc); } .str { --tc: var(--code-string); color: var(--tc); } .num { --tc: var(--code-number); color: var(--tc); }
+.fn { --tc: var(--code-function); color: var(--tc); } .ty { --tc: var(--code-type); color: var(--tc); } .com { --tc: var(--code-comment); color: var(--tc); font-style: italic; } .pun { --tc: var(--code-punctuation); color: var(--tc); }
+
+/*
+ * The editor's input sits inside the code area, so keyboard users can reach the area when it
+ * scrolls sideways on a phone (axe: scrollable-region-focusable). Sticky across the whole row,
+ * it stays in the visible corner, so the browser never scrolls the code to show it when it takes
+ * focus or is typed into. The gutter and code are placed explicitly, so it takes no grid cell.
+ */
+.hidden-input { position: sticky; top: 0; left: 0; grid-area: 1 / 1 / 2 / -1; align-self: start; justify-self: start; opacity: 0; width: 1px; height: 1px; margin-bottom: -1px; border: 0; padding: 0; resize: none; }
+.scroller > .gutter { grid-area: 1 / 1; }
+.scroller > .code { grid-area: 1 / 2; }
+
+.statusbar { display: flex; gap: 18px; flex-wrap: wrap; padding: 7px 14px; border-top: 1px solid var(--border); background: var(--muted); font: var(--text-xs) var(--font-mono); color: var(--muted-foreground); }
+.statusbar .push { margin-left: auto; }
+.statusbar .service.starting { color: var(--primary); }
+.statusbar .service.failed { color: var(--destructive); }
+
+/* Shown over the code when keys can't reach the game (CodeView's overlay button). */
+.editor.unfocused .scroller { filter: blur(5px); opacity: .55; }
+
+/*
+ * The smooth caret (CodeView smoothCaret): a bar that glides between letters.
+ * When it crosses several letters at once (an accepted suggestion), a comet
+ * tail streaks behind it and the inserted text flashes.
+ */
+.editor { --caret-glide: 150ms; }
+.editor.smooth .c.cur { box-shadow: none; animation: none; }
+.code { position: relative; z-index: 1; }
+.caret-bar {
+  position: absolute; left: 0; top: 0; width: 2px; z-index: 2; pointer-events: none; opacity: 0;
+  background: var(--primary); border-radius: 1px;
+  transition: transform var(--caret-glide) cubic-bezier(.2, .7, .3, 1);
+  animation: caret-blink 1.05s steps(1) infinite;
+}
+.caret-bar.moving { animation: none; }
+@keyframes caret-blink { 50% { opacity: 0; } }
+.caret-trail, .caret-flash { position: absolute; left: 0; top: 0; pointer-events: none; opacity: 0; border-radius: 3px; }
+.caret-trail { z-index: 2; background: linear-gradient(to right, transparent, color-mix(in srgb, var(--primary) 38%, transparent)); }
+.caret-trail.show { animation: caret-trail 420ms ease-out forwards; }
+.caret-flash { z-index: -1; background: var(--accent); }
+.caret-flash.show { animation: caret-flash 700ms ease-out forwards; }
+@keyframes caret-trail {
+  0% { opacity: .9; clip-path: inset(0 100% 0 0); }
+  35% { opacity: .9; clip-path: inset(0 0 0 0); }
+  100% { opacity: 0; clip-path: inset(0 0 0 60%); }
+}
+@keyframes caret-flash { 0% { opacity: 0; } 20% { opacity: 1; } 100% { opacity: 0; } }
+/* Text that came from suggestions, kept marked in replays: a soft tint, one block per word (square corners, so it never looks like a mistake's wavy underline). */
+.c.sug { background: var(--accent); border-radius: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .c.cur { animation: none; }
+  .caret-bar { transition: none; animation: none; }
+  .caret-trail.show, .caret-flash.show { animation: none; }
+}
+
+/* A theme's glow (the retro terminal's) on the code. */
+.code, .gutter { text-shadow: var(--code-glow); transition: text-shadow 0.7s ease; }
+
+/* Tab-indented languages (Go) show tabs at the language's indent width. */
+.code, .review-code { tab-size: var(--tab-size, 4); }
+
+/* suggestion list, styled after VS Code's suggest widget */
+.suggest {
+  position: absolute; z-index: 5; margin: 0; padding: 0; list-style: none; overflow-y: auto;
+  background: var(--card); border: 1px solid var(--border); border-radius: 6px;
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--shadow-color) 14%, transparent); font: var(--text-sm) var(--font-mono); color: var(--foreground);
+}
+.suggest li { display: flex; align-items: center; gap: 8px; padding: 0 8px; cursor: pointer; white-space: nowrap; }
+.suggest li.selected { background: var(--accent); }
+.suggest .icon { flex: none; width: 26px; text-align: center; font-size: 10px; font-weight: 600; border-radius: 3px; padding: 1px 0; }
+.suggest .icon.keyword { color: var(--code-keyword); }
+.suggest .icon.word, .suggest .icon.module { color: var(--muted-foreground); }
+.suggest .icon.function, .suggest .icon.method { color: var(--code-function); font-size: 13px; }
+.suggest .icon.variable { color: var(--code-number); }
+.suggest .icon.class, .suggest .icon.interface, .suggest .icon.type, .suggest .icon.typeParameter { color: var(--code-type); }
+.suggest .icon.enum, .suggest .icon.enumMember { color: var(--code-number); }
+.suggest .icon.string { color: var(--code-string); }
+.suggest .icon.property { color: var(--code-string); }
+.suggest .label { overflow: hidden; text-overflow: ellipsis; font-variant-ligatures: none; }
+.suggest .label b { color: var(--primary); font-weight: 600; }
+.suggest .detail { margin-left: auto; color: var(--muted-foreground); font: var(--text-xs) var(--font-sans); }
+
+/* The results' speed chart (SpeedChart) and My runs' chart (RunsView). */
+svg.chart { width: 100%; height: auto; display: block; overflow: visible; }
+svg.chart .gridline { stroke: var(--border); stroke-width: 1; }
+svg.chart .gridline.faint { opacity: .45; }
+svg.chart .axis { fill: var(--muted-foreground); font: var(--text-2xs) var(--font-mono); }
+svg.chart .axis.title { font-size: 10px; letter-spacing: .06em; }
+svg.chart .wpm { fill: none; stroke: var(--primary); stroke-width: 2.5; stroke-linejoin: round; }
+svg.chart .raw { fill: none; stroke: var(--muted-foreground); stroke-width: 1.8; opacity: .8; }
+svg.chart .dot { fill: var(--primary); }
+svg.chart .er path { stroke: var(--destructive); stroke-width: 2; stroke-linecap: round; }
+.runs-svg { margin-top: 8px; }
+svg.chart .runs-line { fill: none; stroke: var(--muted-foreground); stroke-opacity: .45; stroke-width: 1.5; }
+svg.chart .runs-dot { fill: var(--muted-foreground); }
+svg.chart .runs-dot.best { fill: var(--primary); }
+
+/* The results' review of the typed code (Review). */
+.review { display: grid; gap: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--muted); padding: 12px 16px; min-width: 0; }
+.review-legend { display: flex; flex-wrap: wrap; gap: 16px; font: var(--text-xs) var(--font-mono); color: var(--muted-foreground); }
+.review-legend i { font-style: normal; padding: 0 3px; margin-right: 4px; }
+.review-code { margin: 0; font: var(--text-sm)/1.7 var(--font-mono); font-variant-ligatures: none; white-space: pre; overflow-x: auto; }
+.r-bad { color: var(--destructive); background: var(--destructive-muted); border-radius: 2px; text-decoration: underline wavy var(--destructive); text-underline-offset: 4px; }
+.r-sug { box-shadow: inset 0 -2px 0 var(--primary); }
+.r-auto { opacity: .5; }
+
+/* A replay drives the editor itself; the pointer can't move its caret. */
+.replay .editor { pointer-events: none; }
+
+@media (max-width: 640px) {
+  .gutter, .code { font-size: 13px; }
+  .gutter { padding: 0 10px 0 10px; }
+}

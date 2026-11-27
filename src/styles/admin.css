@@ -1,5 +1,5 @@
 /* The admin page (/admin). */
 @import "./system.css";
-@import "../index.css" layer(legacy);
+@import "./editor.css" layer(components);
 
 /* Admin, and the component gallery in it, may use every shadcn component (system.css scans all of src). */

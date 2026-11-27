@@ -1,21 +1,19 @@
 /*
  * The design system's stylesheet, shared by every entry (app.css, admin.css).
  *
- * Layers, lowest first. Utilities beat legacy, so a screen moves onto the
- * system by adding classes and deleting its legacy rules.
+ * Layers, lowest first:
  *   theme       primitives, the theme blocks, Tailwind's theme variables
- *   base        Tailwind's reset, then the defaults legacy still needs back
- *   legacy      the old CSS (index.css), deleted screen by screen
- *   components  shadcn's component styles
- *   utilities   Tailwind classes
+ *   base        Tailwind's reset, then the system's base rules (base.css)
+ *   components  the editor's own stylesheet (editor.css, imported by each entry)
+ *   utilities   Tailwind classes: everything else is styled with these
+ * There is no legacy layer any more (design system step 14); a test keeps it gone.
  */
-@layer theme, base, legacy, components, utilities;
+@layer theme, base, components, utilities;
 
 @import "tailwindcss/theme.css" layer(theme);
 @import "../themes/themes.css" layer(theme);
 @import "tailwindcss/preflight.css" layer(base);
-@import "./legacy-reset.css" layer(base);
-@import "./shadcn-base.css" layer(base);
+@import "./base.css" layer(base);
 @import "tailwindcss/utilities.css" layer(utilities) source(none);
 @import "./tailwind-theme.css";
 /* shadcn: the open/close animations, and its data-open, data-checked… variants and keyframes (definitions only). */

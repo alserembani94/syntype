@@ -1,0 +1,35 @@
+/*
+ * The system's base rules, after Tailwind's reset (design system steps 6 and 14).
+ */
+
+/*
+ * What shadcn's components expect (what `shadcn init` would add): borders and
+ * outlines default to the theme's border and ring colours, so a component's
+ * plain `border` or `outline` class draws in a role, not in currentColor.
+ */
+*, ::before, ::after, ::backdrop {
+  border-color: var(--border);
+  outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
+}
+
+/* The page: the theme's colours and type, and room at the edges (and the phone's safe areas). */
+html, body { min-height: 100%; }
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm--line-height);
+  padding: 1.75rem max(1rem, env(safe-area-inset-right, 0px)) 2.5rem max(1rem, env(safe-area-inset-left, 0px));
+}
+@media (max-width: 640px) {
+  body { padding-block: 1.125rem 1.75rem; }
+}
+
+/*
+ * Links in running text keep their underline: in prose, the underline is what
+ * shows a link (A4, WCAG 1.4.1). Not shadcn's components (data-slot). It must
+ * outrank the reset's own `a` rule in this layer, so no :where(); utilities
+ * (no-underline, a border instead) still win, being a later layer.
+ */
+a:not([data-slot]) { text-decoration-line: underline; text-underline-offset: 0.2em; }

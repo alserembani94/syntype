@@ -1,6 +1,6 @@
 /* The site and the game artifact. */
 @import "./system.css";
-@import "../index.css" layer(legacy);
+@import "./editor.css" layer(components);
 
 /*
  * The shadcn components and composites the site uses: Tailwind scans files, not imports, so

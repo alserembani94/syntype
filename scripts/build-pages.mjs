@@ -78,27 +78,46 @@ const faq = [
   ['Is it free? Do I need an account?', 'It is free, and you can play without an account: everything runs in your browser, and your settings, personal bests and run history stay on your device. Signing in with GitHub or Google is optional, and only gives you a name for the leaderboards.'],
 ]
 
+/**
+ * What the site is, written into each page for search engines and link previews. Once the app
+ * runs it's hidden (.app-ready on <html>) and opens as a dialog (AboutDialog adds .open).
+ */
+const ABOUT = {
+  section:
+    'mx-auto mt-16 max-w-230 border-t pt-7 text-sm leading-relaxed text-muted-foreground max-sm:mt-10 in-[.app-ready]:not-[.open]:hidden [&.open]:m-0 [&.open]:max-w-none [&.open]:border-0 [&.open]:p-0',
+  h2: 'm-0 mb-2 font-display text-xl font-bold tracking-tight text-foreground [.open_&]:pr-10',
+  intro: 'm-0 mb-6 max-w-[72ch]',
+  columns: 'grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-8 max-sm:grid-cols-1 max-sm:gap-5 [.open_&]:grid-cols-2 max-sm:[.open_&]:grid-cols-1',
+  h3: 'm-0 mb-2.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase',
+  dt: 'font-semibold text-foreground',
+  dd: 'mx-0 mt-0.5 mb-3.5',
+  rules: 'mt-3 mb-0 text-sm',
+  rule: 'text-primary',
+  list: 'm-0 list-none columns-2 gap-x-5 p-0',
+  item: 'mb-1 break-inside-avoid',
+  link: 'border-b text-foreground no-underline hover:border-primary hover:text-primary aria-[current=page]:border-transparent aria-[current=page]:text-primary',
+}
 function about(page) {
   const links = LANGUAGES.map((l) => {
     const here = l.id === page.languageId ? ' aria-current="page"' : ''
-    return `          <li><a href="/${l.id}"${here}>${esc(l.name)} typing test</a></li>`
+    return `          <li class="${ABOUT.item}"><a class="${ABOUT.link}" href="/${l.id}"${here}>${esc(l.name)} typing test</a></li>`
   }).join('\n')
-  const qa = faq.map(([q, a]) => `          <dt>${esc(q)}</dt>\n          <dd>${esc(a)}</dd>`).join('\n')
-  const rules = policies.policyPages().map((p) => `<a href="${p.path}">${esc(p.label)}</a>`).join(' · ')
-  return `    <section class="about" id="about" aria-labelledby="about-heading">
-      <h2 id="about-heading">${esc(page.heading)}</h2>
-      <p>${esc(page.intro)}</p>
-      <div class="about-columns">
+  const qa = faq.map(([q, a]) => `          <dt class="${ABOUT.dt}">${esc(q)}</dt>\n          <dd class="${ABOUT.dd}">${esc(a)}</dd>`).join('\n')
+  const rules = policies.policyPages().map((p) => `<a class="${ABOUT.rule}" href="${p.path}">${esc(p.label)}</a>`).join(' · ')
+  return `    <section class="${ABOUT.section}" id="about" aria-labelledby="about-heading">
+      <h2 id="about-heading" class="${ABOUT.h2}">${esc(page.heading)}</h2>
+      <p class="${ABOUT.intro}">${esc(page.intro)}</p>
+      <div class="${ABOUT.columns}">
         <div>
-          <h3>Questions</h3>
-          <dl>
+          <h3 class="${ABOUT.h3}">Questions</h3>
+          <dl class="m-0">
 ${qa}
           </dl>
-          <p class="about-links">${rules}</p>
+          <p class="${ABOUT.rules}">${rules}</p>
         </div>
         <nav aria-label="Languages">
-          <h3>Typing tests by language</h3>
-          <ul>
+          <h3 class="${ABOUT.h3}">Typing tests by language</h3>
+          <ul class="${ABOUT.list}">
 ${links}
           </ul>
         </nav>

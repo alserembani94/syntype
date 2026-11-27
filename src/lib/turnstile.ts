@@ -44,7 +44,8 @@ export async function turnstileToken(siteKey: string, timeoutMs = 60_000): Promi
   const t = await loadApi()
   if (!widget || widget.siteKey !== siteKey) {
     const container = document.createElement('div')
-    container.className = 'turnstile-box'
+    // Hidden unless the widget needs the player to do something (it's empty until then).
+    container.className = 'fixed right-4 bottom-4 z-40 empty:hidden'
     document.body.append(container)
     const w: NonNullable<typeof widget> = { id: '', siteKey, waiting: null }
     const settle = (r: { token?: string; error?: string }) => {
