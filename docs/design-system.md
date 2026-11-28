@@ -14,6 +14,8 @@ How Syntype's UI is built, one entry per component and composite: when to use it
 | Blocks | `src/blocks/`, `src/components/ViewParts.tsx` | Pieces of real screens: the header, the settings row, a view's title row, a stat card. |
 | The editor | `src/styles/editor.css` | The one hand-written stylesheet: the code, caret, suggestion box and charts, kept as plain CSS on the roles because every keystroke goes through it. |
 
+**Merging classes.** Components join their own classes with a caller's `className` through `cn()` (`src/lib/utils.ts`, the `cn` package), which drops the earlier of two conflicting classes, so `className="py-3"` replaces a default `py-2`. It doesn't know three of our own theme values: it reads `text-display` and `text-display-sm` as colours (so beside `text-primary` one of them is dropped, and beside `text-sm` both stay) and keeps `text-shadow-glow` beside `text-shadow-none`. So don't override those three through `className`: put them in the component's own classes, or give it a variant. `src/lib/cn.test.ts` pins these misreads and fails once `cn` learns them, which is when this note can go. (Fitting `cn` to our CSS, or swapping in `tailwind-merge`, would fix it for about 1–2 KB less code but a build step or a hand-kept list; not worth it while nothing hits it.)
+
 Not decided yet, so **ask Atif** first: a warning colour (there's no `--warning` role), forced-colours (Windows High Contrast) styling, and a sheet for pickers on phones (they're top-anchored dialogs today).
 
 ## Components
