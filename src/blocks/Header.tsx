@@ -42,7 +42,7 @@ export const Header = memo(function Header({ view, onSite, onView, onAccountOpen
   return (
     <RenderMark id="header">
       <header className="flex flex-wrap items-center gap-3 sm:gap-5">
-        <h1 className="m-0 font-display text-3xl font-bold tracking-tight [text-shadow:var(--code-glow)]">
+        <h1 className="m-0 font-display text-3xl font-bold tracking-tight text-shadow-glow">
           Syn<span className="text-primary">type</span>
         </h1>
         <nav aria-label="Sections" className="flex gap-1 rounded-lg border border-border bg-card p-1">

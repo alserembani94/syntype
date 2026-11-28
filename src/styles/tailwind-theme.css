@@ -6,6 +6,8 @@
  * classes follow the live theme. The scales are in src/design/primitives.css.
  */
 @theme inline {
+  /* text-shadow-glow: the theme's soft glow on big numbers and the brand (none in most themes). */
+  --text-shadow-glow: var(--code-glow);
   --color-*: initial;
   --color-background: var(--background);
   --color-foreground: var(--foreground);

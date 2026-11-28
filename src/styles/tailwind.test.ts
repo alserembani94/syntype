@@ -153,4 +153,33 @@ describe('sizes come from the scale (D1)', () => {
     const found = [...files(src), pages].flatMap((f) => [...readFileSync(f, 'utf8').matchAll(/\btext-\[\d[\d.]*(?:px|rem|em)\]/g)].map((m) => `${f.slice(src.length)}: ${m[0]}`))
     expect(found).toEqual([])
   })
+
+  // D1: arbitrary values are for layout geometry only. Every class in our code (shadcn's components
+  // keep theirs as installed), with its variants (md:, [&.open]:, aria-[…]:) stripped first.
+  const src = fileURLToPath(new URL('../', import.meta.url))
+  const files = (dir: string): string[] =>
+    readdirSync(dir).flatMap((f) => (statSync(join(dir, f)).isDirectory() ? (f === 'ui' ? [] : files(join(dir, f))) : /\.tsx?$/.test(f) && !f.includes('.test.') ? [join(dir, f)] : []))
+  const pages = fileURLToPath(new URL('../../scripts/build-pages.mjs', import.meta.url))
+  const utilities = [...files(src), pages].flatMap((f) =>
+    [...readFileSync(f, 'utf8').matchAll(/(["'`])((?:(?!\1)[^\n])*)\1/g)].flatMap((m) =>
+      m[2].split(/\s+/).map((token) => ({ where: f.slice(src.length), token, utility: token.replace(/^!/, '').split(/:(?![^[]*\])/).pop()!.replace(/!$/, '') })),
+    ),
+  )
+
+  /** Grid templates, positions and sizes: the layout utilities D1 allows arbitrary values on. */
+  const LAYOUT = /^-?(grid-cols|grid-rows|top|right|bottom|left|inset|inset-x|inset-y|w|h|size|min-w|max-w|min-h|max-h)-\[/
+  /** A geometry expression (calc(), min(), max(), env(), var()) or a grid template (minmax(0,1fr)_auto), never a bare length. */
+  const GEOMETRY = /\[(?:[^\]]*\(|[^\]]*_)/
+
+  it('arbitrary values only for layout geometry (grid templates, calc() positions), never a one-off size', () => {
+    const found = utilities
+      .filter((u) => /^-?[a-z][a-z0-9-]*-\[[^\]]+\]$/.test(u.utility) && !(LAYOUT.test(u.utility) && GEOMETRY.test(u.utility)))
+      .map((u) => `${u.where}: ${u.token}`)
+    expect(found).toEqual([])
+  })
+
+  it('no arbitrary properties ([text-shadow:…]): a utility or a theme value does it once', () => {
+    const found = utilities.filter((u) => /^\[[a-z-]+:[^\]]+\]$/.test(u.utility)).map((u) => `${u.where}: ${u.token}`)
+    expect(found).toEqual([])
+  })
 })

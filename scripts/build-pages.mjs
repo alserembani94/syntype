@@ -87,7 +87,7 @@ const ABOUT = {
   section:
     'mx-auto mt-16 max-w-230 border-t pt-7 text-sm leading-relaxed text-muted-foreground max-sm:mt-10 in-[.app-ready]:not-[.open]:hidden [&.open]:m-0 [&.open]:max-w-none [&.open]:border-0 [&.open]:p-0',
   h2: 'm-0 mb-2 font-display text-xl font-bold tracking-tight text-foreground [.open_&]:pr-10',
-  intro: 'm-0 mb-6 max-w-[72ch]',
+  intro: 'm-0 mb-6 max-w-prose',
   columns: 'grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-8 max-sm:grid-cols-1 max-sm:gap-5 [.open_&]:grid-cols-2 max-sm:[.open_&]:grid-cols-1',
   h3: 'm-0 mb-2.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase',
   dt: 'font-semibold text-foreground',
@@ -232,7 +232,7 @@ function policyHtml(page, all) {
   <body>
     <div class="mx-auto grid max-w-3xl gap-6 leading-relaxed">
       <header class="flex flex-wrap items-center gap-3 sm:gap-5">
-        <a class="text-foreground no-underline" href="/"><span class="font-display text-3xl font-bold tracking-tight [text-shadow:var(--code-glow)]">Syn<span class="text-primary">type</span></span></a>
+        <a class="text-foreground no-underline" href="/"><span class="font-display text-3xl font-bold tracking-tight text-shadow-glow">Syn<span class="text-primary">type</span></span></a>
         <nav aria-label="Site" class="flex flex-wrap gap-1 rounded-lg border bg-card p-1">
           ${nav}
         </nav>

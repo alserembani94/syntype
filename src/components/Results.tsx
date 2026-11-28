@@ -21,7 +21,7 @@ const ShareDialog = lazy(() => import('./ShareDialog').then((m) => ({ default: m
 function Explain({ name, label }: { name: string; label: string }) {
   return (
     <Tip label={label}>
-      <Button variant="ghost" size="icon-xs" className="ml-0.5 size-4 align-[-2px] text-muted-foreground" aria-label={`About ${name}`}>
+      <Button variant="ghost" size="icon-xs" className="ml-0.5 size-4 align-text-bottom text-muted-foreground" aria-label={`About ${name}`}>
         <InfoIcon />
       </Button>
     </Tip>
@@ -52,12 +52,12 @@ interface Props {
 
 const keyLabel = (c: string) => (c === '\n' ? 'enter' : c === ' ' ? 'space' : c)
 /** The stat rows: label, value, caption. */
-const ROW = 'm-0 grid gap-x-7 gap-y-4.5 max-sm:grid-cols-2 max-sm:gap-x-5 max-sm:gap-y-3.5 [&>div]:grid [&>div]:min-w-0 [&>div]:content-start [&>div]:gap-0.5'
+const ROW = 'm-0 grid gap-x-7 gap-y-4.5 max-sm:grid-cols-2 max-sm:gap-x-5 max-sm:gap-y-3.5 *:grid *:min-w-0 *:content-start *:gap-0.5'
 const DT = 'font-mono text-sm text-muted-foreground'
 const DD = 'm-0 font-mono text-sm font-medium'
-const NUM = 'm-0 font-display text-2xl leading-tight font-bold text-primary tabular-nums [text-shadow:var(--code-glow)]'
-const NUM2 = 'm-0 font-display text-xl leading-tight font-bold tabular-nums [text-shadow:var(--code-glow)]'
-const SUB = 'm-0 font-mono text-xs text-muted-foreground [contain:inline-size]'
+const NUM = 'm-0 font-display text-2xl leading-tight font-bold text-primary tabular-nums text-shadow-glow'
+const NUM2 = 'm-0 font-display text-xl leading-tight font-bold tabular-nums text-shadow-glow'
+const SUB = 'm-0 font-mono text-xs text-muted-foreground contain-inline-size'
 
 const pct = (v: number | null) => (v === null ? '—' : `${Math.round(v)}%`)
 
@@ -113,11 +113,11 @@ export function Results({ result: r, isBest, info, run, highlight, onNext, onRet
         <div className="grid content-start gap-3.5 max-sm:flex max-sm:flex-wrap max-sm:items-end max-sm:gap-x-7 max-sm:gap-y-2.5">
           <div className="grid">
             <span className="font-mono text-2xl leading-tight font-medium text-muted-foreground">wpm</span>
-            <span className="font-display text-display font-bold text-primary tabular-nums [text-shadow:var(--code-glow)] max-sm:text-display-sm">{Math.round(r.wpm)}</span>
+            <span className="font-display text-display font-bold text-primary tabular-nums text-shadow-glow max-sm:text-display-sm">{Math.round(r.wpm)}</span>
           </div>
           <div className="grid">
             <span className="font-mono text-2xl leading-tight font-medium text-muted-foreground">acc</span>
-            <span className="font-display text-display font-bold text-primary tabular-nums [text-shadow:var(--code-glow)] max-sm:text-display-sm">{Math.round(r.accuracy)}%</span>
+            <span className="font-display text-display font-bold text-primary tabular-nums text-shadow-glow max-sm:text-display-sm">{Math.round(r.accuracy)}%</span>
           </div>
           {isBest && <span className="justify-self-start rounded-full border border-current px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-success">New personal best</span>}
         </div>
@@ -211,7 +211,7 @@ export function Results({ result: r, isBest, info, run, highlight, onNext, onRet
           <dt className={DT}>symbol accuracy</dt>
           <dd className={NUM2}>
             {pct(r.symbolAccuracy)}
-            {r.symbolAccuracy !== null && <small className="font-mono text-sm font-normal text-muted-foreground [text-shadow:none]"> of {r.symbolTotal}</small>}
+            {r.symbolAccuracy !== null && <small className="font-mono text-sm font-normal text-muted-foreground text-shadow-none"> of {r.symbolTotal}</small>}
           </dd>
         </div>
         <div className="max-sm:col-span-full">

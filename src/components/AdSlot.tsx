@@ -14,6 +14,8 @@ export function AdSlot({ slot, className }: Props) {
   const { width, height } = AD_SLOTS[slot]
   return (
     <aside
+      // min(), not w-(--ad-w) max-w-full: inside a grid, a fixed width counts in full when columns are
+      // sized (percentages don't resolve yet), so a 728px banner would widen the results screen on a phone.
       className={cn('box-border grid h-(--ad-h) w-[min(var(--ad-w),100%)] place-content-center justify-items-center gap-0.5 rounded-lg border border-dashed bg-muted text-xs text-muted-foreground select-none', slot === 'results' && 'mx-auto', className)}
       style={{ '--ad-w': `${width}px`, '--ad-h': `${height}px` } as React.CSSProperties}
       aria-label="Advertisement"

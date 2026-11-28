@@ -8,7 +8,7 @@ How Syntype's UI is built, one entry per component and composite: when to use it
 | --- | --- | --- |
 | Primitives | `src/design/primitives.css` | Raw values: one palette per theme family (from the theme's source files), and the scales for type, radius, shadow, motion and spacing. A new size starts here (D1). |
 | Roles | `src/themes/themes.css` | One block per theme giving every role (`--primary`, `--muted-foreground`, `--code-keyword` …) a primitive from that theme's own palette (T5). |
-| Utilities | `src/styles/tailwind-theme.css` | Tailwind exposes each role as utilities (`bg-primary`, `text-muted-foreground`) and `dark:` as the dark themes. No other colours exist (D2). |
+| Utilities | `src/styles/tailwind-theme.css` | Tailwind exposes each role as utilities (`bg-primary`, `text-muted-foreground`), the theme's glow as `text-shadow-glow` (big numbers, the brand; none in most themes), and `dark:` as the dark themes. No other colours exist (D2). Arbitrary values are for layout geometry only; anything repeated becomes a theme value instead (D1). |
 | Components | `src/components/ui/` | shadcn's, Nova style on React Aria, installed with `npm run ui:add` and kept as installed apart from marked `Local edit:` comments. |
 | Composites | `src/components/composites/` | Ours, built from components: the picker, the toast, chip rows and others below. |
 | Blocks | `src/blocks/`, `src/components/ViewParts.tsx` | Pieces of real screens: the header, the settings row, a view's title row, a stat card. |
