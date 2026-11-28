@@ -12,7 +12,7 @@ Syntype looks is compared against a baseline instead of judged by eye.
 | `npm run check:controls` | The typing screen's controls with a real keyboard and pointer: the settings row's toolbar keys, letters typed on a control going to the editor, Tab leaving controls, focus kept after a keyboard change, and the results keys (Enter, R, V). |
 | `npm run bench:restyle` | What one keystroke costs, counted from a Chrome trace: elements restyled, style time, event handling and main-thread time per key. Steadier than `bench:keys` for comparing two builds. |
 | `npm run check:csp` | Opens every kind of page (home, a language, My runs, leaderboard, policies, admin) on the local site with the real Content Security Policy and fails on any violation. |
-| `npm run report:size` | Gzipped sizes from `dist/`: first load, lazy chunks, the TypeScript worker, admin, the artifact page. |
+| `npm run report:size` | Gzipped sizes from `dist/`: first load (against its budget in `scripts/size-budget.mjs`, which `npm run build` enforces), lazy chunks, the TypeScript worker, admin, the artifact page. |
 | `npm run report:bundle` | What's inside each bundle: builds the app (with its TypeScript worker) and admin into `.visual/bundle/dist/` with source maps, and writes a treemap (`app.html`, `worker.html`, `admin.html`) and its raw data (`.json`) per bundle to `.visual/bundle/` (rollup-plugin-visualizer; module sizes are minified, measured from source maps). Normal builds don't load the plugin. |
 | `npm run visual:fixtures` | Regenerates the test data in `fixtures/` (rerun after editing a snippet it uses). |
 

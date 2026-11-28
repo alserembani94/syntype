@@ -9,6 +9,7 @@
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import { reactAriaStyles } from './react-aria-styles.mjs'
+import { BUDGET, firstLoad, OVER_BUDGET_HELP, overBudget } from './size-budget.mjs'
 import path from 'node:path'
 import { createServer } from 'vite'
 
@@ -293,3 +294,12 @@ const headersFile = path.join(dist, '_headers')
 fs.writeFileSync(headersFile, fs.readFileSync(headersFile, 'utf8').replace('__CSP__', `${CSP_ENFORCED ? 'Content-Security-Policy' : 'Content-Security-Policy-Report-Only'}: ${csp}`))
 
 console.log(`${dist}/: ${pages.length} pages, ${seo.RUNS_PAGE.file}, ${policyList.map((p) => p.file).join(', ')}, sitemap.xml, robots.txt, ${files.length} snippet data files`)
+
+// Last: the first-load budget (scripts/size-budget.mjs). Over it, the build fails, so it can't deploy.
+const size = firstLoad(dist)
+const over = overBudget(size)
+if (over.length) {
+  console.error(`\n${over.join('\n')}\n${OVER_BUDGET_HELP}\n`)
+  process.exit(1)
+}
+console.log(`first load: ${size.js} of ${BUDGET.js} KB JS, ${size.css} of ${BUDGET.css} KB CSS (gzip)`)
